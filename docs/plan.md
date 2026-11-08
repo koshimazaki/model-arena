@@ -107,6 +107,23 @@ Files: `packages/element/src/model-arena.ts`, `layouts/`, `captions.ts`; `packag
 - **Themes:** CSS variables, with one provider look as a separate theme file. The core stays unbranded.
 - **Acceptance:** the embed plays a four-lane record on a phone and a laptop; a second record swaps in by URL.
 
+### MA-4b, generate it yourself and galleries (Wed 11 Nov, with MA-4)
+
+- **Key panel** (PRD F10):
+  - The key is held in memory or `sessionStorage` and sent only to the provider host.
+  - A sign-up link for people without an account.
+  - Per-lane rerun and "rerun all through the router", each with a price cap and a cost confirmation.
+- **Gallery switcher** across records.
+- **Serverless recipe:** `providers/runware-serverless/README.md` with a "deploy this workflow" recipe: the folder, then `runware auth login`, then one deploy command. Verify the exact CLI commands against Runware's docs before writing them.
+- **Acceptance:**
+  - a stranger reruns one lane of the published image-to-video record with their own key;
+  - the key never appears in logs, network calls to other hosts, or storage beyond the session.
+
+### First records to publish (content plan)
+
+1. **"Same image, five models" (the floor, low risk).** One still and one motion prompt per lab's guide, sent to Kling 4.0, Seedance 2.5, MiniMax H3, LTX-2.5 and FLUX 3 Video through the Runware API, plus a router lane. It is the blog-post and social-post comparison.
+2. **"One mannequin guide, five ways in" (the depth piece, only if the first-frame test passes).** The Motion Studio guide via reference video, keyframes and audio.
+
 ### MA-5, Runware Serverless lane (stretch, only with Serverless access)
 
 - Restore the container from camera-director `03a51ea7^` into `providers/runware-serverless/` and add the LTX Layout-to-Render workflow.

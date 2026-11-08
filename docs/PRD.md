@@ -54,6 +54,13 @@ Model comparisons are usually screen recordings stitched from separate tools. Re
   - keyframes to FLUX 3 Video.
   Anything else is refused with a clear message.
 - **F8 Keyframes from a clip:** frames extracted with WebCodecs at chosen times (first, last, beat positions), sized to each model's limit.
+- **F10 Generate it yourself:** next to every published record.
+  - **"Generate this yourself":** opens a key panel with a password-style field, held in memory or `sessionStorage`, labelled "stays in your browser".
+  - **No account?** A link to sign up with the provider.
+  - **Rerun:** any lane reruns, or the whole record through the router lane, with a price cap and a cost confirmation.
+  - **Open-weights lanes:** link to a "deploy this workflow to serverless" recipe in the repo. There is a folder plus one CLI command, because Runware Serverless deploys through its CLI; no deploy button or deploy-from-GitHub flow is documented, as checked on 8 Nov. A one-click deploy link is a product suggestion for the provider.
+  - **Unverified:** whether a provider offers any "connect your account" flow for third-party pages. Runware's Serverless introduction page mentions none, and the pasted key is the default.
+- **F11 Galleries:** switch between records, such as "same image, five models" and "same mannequin guide, five ways in", and compare lanes side by side.
 - **F9 Themes:** CSS variables. A provider or brand look is one theme file; the core stays unbranded.
 
 ## Later
