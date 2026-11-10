@@ -9,3 +9,8 @@ coverage/
 # local media and keys never committed
 .local/
 *.key
+
+# Model Arena runs and demo media (see README)
+runs/
+examples/media/*
+!examples/media/.gitkeep

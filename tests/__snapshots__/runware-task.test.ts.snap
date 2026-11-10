@@ -1,0 +1,192 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`task JSON per model > flux-3-video: matches snapshot and the published schema 1`] = `
+{
+  "deliveryMethod": "async",
+  "duration": 5,
+  "includeCost": true,
+  "inputs": {
+    "frameImages": [
+      {
+        "frame": "first",
+        "image": "{{upload:1:first-frame.png}}",
+      },
+    ],
+  },
+  "model": "bfl:flux@3-video",
+  "positivePrompt": "A mannequin dances.",
+  "resolution": "720p",
+  "taskType": "videoInference",
+  "taskUUID": "00000000-0000-4000-8000-000000000001",
+}
+`;
+
+exports[`task JSON per model > h3: matches snapshot and the published schema 1`] = `
+{
+  "deliveryMethod": "async",
+  "duration": 5,
+  "includeCost": true,
+  "inputs": {
+    "referenceAudios": [
+      "{{upload:3:guide-audio.wav}}",
+    ],
+    "referenceImages": [
+      "{{upload:1:first-frame.png}}",
+    ],
+    "referenceVideos": [
+      "{{upload:2:guide-1280x720.mp4}}",
+    ],
+  },
+  "model": "minimax:h3@0",
+  "positivePrompt": "Follow the clip.",
+  "resolution": "768p",
+  "taskType": "videoInference",
+  "taskUUID": "00000000-0000-4000-8000-000000000001",
+}
+`;
+
+exports[`task JSON per model > kling-4 + first frame: matches snapshot and the published schema 1`] = `
+{
+  "deliveryMethod": "async",
+  "duration": 5,
+  "includeCost": true,
+  "inputs": {
+    "frameImages": [
+      {
+        "frame": "first",
+        "image": "{{upload:1:first-frame.png}}",
+      },
+    ],
+    "referenceVideos": [
+      "{{upload:2:guide-1280x720.mp4}}",
+    ],
+  },
+  "model": "klingai:kling-video@4.0",
+  "positivePrompt": "Follow <<<video_1>>>.",
+  "resolution": "720p",
+  "taskType": "videoInference",
+  "taskUUID": "00000000-0000-4000-8000-000000000001",
+}
+`;
+
+exports[`task JSON per model > kling-4: matches snapshot and the published schema 1`] = `
+{
+  "deliveryMethod": "async",
+  "duration": 5,
+  "includeCost": true,
+  "inputs": {
+    "referenceVideos": [
+      "{{upload:1:guide-1280x720.mp4}}",
+    ],
+  },
+  "model": "klingai:kling-video@4.0",
+  "positivePrompt": "Follow <<<video_1>>>.",
+  "resolution": "720p",
+  "taskType": "videoInference",
+  "taskUUID": "00000000-0000-4000-8000-000000000001",
+}
+`;
+
+exports[`task JSON per model > ltx-2.5 audio: matches snapshot and the published schema 1`] = `
+{
+  "deliveryMethod": "async",
+  "includeCost": true,
+  "inputs": {
+    "audio": "{{upload:2:guide-audio.wav}}",
+    "referenceImages": [
+      "{{upload:1:first-frame.png}}",
+    ],
+  },
+  "model": "lightricks:ltx@2.5-pro",
+  "positivePrompt": "A mannequin dances.",
+  "taskType": "videoInference",
+  "taskUUID": "00000000-0000-4000-8000-000000000001",
+}
+`;
+
+exports[`task JSON per model > ltx-2.5 first frame + camera: matches snapshot and the published schema 1`] = `
+{
+  "deliveryMethod": "async",
+  "duration": 6,
+  "height": 720,
+  "includeCost": true,
+  "inputs": {
+    "frameImages": [
+      {
+        "frame": "first",
+        "image": "{{upload:1:first-frame.png}}",
+      },
+    ],
+  },
+  "model": "lightricks:ltx@2.5-pro",
+  "positivePrompt": "A mannequin dances.",
+  "settings": {
+    "cameraMovement": "dolly_in",
+  },
+  "taskType": "videoInference",
+  "taskUUID": "00000000-0000-4000-8000-000000000001",
+  "width": 1280,
+}
+`;
+
+exports[`task JSON per model > ltx-2.5-fast audio: matches snapshot and the published schema 1`] = `
+{
+  "deliveryMethod": "async",
+  "includeCost": true,
+  "inputs": {
+    "audio": "{{upload:2:guide-audio.wav}}",
+    "referenceImages": [
+      "{{upload:1:first-frame.png}}",
+    ],
+  },
+  "model": "lightricks:ltx@2.5-fast",
+  "positivePrompt": "A mannequin dances.",
+  "taskType": "videoInference",
+  "taskUUID": "00000000-0000-4000-8000-000000000001",
+}
+`;
+
+exports[`task JSON per model > router lane: model auto with routing and a price cap 1`] = `
+{
+  "deliveryMethod": "async",
+  "duration": 5,
+  "includeCost": true,
+  "inputs": {
+    "referenceVideos": [
+      "{{upload:1:guide-1280x720.mp4}}",
+    ],
+  },
+  "model": "auto",
+  "positivePrompt": "Follow the clip.",
+  "routing": {
+    "maxPrice": 1.5,
+    "requirements": "720p or better",
+  },
+  "taskType": "videoInference",
+  "taskUUID": "00000000-0000-4000-8000-000000000001",
+}
+`;
+
+exports[`task JSON per model > seedance-2.5: matches snapshot and the published schema 1`] = `
+{
+  "deliveryMethod": "async",
+  "duration": 5,
+  "includeCost": true,
+  "inputs": {
+    "referenceAudios": [
+      "{{upload:3:guide-audio.wav}}",
+    ],
+    "referenceImages": [
+      "{{upload:1:first-frame.png}}",
+    ],
+    "referenceVideos": [
+      "{{upload:2:guide-1280x720.mp4}}",
+    ],
+  },
+  "model": "bytedance:seedance@2.5",
+  "positivePrompt": "Follow @Video1.",
+  "resolution": "720p",
+  "taskType": "videoInference",
+  "taskUUID": "00000000-0000-4000-8000-000000000001",
+}
+`;

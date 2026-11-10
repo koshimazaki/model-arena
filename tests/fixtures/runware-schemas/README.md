@@ -1,0 +1,1 @@
+Fetched 2026-11-10 from https://runware.ai/docs/models/<slug>/schema.json (public, unauthenticated). Used by tests/runware-schema.test.ts to check every built task against the published schema. Refresh with: sh scripts/fetch-schemas.sh

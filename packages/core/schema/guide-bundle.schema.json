@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:model-arena:guide-bundle:1",
+  "title": "Model Arena guide bundle",
+  "description": "The guide a comparison starts from: a clip, its audio, its first frame (raw and restyled), beats, the recipe that made it and the licences of its assets. motion-studio exports against this schema.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "video"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": { "$ref": "#/$defs/slug" },
+    "title": { "type": "string", "maxLength": 200 },
+    "video": { "$ref": "#/$defs/media" },
+    "audio": { "$ref": "#/$defs/media" },
+    "firstFrame": { "$ref": "#/$defs/media" },
+    "firstFrameStyled": { "$ref": "#/$defs/media" },
+    "passes": {
+      "description": "Extra renders of the same motion, such as depth or canny, keyed by name.",
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/slug" },
+      "additionalProperties": { "$ref": "#/$defs/media" }
+    },
+    "keyframes": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["time", "src"],
+        "properties": {
+          "time": { "type": "number", "minimum": 0 },
+          "src": { "type": "string", "minLength": 1, "maxLength": 2048 }
+        }
+      }
+    },
+    "beats": {
+      "description": "Beat positions in seconds from the start of the clip.",
+      "type": "array",
+      "maxItems": 512,
+      "items": { "type": "number", "minimum": 0 }
+    },
+    "recipe": {
+      "description": "How the guide was made: tool, version and settings. Free-form so motion-studio can grow it.",
+      "type": "object"
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "author": { "type": "string", "maxLength": 200 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "licences": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["asset", "licence"],
+            "properties": {
+              "asset": { "type": "string", "maxLength": 200 },
+              "licence": { "type": "string", "maxLength": 200 },
+              "source": { "type": "string", "maxLength": 2048 },
+              "attribution": { "type": "string", "maxLength": 1000 }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,63}$" },
+    "media": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["src"],
+      "properties": {
+        "src": { "type": "string", "minLength": 1, "maxLength": 2048 },
+        "contentType": { "type": "string", "maxLength": 100 },
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "fps": { "type": "number", "exclusiveMinimum": 0 },
+        "seconds": { "type": "number", "minimum": 0 },
+        "bytes": { "type": "integer", "minimum": 0 },
+        "label": { "type": "string", "maxLength": 200 }
+      }
+    }
+  }
+}

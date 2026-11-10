@@ -1,0 +1,29 @@
+{
+  "name": "model-arena",
+  "version": "0.0.1",
+  "private": true,
+  "description": "A drop-in web component that plays video-model outputs side by side on one clock.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lane": "tsx scripts/run-lane.ts",
+    "demo:media": "sh scripts/prepare-demo-media.sh"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "happy-dom": "^20.14.6",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.8",
+    "vitest": "^3.2.7"
+  }
+}

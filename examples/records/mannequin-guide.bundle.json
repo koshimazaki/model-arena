@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "mannequin-two-fruits",
+  "title": "Mannequin and two fruits",
+  "video": {
+    "src": "../media/mannequin-two-fruits-guide-1024x576-24fps.mp4",
+    "contentType": "video/mp4",
+    "width": 1024,
+    "height": 576,
+    "fps": 24,
+    "seconds": 8.04,
+    "label": "Guide clip (RGB)"
+  },
+  "firstFrame": {
+    "src": "../media/mannequin-two-fruits-guide-first-frame.png",
+    "contentType": "image/png",
+    "width": 1024,
+    "height": 576,
+    "label": "Raw frame 0"
+  },
+  "passes": {
+    "depth": {
+      "src": "../media/mannequin-two-fruits-depth-1024x576-24fps.mp4",
+      "contentType": "video/mp4",
+      "width": 1024,
+      "height": 576,
+      "fps": 24,
+      "seconds": 8.04,
+      "label": "Depth pass"
+    }
+  },
+  "beats": [0, 2, 4, 6, 8],
+  "recipe": { "tool": "motion-studio", "note": "Placeholder recipe; motion-studio fills this on export." },
+  "meta": {
+    "author": "Model Arena examples",
+    "licences": [
+      { "asset": "mannequin-two-fruits-guide-1024x576-24fps.mp4", "licence": "owner's own render, licence to be confirmed before publishing" }
+    ]
+  }
+}

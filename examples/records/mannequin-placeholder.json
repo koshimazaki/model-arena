@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "id": "mannequin-placeholder",
+  "title": "Mannequin and two fruits: layout placeholder",
+  "createdAt": "2026-11-10T12:00:00Z",
+  "guide": {
+    "schemaVersion": 1,
+    "id": "mannequin-two-fruits",
+    "title": "Mannequin and two fruits",
+    "video": { "src": "../media/mannequin-two-fruits-guide-1024x576-24fps.mp4", "contentType": "video/mp4", "width": 1024, "height": 576, "fps": 24, "seconds": 8.04 },
+    "firstFrame": { "src": "../media/mannequin-two-fruits-guide-first-frame.png", "contentType": "image/png", "width": 1024, "height": 576 },
+    "beats": [0, 2, 4, 6, 8]
+  },
+  "lanes": [
+    {
+      "id": "guide",
+      "label": "Guide clip",
+      "provider": "none",
+      "model": "guide",
+      "modelRan": null,
+      "prompt": "",
+      "inputsSent": [],
+      "firstFrameVariant": "C",
+      "output": { "src": "../media/mannequin-two-fruits-guide-1024x576-24fps.mp4", "contentType": "video/mp4" },
+      "costUsd": null,
+      "generationSeconds": null,
+      "status": "placeholder",
+      "note": "The guide itself, shown for reference. Not a model output."
+    },
+    {
+      "id": "kling-4",
+      "label": "Kling VIDEO 4.0",
+      "provider": "runware-api",
+      "model": "klingai:kling-video@4.0",
+      "modelName": "Kling VIDEO 4.0",
+      "modelRan": null,
+      "prompt": "The mannequin from <<<video_1>>> performs the same motion beside two fruits on a wooden table, soft studio light, locked-off camera.",
+      "inputsSent": [
+        { "role": "referenceVideo", "src": "../media/mannequin-two-fruits-guide-1024x576-24fps.mp4", "label": "mannequin-two-fruits-guide-1280x720-24fps.mp4" },
+        { "role": "frameImage", "src": "../media/mannequin-two-fruits-guide-first-frame.png", "frame": "first", "label": "mannequin-two-fruits-guide-first-frame.png" }
+      ],
+      "firstFrameVariant": "A",
+      "output": { "src": "../media/mannequin-two-fruits-depth-1024x576-24fps.mp4", "contentType": "video/mp4" },
+      "costUsd": null,
+      "generationSeconds": null,
+      "durationSeconds": 5,
+      "status": "placeholder",
+      "note": "Placeholder clip (the depth pass) until the first paid run lands. Cost and seconds are blank because nothing ran."
+    },
+    {
+      "id": "router",
+      "label": "Model Router",
+      "provider": "runware-api",
+      "model": "auto",
+      "modelName": "Model Router",
+      "modelRan": null,
+      "prompt": "The mannequin performs the same motion beside two fruits on a wooden table, soft studio light.",
+      "inputsSent": [
+        { "role": "referenceVideo", "src": "../media/mannequin-two-fruits-guide-1024x576-24fps.mp4", "label": "mannequin-two-fruits-guide-1280x720-24fps.mp4" },
+        { "role": "referenceImage", "src": "../media/mannequin-two-fruits-guide-first-frame.png", "label": "mannequin-two-fruits-guide-first-frame.png" }
+      ],
+      "firstFrameVariant": "A",
+      "output": { "src": "../media/mannequin-two-fruits-guide-1024x576-24fps.mp4", "contentType": "video/mp4" },
+      "costUsd": null,
+      "generationSeconds": null,
+      "durationSeconds": 5,
+      "routing": { "maxPrice": 1.5, "requirements": "keeps the motion of the reference video, 720p or better" },
+      "status": "placeholder",
+      "note": "Placeholder clip (the guide again) until the router lane runs."
+    }
+  ],
+  "observations": ["Placeholder record for layout and playback; no model has run yet."],
+  "preferredLane": "kling-4"
+}

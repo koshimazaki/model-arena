@@ -1,0 +1,21 @@
+---
+tags: [friction, model-arena, product-feedback]
+summary: Platform friction met while building Model Arena, one row each, for a product-feedback segment.
+---
+
+# Friction
+
+One row per friction met while building. Date, platform, what happened, what it cost us, what would fix it.
+
+| Date | Platform | Friction | Effect | Suggested fix |
+| --- | --- | --- | --- | --- |
+| 2026-11-10 | Runware docs | The schema URL uses the catalogue slug (`klingai-video-4-0`), not the AIR id (`klingai:kling-video@4.0`). `runware.ai/docs/models/<AIR>/schema.json` returns 404. | Had to find `docs/models/index.json` (mentioned only inside the Model Schemas page) to map AIR to slug. | Accept the AIR id in the schema path, or link `index.json` from every model page. |
+| 2026-11-10 | Runware catalogue | There is no plain "LTX-2.5"; the catalogue has `lightricks:ltx@2.5-pro` and `lightricks:ltx@2.5-fast`, with different audio limits (2-10 s vs 2-20 s) and duration sets. | The plan named a model that does not exist as written; we default to Pro. | None needed; worth naming the tiers in launch posts. |
+| 2026-11-10 | Runware, Kling VIDEO 4.0 | Reference videos must be at least 700 px on each side (`x-constraints`). A 1024×576 guide is refused. The rule lives only in `x-constraints`, not in the input's own description. | The guide has to be upscaled to 1280×720 before a Kling run; a run without the local check would fail at submit. | Mention the minimum size in the `referenceVideos` description and on the model page. |
+| 2026-11-10 | Runware, LTX-2.5 | The audio-driven mode takes the still as `inputs.referenceImages` (exactly one), not `frameImages`; `frameImages` beside `audio` is forbidden, and so are `duration` and `settings.cameraMovement`. Mode name `reference-images+audio` is the only clue. | Our 7 Nov notes ("audio and frameImages") were wrong; lane fitting changed. | A one-line note on the model page: "audio mode: audio + one reference image; length follows the audio". |
+| 2026-11-10 | Runware, Seedance 2.5 and H3 | Both refuse `frameImages` beside any reference input (schema `allOf`), the same as on Magnific. | A start frame cannot sit beside the guide clip; we send the still as a reference image instead, which is weaker. | Document per model, in prose, which inputs combine. |
+| 2026-11-10 | Runware media inputs | Video and audio inputs are "UUID or URL"; local files must go through the `mediaStorage` upload task first (data URI or base64). The upload page states no size limit and no price. A `data:` URI also passes the schema's `format: uri`, so the schema alone cannot say whether base64 video is accepted inline. | One extra API round trip per local file; unknown upper bound for a guide clip. | State the upload size limit and cost; say explicitly that video inputs do not take data URIs. |
+| 2026-11-10 | Runware Model Router | The video response schema (`additionalProperties: false`) has no `model` field, and the router page does not say how to learn which model was chosen. | The record must state the model that ran; we read it back with `getTaskDetails`, unverified that this returns the chosen model rather than `auto`. | Return the chosen AIR in the task response when `model` was `auto`. |
+| 2026-11-10 | Runware Model Router | `routing` is not in any model's schema (all are `additionalProperties: false` with a `const` model), so a router task cannot be validated against any published schema. | Router lane tested only against our own expectations. | Publish a router task schema. |
+| 2026-11-10 | Runware errors | The task-polling page documents `error.code` / `error.message` nested on the row, while its example and `ErrorResponse` put `code` and `message` at the top level of `errors[]`. | The poller handles both shapes. | Pick one shape in the docs. |
+| 2026-11-10 | Runware pricing | H3 bills input video at $0.13/s of uploaded video on top of output; Seedance has separate video-to-video rates. A router `maxPrice` is checked against the highest published tier. | Cost estimates must know the input clip's length; a 5 s H3 lane with an 8 s guide costs more in input than in output. | Show a worked example with a reference video on each model page. |
