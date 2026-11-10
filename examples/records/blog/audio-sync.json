@@ -1,0 +1,265 @@
+{
+  "schemaVersion": 1,
+  "id": "blog-audio-sync",
+  "title": "Audio sync: motion on the beat",
+  "createdAt": "2026-11-10T15:00:00Z",
+  "guide": {
+    "schemaVersion": 1,
+    "id": "mannequin-beat-guide",
+    "title": "Beat-synced mannequin, Motion Studio",
+    "video": {
+      "src": "../../media/placeholder/guide.mp4",
+      "contentType": "video/mp4",
+      "width": 640,
+      "height": 360,
+      "fps": 24,
+      "seconds": 8
+    },
+    "audio": {
+      "src": "../../media/placeholder/inputs/beat.wav",
+      "contentType": "audio/wav",
+      "seconds": 8
+    },
+    "firstFrame": {
+      "src": "../../media/placeholder/inputs/first-frame.png",
+      "contentType": "image/png",
+      "width": 640,
+      "height": 360
+    },
+    "beats": [
+      0,
+      2,
+      4,
+      6,
+      8
+    ]
+  },
+  "lanes": [
+    {
+      "id": "kling-4",
+      "label": "Kling VIDEO 4.0",
+      "provider": "runware-api",
+      "model": "klingai:kling-video@4.0",
+      "modelName": "Kling VIDEO 4.0",
+      "modelRan": null,
+      "prompt": "Reference only the motion, camera path and pacing of <<<video_1>>>. <<<image_1>>> is the first frame.\n\nA wooden mannequin in a grey studio dances on the beat, a step on every kick.\n\nAudio: A dry four-on-the-floor kick at 120 bpm. No subtitles.",
+      "inputsSent": [
+        {
+          "role": "frameImage",
+          "src": "../../media/placeholder/inputs/first-frame.png",
+          "label": "still (<<<image_1>>>)",
+          "frame": "first"
+        },
+        {
+          "role": "referenceVideo",
+          "src": "../../media/placeholder/guide.mp4",
+          "label": "guide (<<<video_1>>>)"
+        }
+      ],
+      "firstFrameVariant": "A",
+      "output": {
+        "src": "../../media/placeholder/audio-sync-kling-4.mp4",
+        "contentType": "video/mp4"
+      },
+      "costUsd": null,
+      "generationSeconds": null,
+      "durationSeconds": 8,
+      "settings": {
+        "taskType": "videoInference",
+        "model": "klingai:kling-video@4.0",
+        "duration": 8
+      },
+      "status": "placeholder",
+      "note": "Placeholder clip; nothing has run. Not sent: beat (Kling VIDEO 4.0 takes no reference audio.) The guide video carries the camera path; the prompt references it instead of describing the move."
+    },
+    {
+      "id": "seedance-2-5",
+      "label": "Seedance 2.5",
+      "provider": "runware-api",
+      "model": "bytedance:seedance@2.5",
+      "modelName": "Seedance 2.5",
+      "modelRan": null,
+      "prompt": "Static, locked-off camera.\n\n@Image1 is the opening frame; keep its composition and pose. @Video1 is the motion guide: follow its body motion, timing and camera move.\n\nA wooden mannequin in a grey studio dances on the beat, a step on every kick.\n\nAudio: A dry four-on-the-floor kick at 120 bpm. Sync the motion to @Audio1.",
+      "inputsSent": [
+        {
+          "role": "referenceImage",
+          "src": "../../media/placeholder/inputs/first-frame.png",
+          "label": "still (@Image1), sent as a reference image"
+        },
+        {
+          "role": "referenceVideo",
+          "src": "../../media/placeholder/guide.mp4",
+          "label": "guide (@Video1)"
+        },
+        {
+          "role": "referenceAudio",
+          "src": "../../media/placeholder/inputs/beat.wav",
+          "label": "beat (@Audio1)"
+        }
+      ],
+      "firstFrameVariant": "A",
+      "output": {
+        "src": "../../media/placeholder/audio-sync-seedance-2.5.mp4",
+        "contentType": "video/mp4"
+      },
+      "costUsd": null,
+      "generationSeconds": null,
+      "durationSeconds": 8,
+      "settings": {
+        "taskType": "videoInference",
+        "model": "bytedance:seedance@2.5",
+        "duration": 8
+      },
+      "status": "placeholder",
+      "note": "Placeholder clip; nothing has run. still: sent as a reference image because Seedance 2.5 does not take a frame beside references (frames-alone)."
+    },
+    {
+      "id": "h3",
+      "label": "MiniMax H3",
+      "provider": "runware-api",
+      "model": "minimax:h3@0",
+      "modelName": "MiniMax H3",
+      "modelRan": null,
+      "prompt": "Image 1 is the opening frame; keep its composition and pose. Video 1 is the motion reference: follow its body motion, timing and camera move.\n\nA wooden mannequin in a grey studio, moving as in Video 1. Locked tripod; the camera does not move.\n\nSound: A dry four-on-the-floor kick at 120 bpm. Follow the reference audio.",
+      "inputsSent": [
+        {
+          "role": "referenceImage",
+          "src": "../../media/placeholder/inputs/first-frame.png",
+          "label": "still (Image 1), sent as a reference image"
+        },
+        {
+          "role": "referenceVideo",
+          "src": "../../media/placeholder/guide.mp4",
+          "label": "guide (Video 1)"
+        },
+        {
+          "role": "referenceAudio",
+          "src": "../../media/placeholder/inputs/beat.wav",
+          "label": "beat"
+        }
+      ],
+      "firstFrameVariant": "A",
+      "output": {
+        "src": "../../media/placeholder/audio-sync-h3.mp4",
+        "contentType": "video/mp4"
+      },
+      "costUsd": null,
+      "generationSeconds": null,
+      "durationSeconds": 8,
+      "settings": {
+        "taskType": "videoInference",
+        "model": "minimax:h3@0",
+        "duration": 8
+      },
+      "status": "placeholder",
+      "note": "Placeholder clip; nothing has run. still: sent as a reference image because MiniMax H3 does not take a frame beside references (frames-alone)."
+    },
+    {
+      "id": "ltx-2-5",
+      "label": "LTX-2.5 Pro",
+      "provider": "runware-api",
+      "model": "lightricks:ltx@2.5-pro",
+      "modelName": "LTX-2.5 Pro",
+      "modelRan": null,
+      "prompt": "A wooden mannequin in a grey studio dances on the beat, a step on every kick. Audio: A dry four-on-the-floor kick at 120 bpm.",
+      "inputsSent": [
+        {
+          "role": "frameImage",
+          "src": "../../media/placeholder/inputs/first-frame.png",
+          "label": "still",
+          "frame": "first"
+        }
+      ],
+      "firstFrameVariant": "A",
+      "output": {
+        "src": "../../media/placeholder/audio-sync-ltx-2.5.mp4",
+        "contentType": "video/mp4"
+      },
+      "costUsd": null,
+      "generationSeconds": null,
+      "durationSeconds": 8,
+      "settings": {
+        "taskType": "videoInference",
+        "model": "lightricks:ltx@2.5-pro",
+        "duration": 8,
+        "settings": {
+          "cameraMovement": "static"
+        }
+      },
+      "status": "placeholder",
+      "note": "Placeholder clip; nothing has run. Not sent: guide (LTX-2.5 Pro takes no reference video.) Not sent: beat (With audio: no frameImages, no duration, no cameraMovement; exactly one reference image; size 1920×1080 or 1080×1920. The camera parameter was kept.)"
+    },
+    {
+      "id": "flux-3-video",
+      "label": "FLUX 3 Video",
+      "provider": "runware-api",
+      "model": "bfl:flux@3-video",
+      "modelName": "FLUX 3 Video",
+      "modelRan": null,
+      "prompt": "Use this image as the first frame. A wooden mannequin in a grey studio dances on the beat, a step on every kick. The camera holds locked at eye level. Audio: A dry four-on-the-floor kick at 120 bpm.",
+      "inputsSent": [
+        {
+          "role": "frameImage",
+          "src": "../../media/placeholder/inputs/first-frame.png",
+          "label": "still",
+          "frame": "first"
+        }
+      ],
+      "firstFrameVariant": "A",
+      "output": {
+        "src": "../../media/placeholder/audio-sync-flux-3-video.mp4",
+        "contentType": "video/mp4"
+      },
+      "costUsd": null,
+      "generationSeconds": null,
+      "durationSeconds": 8,
+      "settings": {
+        "taskType": "videoInference",
+        "model": "bfl:flux@3-video",
+        "duration": 8
+      },
+      "status": "placeholder",
+      "note": "Placeholder clip; nothing has run. Not sent: guide (FLUX 3 Video takes no reference video.) Not sent: beat (FLUX 3 Video takes no reference audio.)"
+    },
+    {
+      "id": "kling-4-flash",
+      "label": "Kling VIDEO 4.0 Flash",
+      "provider": "runware-api",
+      "model": "klingai:kling-video@4.0-flash",
+      "modelName": "Kling VIDEO 4.0 Flash",
+      "modelRan": null,
+      "prompt": "Reference only the motion, camera path and pacing of <<<video_1>>>. <<<image_1>>> is the first frame.\n\nA wooden mannequin in a grey studio dances on the beat, a step on every kick.\n\nAudio: A dry four-on-the-floor kick at 120 bpm. No subtitles.",
+      "inputsSent": [
+        {
+          "role": "frameImage",
+          "src": "../../media/placeholder/inputs/first-frame.png",
+          "label": "still (<<<image_1>>>)",
+          "frame": "first"
+        },
+        {
+          "role": "referenceVideo",
+          "src": "../../media/placeholder/guide.mp4",
+          "label": "guide (<<<video_1>>>)"
+        }
+      ],
+      "firstFrameVariant": "A",
+      "output": {
+        "src": "../../media/placeholder/audio-sync-kling-4-flash.mp4",
+        "contentType": "video/mp4"
+      },
+      "costUsd": null,
+      "generationSeconds": null,
+      "durationSeconds": 8,
+      "settings": {
+        "taskType": "videoInference",
+        "model": "klingai:kling-video@4.0-flash",
+        "duration": 8
+      },
+      "status": "placeholder",
+      "note": "Placeholder clip; nothing has run. Not sent: beat (Kling VIDEO 4.0 Flash takes no reference audio.) The guide video carries the camera path; the prompt references it instead of describing the move."
+    }
+  ],
+  "observations": [
+    "Placeholder clips: no model has run. Prompts, inputs and camera parameters are the composer's real output."
+  ]
+}

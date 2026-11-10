@@ -1,0 +1,239 @@
+{
+  "schemaVersion": 1,
+  "id": "blog-character",
+  "title": "Character: the guide's motion on a new character",
+  "createdAt": "2026-11-10T15:00:00Z",
+  "guide": {
+    "schemaVersion": 1,
+    "id": "mannequin-beat-guide",
+    "title": "Beat-synced mannequin, Motion Studio",
+    "video": {
+      "src": "../../media/placeholder/guide.mp4",
+      "contentType": "video/mp4",
+      "width": 640,
+      "height": 360,
+      "fps": 24,
+      "seconds": 8
+    },
+    "audio": {
+      "src": "../../media/placeholder/inputs/beat.wav",
+      "contentType": "audio/wav",
+      "seconds": 8
+    },
+    "firstFrame": {
+      "src": "../../media/placeholder/inputs/first-frame.png",
+      "contentType": "image/png",
+      "width": 640,
+      "height": 360
+    },
+    "beats": [
+      0,
+      2,
+      4,
+      6,
+      8
+    ]
+  },
+  "lanes": [
+    {
+      "id": "kling-4",
+      "label": "Kling VIDEO 4.0",
+      "provider": "runware-api",
+      "model": "klingai:kling-video@4.0",
+      "modelName": "Kling VIDEO 4.0",
+      "modelRan": null,
+      "prompt": "Reference only the motion, camera path and pacing of <<<video_1>>>. Replace the mannequin with the character in <<<image_1>>>; keep face, build and outfit.\n\nA dancer in a yellow raincoat in a grey studio performs the guide's dance.",
+      "inputsSent": [
+        {
+          "role": "referenceImage",
+          "src": "../../media/placeholder/inputs/character.png",
+          "label": "character (<<<image_1>>>)"
+        },
+        {
+          "role": "referenceVideo",
+          "src": "../../media/placeholder/guide.mp4",
+          "label": "guide (<<<video_1>>>)"
+        }
+      ],
+      "firstFrameVariant": "C",
+      "output": {
+        "src": "../../media/placeholder/character-kling-4.mp4",
+        "contentType": "video/mp4"
+      },
+      "costUsd": null,
+      "generationSeconds": null,
+      "durationSeconds": 8,
+      "settings": {
+        "taskType": "videoInference",
+        "model": "klingai:kling-video@4.0",
+        "duration": 8
+      },
+      "status": "placeholder",
+      "note": "Placeholder clip; nothing has run. The guide video carries the camera path; the prompt references it instead of describing the move."
+    },
+    {
+      "id": "seedance-2-5",
+      "label": "Seedance 2.5",
+      "provider": "runware-api",
+      "model": "bytedance:seedance@2.5",
+      "modelName": "Seedance 2.5",
+      "modelRan": null,
+      "prompt": "Tracking shot moving right with the subject.\n\n@Image1 is the character; keep face, build and outfit. @Video1 is the motion guide: follow its body motion, timing and camera move.\n\nA dancer in a yellow raincoat in a grey studio performs the guide's dance.",
+      "inputsSent": [
+        {
+          "role": "referenceImage",
+          "src": "../../media/placeholder/inputs/character.png",
+          "label": "character (@Image1)"
+        },
+        {
+          "role": "referenceVideo",
+          "src": "../../media/placeholder/guide.mp4",
+          "label": "guide (@Video1)"
+        }
+      ],
+      "firstFrameVariant": "C",
+      "output": {
+        "src": "../../media/placeholder/character-seedance-2.5.mp4",
+        "contentType": "video/mp4"
+      },
+      "costUsd": null,
+      "generationSeconds": null,
+      "durationSeconds": 8,
+      "settings": {
+        "taskType": "videoInference",
+        "model": "bytedance:seedance@2.5",
+        "duration": 8
+      },
+      "status": "placeholder",
+      "note": "Placeholder clip; nothing has run."
+    },
+    {
+      "id": "h3",
+      "label": "MiniMax H3",
+      "provider": "runware-api",
+      "model": "minimax:h3@0",
+      "modelName": "MiniMax H3",
+      "modelRan": null,
+      "prompt": "Image 1 is the character; keep face, build and outfit. Video 1 is the motion reference: follow its body motion, timing and camera move.\n\nA dancer in a yellow raincoat in a grey studio, moving as in Video 1. Slow tracking shot moving right alongside the subject.",
+      "inputsSent": [
+        {
+          "role": "referenceImage",
+          "src": "../../media/placeholder/inputs/character.png",
+          "label": "character (Image 1)"
+        },
+        {
+          "role": "referenceVideo",
+          "src": "../../media/placeholder/guide.mp4",
+          "label": "guide (Video 1)"
+        }
+      ],
+      "firstFrameVariant": "C",
+      "output": {
+        "src": "../../media/placeholder/character-h3.mp4",
+        "contentType": "video/mp4"
+      },
+      "costUsd": null,
+      "generationSeconds": null,
+      "durationSeconds": 8,
+      "settings": {
+        "taskType": "videoInference",
+        "model": "minimax:h3@0",
+        "duration": 8
+      },
+      "status": "placeholder",
+      "note": "Placeholder clip; nothing has run."
+    },
+    {
+      "id": "ltx-2-5",
+      "label": "LTX-2.5 Pro",
+      "provider": "runware-api",
+      "model": "lightricks:ltx@2.5-pro",
+      "modelName": "LTX-2.5 Pro",
+      "modelRan": null,
+      "prompt": "A dancer in a yellow raincoat in a grey studio performs the guide's dance.",
+      "inputsSent": [],
+      "firstFrameVariant": "C",
+      "output": {
+        "src": "../../media/placeholder/character-ltx-2.5.mp4",
+        "contentType": "video/mp4"
+      },
+      "costUsd": null,
+      "generationSeconds": null,
+      "durationSeconds": 8,
+      "settings": {
+        "taskType": "videoInference",
+        "model": "lightricks:ltx@2.5-pro",
+        "duration": 8,
+        "settings": {
+          "cameraMovement": "dolly_right"
+        }
+      },
+      "status": "placeholder",
+      "note": "Placeholder clip; nothing has run. Not sent: guide (LTX-2.5 Pro takes no reference video.) Not sent: character (A reference image is accepted only beside audio.)"
+    },
+    {
+      "id": "flux-3-video",
+      "label": "FLUX 3 Video",
+      "provider": "runware-api",
+      "model": "bfl:flux@3-video",
+      "modelName": "FLUX 3 Video",
+      "modelRan": null,
+      "prompt": "A dancer in a yellow raincoat in a grey studio performs the guide's dance. Tracking shot moving right alongside the subject.",
+      "inputsSent": [],
+      "firstFrameVariant": "C",
+      "output": {
+        "src": "../../media/placeholder/character-flux-3-video.mp4",
+        "contentType": "video/mp4"
+      },
+      "costUsd": null,
+      "generationSeconds": null,
+      "durationSeconds": 8,
+      "settings": {
+        "taskType": "videoInference",
+        "model": "bfl:flux@3-video",
+        "duration": 8
+      },
+      "status": "placeholder",
+      "note": "Placeholder clip; nothing has run. Not sent: character (FLUX 3 Video takes no reference images.) Not sent: guide (FLUX 3 Video takes no reference video.)"
+    },
+    {
+      "id": "kling-4-flash",
+      "label": "Kling VIDEO 4.0 Flash",
+      "provider": "runware-api",
+      "model": "klingai:kling-video@4.0-flash",
+      "modelName": "Kling VIDEO 4.0 Flash",
+      "modelRan": null,
+      "prompt": "Reference only the motion, camera path and pacing of <<<video_1>>>. Replace the mannequin with the character in <<<image_1>>>; keep face, build and outfit.\n\nA dancer in a yellow raincoat in a grey studio performs the guide's dance.",
+      "inputsSent": [
+        {
+          "role": "referenceImage",
+          "src": "../../media/placeholder/inputs/character.png",
+          "label": "character (<<<image_1>>>)"
+        },
+        {
+          "role": "referenceVideo",
+          "src": "../../media/placeholder/guide.mp4",
+          "label": "guide (<<<video_1>>>)"
+        }
+      ],
+      "firstFrameVariant": "C",
+      "output": {
+        "src": "../../media/placeholder/character-kling-4-flash.mp4",
+        "contentType": "video/mp4"
+      },
+      "costUsd": null,
+      "generationSeconds": null,
+      "durationSeconds": 8,
+      "settings": {
+        "taskType": "videoInference",
+        "model": "klingai:kling-video@4.0-flash",
+        "duration": 8
+      },
+      "status": "placeholder",
+      "note": "Placeholder clip; nothing has run. The guide video carries the camera path; the prompt references it instead of describing the move."
+    }
+  ],
+  "observations": [
+    "Placeholder clips: no model has run. Prompts, inputs and camera parameters are the composer's real output."
+  ]
+}

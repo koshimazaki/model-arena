@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "blog-tests",
+  "title": "Three tests",
+  "tabs": [
+    {
+      "id": "camera",
+      "label": "Camera",
+      "src": "camera.json"
+    },
+    {
+      "id": "audio-sync",
+      "label": "Audio sync",
+      "src": "audio-sync.json"
+    },
+    {
+      "id": "character",
+      "label": "Character",
+      "src": "character.json"
+    }
+  ]
+}
