@@ -28,6 +28,7 @@ Failed generations are not charged (pricing page).
 | Lane key | AIR | Inputs used by the lane | Duration | Resolution | Start frame beside reference video? |
 | --- | --- | --- | --- | --- | --- |
 | `kling-4` | `klingai:kling-video@4.0` | `referenceVideos` (≤5, each 3-30 s, ≥700 px a side, 24-60 fps), optional `frameImages` first | 3-30 s | `720p`, `1080p` | Yes (`first-frame+reference-videos` mode) |
+| `kling-4-flash` | `klingai:kling-video@4.0-flash` | As Kling 4.0, reference videos 3-20 s; `frameImages` first only | 3-20 s | 720p only, no `resolution` field (size follows the input) | Yes |
 | `seedance-2.5` | `bytedance:seedance@2.5` | `referenceVideos` (≤10, 2-30 s), `referenceAudios` (≤10), still as `referenceImages` | 4-30 s or `auto` | `480p`, `720p`, `1080p` | No: still goes in as `referenceImages` |
 | `h3` | `minimax:h3@0` | `referenceVideos` (≤3, 2-15 s each, 15 s total), `referenceAudios` (≤3, needs an image or video reference), still as `referenceImages` | 4-15 s | `768p`, `1440p` | No: still goes in as `referenceImages` |
 | `ltx-2.5` | `lightricks:ltx@2.5-pro` | Audio mode: `inputs.audio` (2-10 s) plus exactly one `referenceImages`; no duration. Otherwise `frameImages` first. No reference video. | 6, 8, 10 s or `auto` | width/height 1280×720 or 1920×1080 (audio mode: 1920×1080 only) | n/a |
@@ -62,3 +63,28 @@ An `auto` duration is estimated at the model's longest clip. The router lane's e
 ## The key
 
 The browser key panel (MA-4b) uses `KeyStore`: memory by default, `sessionStorage` only on request, never `localStorage`. The CLI reads `RUNWARE_API_KEY` and nothing else. `RunwareClient` sends the key only to `https://api.runware.ai/v1` and redacts it from error text. CORS on `api.runware.ai` was re-checked on 10 Nov: the preflight allows any origin and the `Authorization` header.
+
+## A character in place of the guide's figure
+
+`--character <png>` sends a still that replaces the guide's placeholder figure. It is always a reference image, never a frame image, and comes first among the reference images so the composer's numbering holds:
+
+| Lane | Where the character goes | Addressed as |
+| --- | --- | --- |
+| Kling 4.0 / Flash | `inputs.referenceImages`, beside `referenceVideos` | `<<<image_1>>>`, or `<<<image_2>>>` when a first frame is also sent (images are numbered across `frameImages` then `referenceImages`) |
+| Seedance 2.5 | `inputs.referenceImages` | `@Image1` |
+| MiniMax H3 | `inputs.referenceImages` | "Image 1" |
+| Router | `inputs.referenceImages` | as the chosen model |
+| LTX-2.5, FLUX 3 Video | refused: no reference image beside a guide; pass the still as `--first-frame` | |
+
+`--shot shot.json` lets the composer write the prompt, camera parameter and duration for the lane (see `examples/shots/motion-swap.json`); the run's record keeps the shot. The CLI refuses when the shot uses a reference whose flag is missing.
+
+## Character stills (image inference)
+
+`npm run still` (`scripts/make-still.ts`, `providers/runware-api/image.ts`) runs `imageInference`, read from each schema on 10 Nov 2026:
+
+| Key | AIR | Text to image | Reference | Size | Price |
+| --- | --- | --- | --- | --- | --- |
+| `klein-9b` | `runware:400@2` (FLUX.2 [klein] 9B) | yes | `referenceImages` up to 4, aspect 1:8 to 8:1 | width and height required, 128-2048 px in multiples of 16; defaults to the reference's size, snapped | No published rate: billed by compute time. Published examples $0.00078-$0.00338; the estimate uses the highest |
+| `kling-image-3` | `klingai:kling-image@3` (Kling IMAGE 3.0) | yes | `referenceImages`, exactly one | without a reference, one of 16 fixed pairs (default 1360×768); with one, `resolution` 1K or 2K and the reference's aspect | $0.028 per image |
+
+Pose-matching: pass the guide's first frame as `--reference` and say in the prompt that the figure keeps its pose and framing. The output is fetched from `imageURL` and saved as `runs/<date>-still-<model>-<id>/still.png`, with a row in `docs/costs.md`.

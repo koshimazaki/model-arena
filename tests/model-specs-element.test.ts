@@ -63,3 +63,16 @@ describe("<model-specs>", () => {
     expect(root.querySelectorAll(".composer .out")).toHaveLength(2);
   });
 });
+
+describe("<model-arena> shows the record's one intent", () => {
+  it("renders the shot summary above the lanes when the record has a shot", async () => {
+    const { readFileSync } = await import("node:fs");
+    const record = JSON.parse(readFileSync("examples/records/blog/character.json", "utf8"));
+    const node = document.createElement("model-arena") as HTMLElement & { setRecord(r: unknown, b: string): void };
+    document.body.append(node);
+    node.setRecord(record, "https://example.com/examples/records/blog/character.json");
+    const intent = node.shadowRoot!.querySelector(".intent")!;
+    expect(intent.textContent).toContain(record.shot.subject);
+    expect(intent.textContent).toContain(`Camera: ${record.shot.camera}`);
+  });
+});

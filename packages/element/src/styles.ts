@@ -54,6 +54,7 @@ export const styles = /* css */ `
 .head .meta { color: var(--ma-muted); font-size: 13px; }
 .controls { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
 .body { padding: 12px; display: grid; gap: 12px; min-width: 0; }
+.intent { margin: 0; padding: 8px 16px; border-bottom: 1px solid var(--ma-line); font-size: 13px; color: var(--ma-muted); overflow-wrap: anywhere; }
 .seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--ma-line); border-radius: 8px; overflow: hidden; max-width: 100%; }
 .seg button { background: transparent; color: var(--ma-muted); border: 0; border-radius: 0; font: 500 13px var(--ma-font); padding: 5px 11px; min-height: 32px; }
 .seg button + button { border-left: 1px solid var(--ma-line); }

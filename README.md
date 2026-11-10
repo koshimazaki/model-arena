@@ -2,35 +2,65 @@
 
 A drop-in web component that plays video-model outputs side by side on one clock, runs them with your own key, and shows exactly what each model was given and what it cost.
 
-Status: first working slice (MA-0 to MA-2). The element plays a record; a Node CLI runs one lane through the Runware API.
+Status: first milestone in progress (10 November 2026). The element plays records; `<model-specs>` shows what each video model takes, how you prompt it and how you move its camera; a Node CLI runs one lane, or makes a character still, through the Runware API. No paid run has been made yet.
 
 - [Product requirements](docs/PRD.md) · [Implementation plan](docs/plan.md)
-- [Runware provider: inputs, prices, camera parameters](docs/providers/runware-api.md)
+- [Model specs: the format and how to add a model](docs/model-specs.md)
+- [Runware provider: inputs, prices, camera parameters, character stills](docs/providers/runware-api.md)
 - [Costs of every paid run](docs/costs.md) · [Platform friction log](docs/friction.md)
 
 Companion repo: **motion-studio**, which makes guide clips. Model Arena reads its guide bundles (`packages/core/schema/guide-bundle.schema.json`); the two share files, not code.
 
-## Run it
+## Five minutes, no key
 
-Node 24 (`nvm use 24`).
+You need Node 24 (`nvm use 24`) and ffmpeg (for the placeholder clips). Nothing here sends a request or needs a key.
 
 ```sh
 npm install
-npm run demo:media   # copies the mannequin placeholder clips into examples/media/ (gitignored)
-npm run dev          # demo page plays examples/records/mannequin-placeholder.json
-npm test             # vitest
-npm run typecheck
-npm run build        # dist/model-arena.js, one ES module
+npm run demo:placeholders   # labelled placeholder clips and stills in examples/media/placeholder/ (gitignored)
+npm run dev                 # Vite on http://localhost:5173
 ```
 
-Demo media is not committed. `examples/media/` is gitignored; `npm run demo:media [dir]` copies the three mannequin files from `~/Downloads` (or `dir`) and, with ffmpeg, makes a 1280×720 copy of the guide (Kling 4.0 refuses reference videos under 700 px), a 1280×720 first frame and a WAV of the guide's audio.
+Then open:
+
+- **http://localhost:5173/specs.html**: the spec matrix, a card per model with links to its Runware API page and guides, and the composer. Type one shot description, pick a camera move, and read each model's prompt and request params side by side.
+- **http://localhost:5173/blog-demo.html**: the `arena` and `guidance` layouts playing placeholder clips on one clock.
+
+A dry run prints exactly what a paid run would send, and sends nothing:
+
+```sh
+# One lane: the composer writes Seedance's prompt from a neutral shot (guide video plus a character still).
+npm run lane -- --model seedance-2.5 --shot examples/shots/motion-swap.json \
+  --guide examples/media/placeholder/guide.mp4 --character examples/media/placeholder/inputs/character.png --dry-run
+
+# A character still with FLUX.2 [klein] 9B, pose-matched to the guide's first frame.
+npm run still -- --model klein-9b --reference examples/media/placeholder/inputs/first-frame.png \
+  --prompt "A figure in a plain grey jumpsuit, in exactly the pose and framing of the reference image." --dry-run
+```
+
+Checks:
+
+```sh
+npm test            # vitest: schemas, specs against Runware's schemas, composer, provider, CLIs, elements
+npm run typecheck
+npm run lint
+npm run smoke       # headless Google Chrome: every clip loads, Play all keeps one clock, the composer renders
+npm run build       # dist/model-arena.js (both elements, one ES module) and dist/model-specs.json
+```
+
+`npm run smoke` expects Google Chrome at its macOS path; set `CHROME_PATH` elsewhere.
+
+The real mannequin guide is not committed. If you have it, `npm run demo:media [dir]` copies it from `~/Downloads` (or `dir`) and, with ffmpeg, makes a 1280×720 copy (Kling 4.0 refuses reference videos under 700 px), a 1280×720 first frame and a WAV of its audio; `index.html` plays it.
 
 ## Embed
 
 ```html
 <script type="module" src="model-arena.js"></script>
 <model-arena src="records/mannequin-five-models.json" layout="three-up"></model-arena>
+<model-specs models="kling-4,seedance-2.5,h3,ltx-2.5,flux-3-video"></model-specs>
 ```
+
+`<model-specs>` takes `models` (spec ids, default all seven) and `view` (`matrix`, `cards` or `composer` to show one part only). A record may carry `shot`, the one neutral description its lanes' prompts were composed from; captions then show the intent behind every per-model prompt.
 
 Media paths in a record resolve against the record's URL; a record set's tab paths resolve against the set's URL. `npm run build` writes the element as one file, `dist/model-arena.js`.
 
@@ -42,13 +72,7 @@ Layouts:
 
 The element fills its container's width and collapses to one column below 640 px. Colours, fonts and radii are `--ma-*` custom properties (defaults: the Runware blog's dark tokens); `theme="auto"` follows the reader's light or dark setting.
 
-## Blog demo, no key
-
-```sh
-npm run demo:media          # optional: the real mannequin guide from ~/Downloads
-npm run demo:placeholders   # labelled placeholder clips and inputs in examples/media/placeholder/
-npm run dev                 # then open http://localhost:5173/blog-demo.html
-```
+## Blog demo records
 
 The records in `examples/records/blog/` come from `npm run demo:records`, which runs neutral shot descriptions through the prompt composer: the prompts, inputs and camera parameters are real; the clips are placeholders and no cost is claimed.
 
@@ -66,7 +90,11 @@ RUNWARE_API_KEY=... npm run lane -- <same flags, without --dry-run> --max-price 
 
 A run writes `runs/<date>-<model>-<uuid>/` (gitignored) with the plan, the task as sent, the inputs, `output.mp4` and a one-lane `record.json`, and appends a row to `docs/costs.md`. Open it in the demo with `?record=/runs/<folder>/record.json`. If polling stops, resume with `--resume <taskUUID>` and the same flags; never resubmit, because that bills a second generation.
 
-Models: `kling-4`, `seedance-2.5`, `h3`, `ltx-2.5`, `ltx-2.5-fast`, `flux-3-video`, and `auto` (the router, with `--requirements`). `npm run lane -- --help` lists every flag.
+Models: `kling-4`, `kling-4-flash`, `seedance-2.5`, `h3`, `ltx-2.5`, `ltx-2.5-fast`, `flux-3-video`, and `auto` (the router, with `--requirements`). `npm run lane -- --help` lists every flag.
+
+- `--shot shot.json` lets the composer write the prompt, camera parameter and duration for that model; the run's record keeps the shot.
+- `--character still.png` sends a still that replaces the guide's figure: a reference image beside the guide on Kling, Seedance, H3 and the router, never a frame image. LTX and FLUX 3 Video refuse it.
+- `npm run still -- --model klein-9b|kling-image-3 --prompt ... [--reference frame0.png] --max-price 0.05` makes that still; same refusals, confirmation and cost row as a lane.
 
 ## Your key
 

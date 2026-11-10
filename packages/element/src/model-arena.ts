@@ -15,6 +15,7 @@
  * framework, no server.
  */
 import { SharedClock } from "../../core/src/clock.ts";
+import { shotSummary } from "../../core/src/shot.ts";
 import { parseRecord, type ArenaRecord } from "../../core/src/record.ts";
 import { isRecordSet, parseRecordSet, type RecordSet } from "../../core/src/record-set.ts";
 import { el } from "./captions.ts";
@@ -196,7 +197,11 @@ export class ModelArena extends HTMLElement {
       el("div", { class: "title" }, el("h2", {}, record.title), el("span", { class: "meta" }, `${record.lanes.length} lanes`)),
       controls.length ? el("div", { class: "controls" }, ...controls) : null,
     );
-    this.root.replaceChildren(el("style", {}, styles), head, error, el("div", { class: "body" }, ...view.nodes));
+    // The one intent behind every composed lane prompt, when the record carries it.
+    const intent = record.shot
+      ? el("p", { class: "intent" }, el("span", { class: "id" }, "One shot description, composed per model: "), shotSummary(record.shot))
+      : null;
+    this.root.replaceChildren(el("style", {}, styles), head, ...(intent ? [intent] : []), error, el("div", { class: "body" }, ...view.nodes));
     this.dataset.layout = layout;
     this.unsubscribe = this.clock.subscribe((s) => {
       view.update(s);
