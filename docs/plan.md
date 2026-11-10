@@ -5,7 +5,7 @@ summary: Implementation plan for Model Arena as work packages MA-0 to MA-6, with
 
 # Model Arena: implementation plan
 
-Written 7 November 2026. Product scope is in [PRD.md](PRD.md). The cross-repo overview, covering both this repo and `motion-studio`, is kept privately by the owner. This file is the build plan for this repo.
+Written 7 November 2026; state updated 10 November. Product scope is in [PRD.md](PRD.md). The cross-repo overview, covering both this repo and `motion-studio`, is kept privately by the owner. This file is the build plan for this repo.
 
 ## Milestones
 
@@ -16,6 +16,45 @@ Written 7 November 2026. Product scope is in [PRD.md](PRD.md). The cross-repo ov
 | Wed 11 Nov | MA-4: embed, layouts, capture mode, themes |
 | Thu 12 Nov | Preview: repo public, README runnable in five minutes |
 | Sat 14 Nov | Final for the first milestone |
+
+## State on 10 November
+
+Branch `feat/ma-floor`, not pushed. No paid run has been made: `docs/costs.md` has no rows, and the owner has not approved spend.
+
+| Package | State |
+| --- | --- |
+| MA-0 schemas | Done (`cc18c35`) |
+| MA-1 Runware provider and lane CLI | Built and tested against fake fetch (`cc18c35`); its acceptance run (one paid Kling 4.0 clip) is **not done**, waiting on spend approval |
+| MA-2 element and lanes | Done for `three-up` (`cc18c35`) |
+| Spec database | Done (`6224bbf`): seven models in `packages/core/src/specs/`, checked field by field against the schema fixtures by `tests/model-specs.test.ts`. See [model-specs.md](model-specs.md) |
+| Prompt composer | Done (`c67b5ea`, `3f27d9d`): `compose()` in `packages/core/src/compose.ts` |
+| Blog panels | Done with placeholder clips (`7374e25`, `8657f41`): `layout="arena"` and `layout="guidance"`, record sets as tabs, `blog-demo.html` |
+| MA-3 keyframes | Not started |
+| MA-4 embed, capture mode, themes | Partly: the build is one file (`dist/model-arena.js`); themes are `--ma-*` properties with the Runware blog tokens as defaults. `templates/embed.html` and capture mode are not built |
+| MA-4b key panel, galleries | Galleries partly, as record-set tabs; the key panel is not built |
+| MA-5, MA-6 | Not started |
+
+### What was added beyond the original plan
+
+- **Spec database** (`packages/core/src/specs/`, `schema/model-spec.schema.json`): per model, which inputs it takes and their limits, combination rules, durations, sizes, prompt length, addressing syntax, prompt rules, seed, camera (parameter or prompt-only, with the guide's own words), rates. A field holds a value only when Runware's schema or docs state it; otherwise it is null with a "not stated" note.
+- **Prompt composer** (`compose.ts`, `compose-text.ts`): one neutral shot (subject, action, camera move, references with roles, audio intent, duration, optional focus and timed beats) in; per model out: the prompt in its dialect, request params, how the camera is steered, inputs used with their addresses, inputs dropped with reasons, input kinds it cannot take.
+  - Addressing: Kling `<<<image_n>>>`/`<<<video_n>>>` (images across frames then references; videos across `inputs.video` then `referenceVideos`), Seedance `@Image1`/`@Video1`/`@Audio1`, MiniMax "Image 1"/"Video 1", none for LTX and FLUX 3 Video.
+  - Camera: LTX gets `settings.cameraMovement`; every other model gets the move in words. With a guide video, Kling uses Runware's "Reference only the … camera path and pacing of `<<<video_1>>>`" pattern and no camera words.
+  - Rules from the spec: a start frame beside reference videos goes in as an image reference on Seedance and H3; LTX keeps the camera parameter over audio mode unless `prefer: "inputs"`.
+- **Record sets** (`record-set.ts`): several records as tabs in one element.
+- **Two blog views:**
+  - `arena`: 2-5 models, a layout per count, a model menu per tile, cost per clip and seconds, list price for lanes not run;
+  - `guidance`: guide beside output on one clock, model switcher, the three steering modes, inputs strip, composed prompt with copy.
+
+### How to see it
+
+`npm run demo:placeholders`, then `npm run dev` and open `/blog-demo.html`. `npm run shot -- <url> <width> <out.png>` screenshots a page and reports horizontal overflow (checked at 360 px and 1400 px: none).
+
+### Open
+
+- The first paid run (MA-1 acceptance) and real clips for the blog records, after the owner approves spend.
+- Light and dark: the element defaults to the Runware blog's dark tokens because that page is dark-only; `theme="auto"` follows `prefers-color-scheme`. Confirm this default.
+- MA-3 keyframes, the FLUX 3 Video keyframe lane, the embed template, capture mode and the key panel.
 
 ## Stack and layout
 
