@@ -72,6 +72,7 @@ describe("task JSON per model", () => {
   it("every model id is the AIR from the catalogue", () => {
     expect(MODELS.map((m) => m.air)).toEqual([
       "klingai:kling-video@4.0",
+      "klingai:kling-video@4.0-flash",
       "bytedance:seedance@2.5",
       "minimax:h3@0",
       "lightricks:ltx@2.5-pro",

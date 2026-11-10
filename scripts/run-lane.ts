@@ -30,6 +30,8 @@ const HELP = `Usage: npm run lane -- --model <key> --prompt <text> [inputs] [opt
 Models: ${MODELS.map((m) => `${m.key} (${m.air})`).join(", ")}
 
 Inputs:   --guide <mp4|https>  --first-frame <png|jpg|https>  --audio <wav|mp3|m4a|https>
+          --character <png|jpg|https>  (a still that replaces the guide's figure: a reference
+          image beside the guide on Kling, Seedance, H3 and the router; never a frame image)
 Options:  --duration <s|auto>  --resolution <preset>  --camera <movement, LTX only>
           --first-frame-variant A|B|C  --requirements <text, router>  --max-price <usd>
           --out <dir> (default runs/)  --timeout-min <n> (default 45)  --resume <taskUUID>
@@ -65,6 +67,7 @@ export function parseCli(argv: string[]) {
       guide: { type: "string" },
       "first-frame": { type: "string" },
       "first-frame-variant": { type: "string" },
+      character: { type: "string" },
       audio: { type: "string" },
       duration: { type: "string" },
       resolution: { type: "string" },
@@ -113,6 +116,7 @@ export async function buildRequest(o: Cli): Promise<LaneRequest> {
     ...(o.guide ? { guideVideo: await loadMedia(o.guide, "video") } : {}),
     ...(o["first-frame"] ? { firstFrame: await loadMedia(o["first-frame"], "image") } : {}),
     ...(variant ? { firstFrameVariant: variant as FirstFrameVariant } : {}),
+    ...(o.character ? { character: await loadMedia(o.character, "image") } : {}),
     ...(o.audio ? { audio: await loadMedia(o.audio, "audio") } : {}),
     ...(o.duration !== undefined ? { duration: parseDuration(o.duration) } : {}),
     ...(o.resolution ? { resolution: o.resolution } : {}),
@@ -191,9 +195,9 @@ export async function runLaneCli(argv: string[], deps: CliDeps = {}): Promise<vo
   const taskUUID = o.resume ?? String(plan.task.taskUUID);
   const outDir = resolve(o.out ?? join(ROOT, "runs"), `${date.slice(0, 10)}-${findModel(req.model).key}-${taskUUID.slice(0, 8)}`);
   await mkdir(join(outDir, "inputs"), { recursive: true });
-  for (const m of [req.guideVideo, req.firstFrame, req.audio])
+  for (const m of [req.guideVideo, req.firstFrame, req.character, req.audio])
     if (m && !m.ref.startsWith("https://")) {
-      const src = [o.guide, o["first-frame"], o.audio].find((p) => p && basename(p) === m.name);
+      const src = [o.guide, o["first-frame"], o.character, o.audio].find((p) => p && basename(p) === m.name);
       if (src) await copyFile(src, join(outDir, "inputs", m.name));
       m.displaySrc = `inputs/${m.name}`;
     }

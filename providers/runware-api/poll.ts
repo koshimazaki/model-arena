@@ -14,6 +14,8 @@ export interface PollOptions {
   onProgress?: (status: string, progress?: number) => void;
   sleep?: (ms: number) => Promise<void>;
   now?: () => number;
+  /** The response field that carries the result URL: `videoURL` (default) or `imageURL`. */
+  urlField?: "videoURL" | "imageURL";
 }
 
 export interface VideoResult {
@@ -39,17 +41,18 @@ export function readVideoRow(
   taskUUID: string,
   data: Record<string, unknown>[],
   errors: { code: string; message: string; taskUUID?: string }[],
+  urlField: "videoURL" | "imageURL" = "videoURL",
 ): { state: "success"; result: VideoResult } | { state: "processing"; progress?: number } | { state: "error"; error: RunwareApiError } | { state: "absent" } {
   const failed = errors.filter((e) => e.taskUUID === taskUUID || !e.taskUUID);
   if (failed.length) return { state: "error", error: new RunwareApiError(200, failed) };
   const rows = data.filter((d) => d.taskUUID === taskUUID);
-  const done = rows.find((r) => r.status === "success" || typeof r.videoURL === "string");
-  if (done && typeof done.videoURL === "string")
+  const done = rows.find((r) => r.status === "success" || typeof r[urlField] === "string");
+  if (done && typeof done[urlField] === "string")
     return {
       state: "success",
       result: {
         taskUUID,
-        videoURL: done.videoURL,
+        videoURL: done[urlField] as string,
         ...(typeof done.videoUUID === "string" ? { videoUUID: done.videoUUID } : {}),
         cost: parseCost(done.cost),
         ...(typeof done.seed === "number" ? { seed: done.seed } : {}),
@@ -80,7 +83,7 @@ export async function pollVideo(client: RunwareClient, taskUUID: string, opts: P
   for (;;) {
     if (opts.signal?.aborted) throw new Error(`Stopped polling. Resume with taskUUID ${taskUUID}.`);
     const { data, errors } = await client.post([{ taskType: "getResponse", taskUUID }], opts.signal);
-    const row = readVideoRow(taskUUID, data, errors);
+    const row = readVideoRow(taskUUID, data, errors, opts.urlField);
     if (row.state === "success") return row.result;
     if (row.state === "error") throw row.error;
     opts.onProgress?.(row.state, row.state === "processing" ? row.progress : undefined);
@@ -89,4 +92,17 @@ export async function pollVideo(client: RunwareClient, taskUUID: string, opts: P
     await sleep(interval);
     interval = Math.min(maxInterval, Math.round(interval * 1.5));
   }
+}
+
+export interface ImageResult {
+  taskUUID: string;
+  imageURL: string;
+  cost: number | null;
+  seed?: number;
+}
+
+/** Polls an async `imageInference` task; same rules as video: never resubmit. */
+export async function pollImage(client: RunwareClient, taskUUID: string, opts: PollOptions = {}): Promise<ImageResult> {
+  const r = await pollVideo(client, taskUUID, { initialDelayMs: 1500, timeoutMs: 10 * 60_000, ...opts, urlField: "imageURL" });
+  return { taskUUID, imageURL: r.videoURL, cost: r.cost, ...(r.seed !== undefined ? { seed: r.seed } : {}) };
 }

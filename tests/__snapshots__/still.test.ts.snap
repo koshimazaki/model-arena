@@ -1,0 +1,37 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`image inference plans > klein: text to image at 1280×720 matches the schema 1`] = `
+{
+  "deliveryMethod": "async",
+  "height": 720,
+  "includeCost": true,
+  "model": "runware:400@2",
+  "numberResults": 1,
+  "outputFormat": "PNG",
+  "outputType": "URL",
+  "positivePrompt": "A figure in a grey jumpsuit.",
+  "taskType": "imageInference",
+  "taskUUID": "00000000-0000-4000-8000-000000000001",
+  "width": 1280,
+}
+`;
+
+exports[`image inference plans > kling image: a fixed pair without a reference, a resolution preset with one 1`] = `
+{
+  "deliveryMethod": "async",
+  "includeCost": true,
+  "inputs": {
+    "referenceImages": [
+      "{{upload:1:first-frame.png}}",
+    ],
+  },
+  "model": "klingai:kling-image@3",
+  "numberResults": 1,
+  "outputFormat": "PNG",
+  "outputType": "URL",
+  "positivePrompt": "Same pose.",
+  "resolution": "1K",
+  "taskType": "imageInference",
+  "taskUUID": "00000000-0000-4000-8000-000000000001",
+}
+`;

@@ -140,7 +140,7 @@ export const MINIMAX_H3: ModelSpec = {
   pricing: {
     rates: [
       { usdPerSecond: 0.08, tier: "768p", mode: "any", label: "768p" },
-      { usdPerSecond: 0.13, tier: "2K", mode: "any", label: "2K" },
+      { usdPerSecond: 0.13, tier: "1440p", mode: "any", label: "2K" },
     ],
     surcharges: [
       { label: "uploaded video", usd: 0.13, per: "input-video-second" },

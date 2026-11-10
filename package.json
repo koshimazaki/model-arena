@@ -19,7 +19,8 @@
     "demo:placeholders": "sh scripts/make-placeholder-clips.sh",
     "demo:records": "tsx scripts/build-demo-records.ts",
     "shot": "node scripts/shot.mjs",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "still": "tsx scripts/make-still.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

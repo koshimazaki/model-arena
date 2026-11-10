@@ -82,6 +82,7 @@ export function planTask(req: LaneRequest, taskUUID = randomUUID()): LanePlan {
       modelName: m.name,
       guideVideo: req.guideVideo,
       firstFrame: req.firstFrame,
+      character: req.character,
       audio: req.audio,
       keyframes: req.keyframes,
     });
@@ -146,6 +147,10 @@ export function planTask(req: LaneRequest, taskUUID = randomUUID()): LanePlan {
       task.width = size.width;
       task.height = size.height;
     }
+  } else if (m.key !== "auto") {
+    // No resolution field (Kling 4.0 Flash): one tier only, the size follows the input.
+    if (req.resolution && req.resolution !== m.defaultResolution)
+      throw new PlanError(`${m.name} makes ${m.defaultResolution} only; the size follows the input.`);
   } else if (req.resolution) throw new PlanError(`${m.name}: resolution is not set on the router lane; describe it in --requirements.`);
 
   if (Object.keys(inputs).length) task.inputs = inputs;

@@ -7,6 +7,7 @@
  * Every task schema sets `additionalProperties: false`, so nothing else may be sent.
  */
 import type { ModelCaps } from "../../packages/core/src/fit.ts";
+import { KLING_VIDEO_4_0_FLASH } from "../../packages/core/src/specs/kling-video-4-0-flash.ts";
 
 export interface Rate {
   usdPerSecond: number;
@@ -80,6 +81,39 @@ export const KLING_4: RunwareModel = {
     { usdPerSecond: 0.282, label: "1080p · Video input", resolution: "1080p", videoInput: true },
   ],
   schemaUrl: schema("klingai-video-4-0"),
+};
+
+/**
+ * Kling VIDEO 4.0 Flash: limits taken from its spec, so the two cannot drift.
+ * 720p only and no `resolution` field: with inputs the size follows the input.
+ */
+const flashVideo = KLING_VIDEO_4_0_FLASH.inputs.referenceVideos.limits!;
+export const KLING_4_FLASH: RunwareModel = {
+  ...KLING_4,
+  key: KLING_VIDEO_4_0_FLASH.id,
+  air: KLING_VIDEO_4_0_FLASH.air,
+  slug: KLING_VIDEO_4_0_FLASH.slug,
+  name: KLING_VIDEO_4_0_FLASH.name,
+  caps: {
+    ...KLING_4.caps,
+    referenceVideos: {
+      ...KLING_4.caps.referenceVideos!,
+      minSeconds: flashVideo.secondsEach!.min!,
+      maxSeconds: flashVideo.secondsEach!.max!,
+      totalMaxSeconds: flashVideo.secondsTotalMax!,
+    },
+    frameImages: { ...imageLimits, max: KLING_VIDEO_4_0_FLASH.inputs.firstFrame.maxCount!, indexPositions: false },
+  },
+  duration: { kind: "range", min: 3, max: 20, auto: false },
+  resolutions: undefined,
+  defaultResolution: "720p",
+  rates: KLING_VIDEO_4_0_FLASH.pricing.rates.map((r) => ({
+    usdPerSecond: r.usdPerSecond,
+    label: r.label,
+    resolution: r.tier,
+    videoInput: r.mode === "video-input",
+  })),
+  schemaUrl: KLING_VIDEO_4_0_FLASH.sources.schema,
 };
 
 export const SEEDANCE_25: RunwareModel = {
@@ -212,7 +246,8 @@ export const FLUX_3_VIDEO: RunwareModel = {
     frameImages: { max: 10, indexPositions: true },
     startFrameWithReferences: false,
   },
-  prompt: { min: 1, max: 50000 },
+  // The schema states no prompt limit (the guides say 10,000 characters).
+  prompt: { min: 1, max: Infinity },
   duration: { kind: "range", min: 5, max: 20, auto: true },
   resolutions: ["720p", "1080p"],
   defaultResolution: "720p",
@@ -242,7 +277,7 @@ export const ROUTER: RunwareModel = {
   schemaUrl: "https://runware.ai/docs/models-api/model-router",
 };
 
-export const MODELS: RunwareModel[] = [KLING_4, SEEDANCE_25, H3, LTX_25_PRO, LTX_25_FAST, FLUX_3_VIDEO, ROUTER];
+export const MODELS: RunwareModel[] = [KLING_4, KLING_4_FLASH, SEEDANCE_25, H3, LTX_25_PRO, LTX_25_FAST, FLUX_3_VIDEO, ROUTER];
 
 export function findModel(keyOrAir: string): RunwareModel {
   const m = MODELS.find((x) => x.key === keyOrAir || x.air === keyOrAir || x.slug === keyOrAir);

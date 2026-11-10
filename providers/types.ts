@@ -27,6 +27,8 @@ export interface LaneRequest {
   guideVideo?: LaneMedia;
   firstFrame?: LaneMedia;
   firstFrameVariant?: FirstFrameVariant;
+  /** A character still: a reference image beside the guide (never a frame image). */
+  character?: LaneMedia;
   audio?: LaneMedia;
   keyframes?: { media: LaneMedia; frame: number | "first" | "last" }[];
   duration?: number | "auto";
