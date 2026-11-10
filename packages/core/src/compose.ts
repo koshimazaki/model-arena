@@ -32,6 +32,15 @@ export interface ShotReference {
   role: ReferenceRole;
   /** What the model should keep from it; a default per role otherwise. */
   keep?: string;
+  /** For an image beside a motion guide: what in the guide it replaces, e.g. "the mannequin". */
+  replaces?: string;
+}
+
+/** A timed beat, written as "0–3 s: …" where the model's guide supports it. */
+export interface ShotBeat {
+  start: number;
+  end: number;
+  text: string;
 }
 
 export interface ShotDescription {
@@ -43,6 +52,9 @@ export interface ShotDescription {
   audio?: string;
   /** Seconds. */
   duration: number;
+  /** What the camera frames and ends on, e.g. "the mannequin"; "the subject" otherwise. */
+  focus?: string;
+  beats?: ShotBeat[];
 }
 
 export interface ComposeOptions {
@@ -261,11 +273,14 @@ export function composeFor(model: string | ModelSpec, shot: ShotDescription, opt
     params[spec.camera.field] = value;
     camera = { move: shot.camera, mode: "parameter", field: spec.camera.field, value, text: null };
   } else {
-    const words = cameraSentence(spec, shot.camera);
+    const words = cameraSentence(spec, shot.camera, shot.focus);
     if (words.note) notes.push(words.note);
     if (spec.camera.kind === "parameter" && !value) notes.push(`${spec.camera.field} has no value for "${shot.camera}"; the move is written into the prompt.`);
     if (spec.camera.kind === "parameter" && value && forbiddenBeside) notes.push(`${spec.camera.field} is not allowed beside these inputs; the move is written into the prompt.`);
-    camera = { move: shot.camera, mode: guideVideo ? "guide-video" : "prompt", text: words.text };
+    // Kling's "borrowing a camera path": the reference carries the move, so no camera words compete with it.
+    const pathOnly = guideVideo && spec.prompting.addressing.style === "tags";
+    if (pathOnly) notes.push("The guide video carries the camera path; the prompt references it instead of describing the move.");
+    camera = { move: shot.camera, mode: guideVideo ? "guide-video" : "prompt", text: pathOnly ? null : words.text };
   }
 
   const audioDriven = used.some((u) => u.input === "audioToVideo");

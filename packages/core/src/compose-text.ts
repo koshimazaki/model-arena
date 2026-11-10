@@ -1,7 +1,8 @@
 /**
  * The words of each model's dialect. Structure follows each model's own
  * prompting guide, as summarised in its spec's `prompting.rules`:
- * - tags (Kling): one sentence per input first, then the shot, then an audio section;
+ * - tags (Kling): "Reference only the … of <<<video_1>>>" when a guide video carries the move, one
+ *   sentence per other input, the shot, camera words (move, height, speed, end) only without a guide, timed beats, audio;
  * - at-mentions (Seedance): the camera clause first, tags bound to roles, audio last;
  * - plain words (MiniMax): references by number with roles, subject not move, then "Sound:";
  * - none (LTX): one flowing present-tense paragraph, the move left out when the parameter carries it;
@@ -39,9 +40,9 @@ const NEUTRAL: Record<CameraMove, string> = {
 };
 
 /** The camera sentence from the model's own guide vocabulary, or plain words with a note. */
-export function cameraSentence(spec: ModelSpec, move: CameraMove): { text: string; note?: string } {
+export function cameraSentence(spec: ModelSpec, move: CameraMove, focus = "the subject"): { text: string; note?: string } {
   const term = spec.camera.vocabulary.find((t) => t.move === move && t.phrase);
-  if (term?.phrase) return { text: term.phrase };
+  if (term?.phrase) return { text: term.phrase.replaceAll("{subject}", focus) };
   if (spec.camera.kind === "parameter") {
     const v = spec.camera.values.find((x) => x.move === move);
     if (v) return { text: v.meaning };
@@ -58,20 +59,27 @@ const sentence = (s: string) => {
 const keepOf = (u: UsedInput, shot: ShotDescription) => shot.references.find((r) => r.id === u.ref)?.keep ?? ROLE[u.role].keep;
 const join = (parts: (string | null | undefined | false)[], sep = " ") => parts.filter(Boolean).join(sep);
 
+const range = (b: { start: number; end: number }) => `${b.start}–${b.end} s`;
+
 function tags(spec: ModelSpec, shot: ShotDescription, used: UsedInput[], cam: ComposedCamera): string {
-  const lines = used
-    .filter((u) => u.address)
-    .map((u) =>
-      u.input === "referenceVideos" && u.role === "motion"
-        ? `${u.address} sets the motion: copy only its ${keepOf(u, shot)}.`
-        : u.input === "firstFrame"
-          ? `${u.address} is the first frame.`
-          : u.input === "lastFrame"
-            ? `${u.address} is the last frame.`
-            : `${u.address} defines ${ROLE[u.role].noun}; keep ${keepOf(u, shot)}.`,
-    );
+  const guide = used.find((u) => u.input === "referenceVideos" && u.role === "motion" && u.address);
+  const lines: string[] = [];
+  if (guide) {
+    // Runware's reference-videos guide: "Reference only the camera path and pacing of <<<video_1>>>."
+    const what = shot.references.find((r) => r.id === guide.ref)?.keep;
+    lines.push(`Reference only the ${what ?? "motion, camera path and pacing"} of ${guide.address}.`);
+  }
+  for (const u of used) {
+    if (!u.address || u === guide) continue;
+    const ref = shot.references.find((r) => r.id === u.ref);
+    if (u.input === "firstFrame") lines.push(`${u.address} is the first frame.`);
+    else if (u.input === "lastFrame") lines.push(`${u.address} is the last frame.`);
+    else if (guide && ref?.replaces) lines.push(`Replace ${ref.replaces} with ${ROLE[u.role].noun} in ${u.address}; keep ${keepOf(u, shot)}.`);
+    else lines.push(`${u.address} defines ${ROLE[u.role].noun}; keep ${keepOf(u, shot)}.`);
+  }
+  const beats = shot.beats?.length ? shot.beats.map((b) => `${range(b)}: ${sentence(b.text)}`).join("\n") : null;
   const audio = shot.audio ? `Audio: ${sentence(shot.audio)} No subtitles.` : null;
-  return join([join(lines), join([sentence(`${shot.subject} ${shot.action}`), cam.text]), audio], "\n\n");
+  return join([join(lines), join([sentence(`${shot.subject} ${shot.action}`), cam.text]), beats, audio], "\n\n");
 }
 
 function atMentions(spec: ModelSpec, shot: ShotDescription, used: UsedInput[], cam: ComposedCamera): string {
@@ -80,7 +88,8 @@ function atMentions(spec: ModelSpec, shot: ShotDescription, used: UsedInput[], c
     .map((u) => (u.role === "motion" ? `${u.address} is ${ROLE.motion.noun}: follow its ${keepOf(u, shot)}.` : `${u.address} is ${ROLE[u.role].noun}; keep ${keepOf(u, shot)}.`));
   const audioRef = used.find((u) => u.input === "referenceAudios");
   const audio = shot.audio || audioRef ? join(["Audio:", shot.audio ? sentence(shot.audio) : null, audioRef?.address ? `Sync the motion to ${audioRef.address}.` : null]) : null;
-  return join([cam.text, join(bind), sentence(`${shot.subject} ${shot.action}`), audio], "\n\n");
+  const beats = shot.beats?.length ? shot.beats.map((b) => `[${b.start}-${b.end}s] ${sentence(b.text)}`).join("\n") : null;
+  return join([cam.text, join(bind), sentence(`${shot.subject} ${shot.action}`), beats, audio], "\n\n");
 }
 
 function plainWords(spec: ModelSpec, shot: ShotDescription, used: UsedInput[], cam: ComposedCamera): string {

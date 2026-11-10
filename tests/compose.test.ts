@@ -23,7 +23,7 @@ describe("addressing in each model's syntax", () => {
 
   it("Kling numbers images across frames then references, with tags", () => {
     expect(out["kling-4"]!.used.map((u) => u.address)).toEqual(["<<<image_1>>>", "<<<image_2>>>", "<<<video_1>>>"]);
-    expect(out["kling-4"]!.prompt).toContain("<<<video_1>>> sets the motion");
+    expect(out["kling-4"]!.prompt).toContain("Reference only the motion, camera path and pacing of <<<video_1>>>.");
   });
 
   it("Seedance uses @Image, @Video and @Audio", () => {
@@ -56,8 +56,30 @@ describe("camera", () => {
     expect(ltx.prompt).not.toMatch(/camera|dolly|push/i);
   });
 
-  it("models with a guide video carry the move in the video and in words", () => {
-    for (const id of ["kling-4", "seedance-2.5", "h3"]) {
+  it("Kling borrows the camera path from the guide video and writes no camera words", () => {
+    const k = composeFor("kling-4", shot({ references: [guide, { ...character, replaces: "the mannequin" }] }));
+    expect(k.camera).toMatchObject({ mode: "guide-video", text: null });
+    expect(k.prompt).toMatch(/^Reference only the motion, camera path and pacing of <<<video_1>>>\./);
+    expect(k.prompt).toContain("Replace the mannequin with the character in <<<image_1>>>");
+    expect(k.prompt).not.toMatch(/push-in|crane/i);
+  });
+
+  it("Kling's prompt-only camera names the move, height, speed and end, and never says crane", () => {
+    const up = composeFor("kling-4", shot({ camera: "crane-up", references: [], focus: "the mannequin" }));
+    expect(up.camera.text).toBe("The camera slowly rises and tilts down, ending on a high view looking down at the mannequin.");
+    const push = composeFor("kling-4", shot({ references: [], focus: "the mannequin" }));
+    expect(push.camera.text).toBe("Slow push-in at eye level, ending on a close-up of the mannequin.");
+    expect(push.params).not.toHaveProperty("settings.cameraMovement");
+  });
+
+  it("timed beats are written in each dialect's form", () => {
+    const beats = [{ start: 0, end: 3, text: "the mannequin steps left" }, { start: 3, end: 7, text: "it spins on the kick" }];
+    expect(composeFor("kling-4", shot({ beats })).prompt).toContain("0–3 s: The mannequin steps left.\n3–7 s: It spins on the kick.");
+    expect(composeFor("seedance-2.5", shot({ beats })).prompt).toContain("[0-3s] The mannequin steps left.");
+  });
+
+  it("Seedance and H3 with a guide video carry the move in the video and in words", () => {
+    for (const id of ["seedance-2.5", "h3"]) {
       const c = composeFor(id, shot());
       expect(c.camera.mode).toBe("guide-video");
       expect(c.params["settings.cameraMovement"]).toBeUndefined();
@@ -156,6 +178,6 @@ describe("duration", () => {
     expect(h3.duration).toEqual({ requested: 20, sent: 15 });
     expect(h3.notes.join(" ")).toMatch(/15 s is sent/);
     expect(composeFor("ltx-2.5", shot({ duration: 9 })).params.duration).toBe(8);
-    expect(composeFor("kling-4", shot({ duration: 8 })).notes).toEqual([]);
+    expect(composeFor("kling-4", shot({ duration: 8 })).notes.join(" ")).not.toMatch(/Duration/);
   });
 });
