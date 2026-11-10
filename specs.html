@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <title>Model specs demo</title>
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body { margin: 0; padding: 24px 16px; background: #1a1a1a; color: #f2f2f2; font: 15px/1.6 system-ui, sans-serif; }
+      main { max-width: 1280px; margin: 0 auto; display: grid; gap: 24px; }
+      code { font-family: ui-monospace, monospace; font-size: 13px; }
+      p { margin: 0; color: #d9d9d9; }
+    </style>
+    <script type="module" src="/packages/element/src/index.ts"></script>
+  </head>
+  <body>
+    <main>
+      <h1>What each model takes, how you prompt it, how you move its camera</h1>
+      <p>Every fact below comes from a Runware schema or guide; anything the docs do not state says so. The composer runs in this page and sends nothing.</p>
+      <model-specs></model-specs>
+      <p>The same intent, played: the mannequin guide with placeholder clips.</p>
+      <model-arena src="/examples/records/mannequin-placeholder.json" layout="three-up"></model-arena>
+    </main>
+  </body>
+</html>

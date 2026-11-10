@@ -136,7 +136,7 @@ async function checkSpecs(page, path, i) {
       return {
         rows: root.querySelectorAll("table.matrix tbody tr").length,
         cards: root.querySelectorAll("article.card").length,
-        prompts: [...root.querySelectorAll(".composer .out pre")].map((p) => p.textContent.length),
+        prompts: [...root.querySelectorAll(".composer .out pre:not(.params)")].map((p) => p.textContent.length),
       };
     },
     [i],
@@ -153,7 +153,7 @@ async function checkSpecs(page, path, i) {
     if (!input) return false;
     input.value = "a wooden chair";
     input.dispatchEvent(new Event("input", { bubbles: true }));
-    return [...root.querySelectorAll(".composer .out pre")].every((p) => p.textContent.includes("wooden chair"));
+    return [...root.querySelectorAll(".composer .out pre:not(.params)")].every((p) => p.textContent.includes("wooden chair"));
   }, i);
   log(changed, `${tag}: editing the subject updates every prompt`);
 }
