@@ -1,41 +1,42 @@
 /**
- * <model-arena src="record.json" layout="three-up">
+ * <model-arena src="record.json" layout="arena|guidance|three-up">
  *
- * Plays a comparison record's lanes side by side on one shared clock: play
- * all, play one alone, seek, one playhead across every lane, and a caption
- * under each clip saying what the model was given, what ran, what it cost and
- * how long it took. Set `src` to fetch a record, or the `record` property to
- * hand one in. No framework, no server.
+ * Plays a comparison record's clips on one shared clock. `src` may point at
+ * one record or at a record set, whose records become tabs above the view.
+ *
+ * - layout="arena": the same shot from each model; play all, play alone,
+ *   captions with model name, cost per clip and seconds.
+ * - layout="guidance": the Motion Studio guide beside one model's output,
+ *   a model switcher, how that model is steered, what it received and its
+ *   composed prompt. `model` picks the first lane shown.
+ * - layout="three-up" (default): every lane with its full caption.
+ *
+ * The element fills its container's width and works down to 360 px. No
+ * framework, no server.
  */
-import { SharedClock, type ClockState } from "../../core/src/clock.ts";
+import { SharedClock } from "../../core/src/clock.ts";
 import { parseRecord, type ArenaRecord } from "../../core/src/record.ts";
-import { caption, el, mediaUrl } from "./captions.ts";
+import { isRecordSet, parseRecordSet, type RecordSet } from "../../core/src/record-set.ts";
+import { el } from "./captions.ts";
 import { styles } from "./styles.ts";
+import { arenaView, fitState, type ArenaState, type View } from "./views/arena.ts";
+import { guidanceView } from "./views/guidance.ts";
+import { lanesView } from "./views/lanes.ts";
 
-const fmt = (t: number) => {
-  const m = Math.floor(t / 60);
-  const s = t - m * 60;
-  return `${m}:${s.toFixed(1).padStart(4, "0")}`;
-};
+const here = () => (typeof location === "undefined" ? "http://localhost/" : location.href);
 
 export class ModelArena extends HTMLElement {
-  static observedAttributes = ["src", "layout"];
+  static observedAttributes = ["src", "layout", "tab"];
 
   private root: ShadowRoot;
   private clock = new SharedClock();
   private unsubscribe?: () => void;
   private current?: ArenaRecord;
-  private base = typeof location === "undefined" ? "http://localhost/" : location.href;
+  private set?: { data: RecordSet; base: string; cache: Map<string, { record: ArenaRecord; base: string }> };
+  private tabId?: string;
+  private arenaState?: ArenaState;
+  private base = here();
   private load = 0;
-  private ui?: {
-    play: HTMLButtonElement;
-    scrub: HTMLInputElement;
-    time: HTMLElement;
-    error: HTMLElement;
-    bars: HTMLElement[];
-    solos: Map<string, HTMLButtonElement>;
-  };
-  private scrubbing = false;
   private onHide = () => document.hidden && this.clock.hide();
 
   constructor() {
@@ -54,138 +55,153 @@ export class ModelArena extends HTMLElement {
   }
 
   attributeChangedCallback(name: string, old: string | null, value: string | null) {
-    if (name === "src" && value && value !== old) void this.fetchRecord(value);
+    if (name === "src" && value && value !== old) void this.fetchSource(value);
     if (name === "layout" && this.current) this.render(this.current);
+    if (name === "tab" && value && this.set && value !== this.tabId) void this.showTab(value);
   }
 
   get record(): ArenaRecord | undefined {
     return this.current;
   }
 
-  /** Hands in a record directly; media paths resolve against `baseUrl` (default: the page). */
-  setRecord(record: unknown, baseUrl = typeof location === "undefined" ? "http://localhost/" : location.href) {
-    this.load++;
-    try {
-      this.base = baseUrl;
-      this.render(parseRecord(record));
-    } catch (e) {
-      this.message(`This record cannot be shown: ${(e as Error).message}`);
-    }
-  }
-
   set record(record: unknown) {
     this.setRecord(record);
   }
 
-  private async fetchRecord(src: string) {
+  /** Hands in a record or a record set; media and tab paths resolve against `baseUrl` (default: the page). */
+  setRecord(data: unknown, baseUrl = here()) {
+    const attempt = ++this.load;
+    const fail = (e: unknown) => this.message(`This record cannot be shown: ${(e as Error).message}`);
+    try {
+      // A single record renders synchronously; a set loads its first tab.
+      this.accept(data, baseUrl, attempt).catch(fail);
+    } catch (e) {
+      fail(e);
+    }
+  }
+
+  /** Not async on purpose: a bad record throws synchronously, so the message shows at once. */
+  private accept(data: unknown, baseUrl: string, attempt: number): Promise<void> {
+    if (isRecordSet(data)) {
+      this.set = { data: parseRecordSet(data), base: baseUrl, cache: new Map() };
+      return this.showTab(this.getAttribute("tab") ?? this.set.data.tabs[0]!.id, attempt);
+    }
+    const record = parseRecord(data);
+    this.set = undefined;
+    this.tabId = undefined;
+    this.base = baseUrl;
+    this.render(record);
+    return Promise.resolve();
+  }
+
+  private async fetchJson(url: string) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }
+
+  private async fetchSource(src: string) {
     const attempt = ++this.load;
     this.message("Loading…");
     try {
-      const url = new URL(src, location.href).href;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
+      const url = new URL(src, here()).href;
+      const json = await this.fetchJson(url);
       if (attempt !== this.load) return;
-      this.base = url;
-      this.render(parseRecord(json));
+      await this.accept(json, url, attempt);
     } catch (e) {
       if (attempt === this.load) this.message(`Could not load ${src}: ${(e as Error).message}`);
     }
   }
 
+  private async showTab(id: string, attempt = ++this.load) {
+    const set = this.set;
+    if (!set) return;
+    const tab = set.data.tabs.find((t) => t.id === id) ?? set.data.tabs[0]!;
+    this.tabId = tab.id;
+    try {
+      let hit = set.cache.get(tab.id);
+      if (!hit) {
+        if (tab.record) hit = { record: parseRecord(tab.record), base: set.base };
+        else {
+          const url = new URL(tab.src!, set.base).href;
+          hit = { record: parseRecord(await this.fetchJson(url)), base: url };
+        }
+        set.cache.set(tab.id, hit);
+      }
+      if (attempt !== this.load) return;
+      this.base = hit.base;
+      this.render(hit.record);
+    } catch (e) {
+      if (attempt === this.load) this.message(`Could not load the "${tab.label}" tab: ${(e as Error).message}`);
+    }
+  }
+
   private message(text: string) {
     this.teardown();
-    this.root.replaceChildren(el("style", {}, styles), el("p", { class: "note" }, text));
+    const tabs = this.tabs();
+    this.root.replaceChildren(
+      el("style", {}, styles),
+      ...(tabs ? [el("div", { class: "head" }, el("div", { class: "controls" }, tabs))] : []),
+      el("div", { class: "body" }, el("p", { class: "note" }, text)),
+    );
   }
 
   private teardown() {
     this.unsubscribe?.();
     this.clock.hide();
     this.clock = new SharedClock();
-    this.ui = undefined;
+  }
+
+  private tabs(): HTMLElement | null {
+    const set = this.set;
+    if (!set || set.data.tabs.length < 2) return null;
+    const bar = el("div", { class: "seg tabs", role: "tablist", "aria-label": "Test" });
+    const ids = set.data.tabs.map((t) => t.id);
+    for (const t of set.data.tabs) {
+      const on = t.id === this.tabId;
+      const b = el("button", { type: "button", role: "tab", "aria-selected": String(on), tabindex: on ? "0" : "-1", "data-tab": t.id }, t.label);
+      b.addEventListener("click", () => void this.showTab(t.id));
+      b.addEventListener("keydown", (e) => {
+        const step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+        if (!step) return;
+        e.preventDefault();
+        const next = ids[(ids.indexOf(t.id) + step + ids.length) % ids.length]!;
+        void this.showTab(next).then(() => (this.root.querySelector(`[data-tab="${next}"]`) as HTMLElement | null)?.focus());
+      });
+      bar.append(b);
+    }
+    return bar;
   }
 
   private render(record: ArenaRecord) {
     this.teardown();
     this.current = record;
     const layout = this.getAttribute("layout") ?? "three-up";
-    const columns = layout === "three-up" ? Math.min(3, record.lanes.length) : 3;
-
-    const play = el("button", { class: "primary", type: "button" }, "Play all");
-    play.addEventListener("click", () => void this.clock.play());
-    const scrub = el("input", { type: "range", min: "0", max: "0", step: String(1 / 24), value: "0", "aria-label": "Playhead" });
-    scrub.addEventListener("input", () => {
-      this.scrubbing = true;
-      this.clock.seek(Number(scrub.value));
-    });
-    scrub.addEventListener("change", () => (this.scrubbing = false));
-    const time = el("span", { class: "time" }, "0:00.0 / 0:00.0");
     const error = el("div", { class: "error", role: "status" });
+    const ctx = { record, base: this.base, clock: () => this.clock, error: (msg: string) => (error.textContent = msg) };
+    let view: View;
+    if (layout === "arena") {
+      this.arenaState = fitState(record, this.arenaState);
+      view = arenaView(ctx, this.arenaState, (next) => {
+        this.arenaState = next;
+        this.render(record);
+      });
+    } else view = layout === "guidance" ? guidanceView(ctx, this.getAttribute("model")) : lanesView(ctx, layout);
 
-    const bars: HTMLElement[] = [];
-    const solos = new Map<string, HTMLButtonElement>();
-    const lanes = el("div", { class: "lanes" });
-    lanes.style.setProperty("--ma-columns", String(columns));
-
-    for (const lane of record.lanes) {
-      const src = lane.output ? mediaUrl(lane.output.src, this.base) : null;
-      const screen = el("div", { class: "screen" });
-      if (src) {
-        const video = el("video", { src, muted: "", playsinline: "", preload: "auto", "aria-label": lane.label ?? lane.model });
-        video.muted = true;
-        video.addEventListener("loadedmetadata", () => this.clock.loaded());
-        video.addEventListener("error", () => error.textContent = `${lane.label ?? lane.id}: the clip did not load.`);
-        screen.append(video);
-        this.clock.add(lane.id, video);
-      } else screen.append(el("div", { class: "badge" }, lane.status === "pending" ? "Not run yet" : "No output"));
-      if (lane.status === "placeholder") screen.append(el("div", { class: "badge" }, "Placeholder clip"));
-      const bar = el("span");
-      screen.append(el("div", { class: "playhead" }, bar));
-      bars.push(bar);
-      const { node, solo } = caption(lane, this.base, () => void this.clock.solo(lane.id));
-      if (!src) solo.disabled = true;
-      solos.set(lane.id, solo);
-      lanes.append(
-        el("article", { class: `lane${record.preferredLane === lane.id ? " preferred" : ""}`, "data-lane": lane.id }, screen, node),
-      );
-    }
-
+    const tabs = this.tabs();
+    const controls = [...(tabs ? [tabs] : []), ...(view.controls ?? [])];
     const head = el(
       "div",
       { class: "head" },
-      el("h2", {}, record.title),
-      el("span", { class: "meta" }, `${record.lanes.length} lanes${record.preferredLane ? ` · preferred: ${record.preferredLane}` : ""}`),
+      el("div", { class: "title" }, el("h2", {}, record.title), el("span", { class: "meta" }, `${record.lanes.length} lanes`)),
+      controls.length ? el("div", { class: "controls" }, ...controls) : null,
     );
-    const observations = record.observations?.length
-      ? el("ul", { class: "note" }, ...record.observations.map((o) => el("li", {}, o)))
-      : null;
-
-    this.root.replaceChildren(
-      el("style", {}, styles),
-      head,
-      el("div", { class: "transport" }, play, scrub, time),
-      error,
-      lanes,
-      ...(observations ? [observations] : []),
-    );
-    this.ui = { play, scrub, time, error, bars, solos };
-    this.unsubscribe = this.clock.subscribe((s) => this.update(s));
-  }
-
-  private update(s: ClockState) {
-    const ui = this.ui;
-    if (!ui) return;
-    ui.play.textContent = s.playing ? "Pause" : "Play all";
-    ui.scrub.max = String(s.duration || 0);
-    if (!this.scrubbing) ui.scrub.value = String(s.time);
-    ui.time.textContent = `${fmt(s.time)} / ${fmt(s.duration)}`;
-    const pct = s.duration ? `${Math.min(100, (s.time / s.duration) * 100)}%` : "0%";
-    ui.bars.forEach((b) => (b.style.width = pct));
-    for (const [id, b] of ui.solos) {
-      b.textContent = s.soloing === id ? "Stop" : "Play alone";
-      b.setAttribute("aria-pressed", String(s.soloing === id));
-    }
-    if (s.error) ui.error.textContent = s.error;
+    this.root.replaceChildren(el("style", {}, styles), head, error, el("div", { class: "body" }, ...view.nodes));
+    this.dataset.layout = layout;
+    this.unsubscribe = this.clock.subscribe((s) => {
+      view.update(s);
+      if (s.error) error.textContent = s.error;
+    });
   }
 }
 
