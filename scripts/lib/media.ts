@@ -65,7 +65,7 @@ export async function loadMedia(pathOrUrl: string, kind: "video" | "image" | "au
       const p = probeMp4(bytes);
       media.info = { ...media.info, width: p.width, height: p.height, seconds: p.seconds, fps: p.fps };
     } catch (e) {
-      if (kind === "video") throw new Error(`${pathOrUrl}: ${(e as Error).message}`);
+      if (kind === "video") throw new Error(`${pathOrUrl}: ${(e as Error).message}`, { cause: e });
     }
   }
   if (ext === ".png" && bytes.byteLength > 24) {

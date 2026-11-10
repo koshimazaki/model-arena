@@ -12,17 +12,23 @@
     "dev": "vite",
     "build": "vite build",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
     "test": "vitest run",
     "lane": "tsx scripts/run-lane.ts",
     "demo:media": "sh scripts/prepare-demo-media.sh"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^24.19.2",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
+    "eslint": "^10.14.0",
+    "globals": "^17.14.0",
     "happy-dom": "^20.14.6",
+    "puppeteer-core": "^25.16.0",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.72.2",
     "vite": "^7.3.8",
     "vitest": "^3.2.7"
   }

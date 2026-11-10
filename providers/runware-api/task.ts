@@ -124,7 +124,7 @@ export function planTask(req: LaneRequest, taskUUID = randomUUID()): LanePlan {
     positivePrompt: prompt,
   };
   const audioDriven = Boolean(fit.drivingAudio);
-  let duration: number | "auto" = req.duration ?? (m.duration.kind === "range" ? Math.max(5, m.duration.min) : m.duration.values[0]!);
+  const duration: number | "auto" = req.duration ?? (m.duration.kind === "range" ? Math.max(5, m.duration.min) : m.duration.values[0]!);
   if (audioDriven) {
     // LTX schema: duration and cameraMovement are forbidden once inputs.audio is sent.
     if (req.duration !== undefined) throw new PlanError(`${m.name} with audio takes its length from the audio; drop --duration.`);

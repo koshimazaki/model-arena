@@ -101,6 +101,7 @@ const ROLES: readonly InputRole[] = [
   "video",
 ];
 // Control characters are refused before any text reaches the page.
+// eslint-disable-next-line no-control-regex
 const CONTROL = /[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/;
 
 export class RecordError extends Error {
