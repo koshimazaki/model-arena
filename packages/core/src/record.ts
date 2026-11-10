@@ -4,6 +4,9 @@
  * runtime check the element runs before it renders anything it fetched.
  */
 
+import type { ShotDescription } from "./compose.ts";
+import { parseShot, ShotError } from "./shot.ts";
+
 export const SCHEMA_VERSION = 1 as const;
 
 export interface MediaRef {
@@ -78,6 +81,8 @@ export interface Lane {
   settings?: Record<string, unknown>;
   status?: "ready" | "pending" | "error" | "placeholder";
   note?: string;
+  /** Set when the prompt came from the composer: the record's `shot`, written for this model. */
+  composed?: { model: string; notes?: string[]; dropped?: string[] };
 }
 
 export interface ArenaRecord {
@@ -89,6 +94,8 @@ export interface ArenaRecord {
   lanes: Lane[];
   observations?: string[];
   preferredLane?: string;
+  /** The one neutral shot description behind every composed lane prompt (optional, still version 1). */
+  shot?: ShotDescription;
 }
 
 const SLUG = /^[a-z0-9][a-z0-9-]{0,63}$/;
@@ -177,6 +184,16 @@ function lane(v: unknown, path: string): Lane {
   numOrNull(v.costUsd, `${path}.costUsd`);
   numOrNull(v.generationSeconds, `${path}.generationSeconds`);
   optText(v.note, `${path}.note`, 2000);
+  if (v.composed !== undefined) {
+    if (!isObj(v.composed)) throw new RecordError(`${path}.composed`, "must be an object");
+    text(v.composed.model, `${path}.composed.model`, 120, 1);
+    for (const k of ["notes", "dropped"] as const) {
+      const list = v.composed[k];
+      if (list === undefined) continue;
+      if (!Array.isArray(list) || list.length > 40) throw new RecordError(`${path}.composed.${k}`, "must be an array");
+      list.forEach((n, i) => text(n, `${path}.composed.${k}[${i}]`, 1000));
+    }
+  }
   return v as unknown as Lane;
 }
 
@@ -188,6 +205,14 @@ export function parseRecord(v: unknown): ArenaRecord {
   if (typeof v.id !== "string" || !SLUG.test(v.id)) throw new RecordError("id", "must be a slug");
   text(v.title, "title", 200, 1);
   if (v.guide !== undefined) parseGuide(v.guide);
+  if (v.shot !== undefined) {
+    try {
+      parseShot(v.shot);
+    } catch (e) {
+      if (e instanceof ShotError) throw new RecordError(e.path, e.message.slice(e.path.length + 2));
+      throw e;
+    }
+  }
   if (!Array.isArray(v.lanes) || v.lanes.length < 1 || v.lanes.length > 12)
     throw new RecordError("lanes", "must hold 1-12 lanes");
   const lanes = v.lanes.map((l, i) => lane(l, `lanes[${i}]`));

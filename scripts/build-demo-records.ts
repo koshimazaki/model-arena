@@ -13,6 +13,7 @@ import { compose, type ComposedPrompt, type ShotDescription } from "../packages/
 import type { ArenaRecord, InputSent, Lane } from "../packages/core/src/record.ts";
 import { findSpec } from "../packages/core/src/specs/index.ts";
 import type { InputKind } from "../packages/core/src/specs/types.ts";
+import { composedMarker } from "../packages/core/src/shot.ts";
 
 const OUT = join(import.meta.dirname, "../examples/records/blog");
 const MEDIA = "../../media/placeholder";
@@ -71,6 +72,7 @@ function lane(test: string, c: ComposedPrompt): Lane {
       ...(camera ? { settings: { cameraMovement: camera } } : {}),
     },
     status: "placeholder",
+    composed: composedMarker(c),
     note: `Placeholder clip; nothing has run. ${notes.join(" ")}`.trim().slice(0, 2000),
   };
 }
@@ -92,6 +94,7 @@ function record(id: string, title: string, shot: ShotDescription, models: string
     },
     lanes: compose(shot, models).map((c) => lane(id.replace(/^blog-/, ""), c)),
     observations,
+    shot,
   };
 }
 

@@ -69,6 +69,12 @@
         "duration": 8
       },
       "status": "placeholder",
+      "composed": {
+        "model": "kling-4",
+        "notes": [
+          "The guide video carries the camera path; the prompt references it instead of describing the move."
+        ]
+      },
       "note": "Placeholder clip; nothing has run. The guide video carries the camera path; the prompt references it instead of describing the move."
     },
     {
@@ -105,6 +111,9 @@
         "duration": 8
       },
       "status": "placeholder",
+      "composed": {
+        "model": "seedance-2.5"
+      },
       "note": "Placeholder clip; nothing has run."
     },
     {
@@ -141,6 +150,9 @@
         "duration": 8
       },
       "status": "placeholder",
+      "composed": {
+        "model": "h3"
+      },
       "note": "Placeholder clip; nothing has run."
     },
     {
@@ -169,6 +181,13 @@
         }
       },
       "status": "placeholder",
+      "composed": {
+        "model": "ltx-2.5",
+        "dropped": [
+          "guide: LTX-2.5 Pro takes no reference video.",
+          "character: A reference image is accepted only beside audio."
+        ]
+      },
       "note": "Placeholder clip; nothing has run. Not sent: guide (LTX-2.5 Pro takes no reference video.) Not sent: character (A reference image is accepted only beside audio.)"
     },
     {
@@ -194,6 +213,13 @@
         "duration": 8
       },
       "status": "placeholder",
+      "composed": {
+        "model": "flux-3-video",
+        "dropped": [
+          "character: FLUX 3 Video takes no reference images.",
+          "guide: FLUX 3 Video takes no reference video."
+        ]
+      },
       "note": "Placeholder clip; nothing has run. Not sent: character (FLUX 3 Video takes no reference images.) Not sent: guide (FLUX 3 Video takes no reference video.)"
     },
     {
@@ -230,10 +256,36 @@
         "duration": 8
       },
       "status": "placeholder",
+      "composed": {
+        "model": "kling-4-flash",
+        "notes": [
+          "The guide video carries the camera path; the prompt references it instead of describing the move."
+        ]
+      },
       "note": "Placeholder clip; nothing has run. The guide video carries the camera path; the prompt references it instead of describing the move."
     }
   ],
   "observations": [
     "Placeholder clips: no model has run. Prompts, inputs and camera parameters are the composer's real output."
-  ]
+  ],
+  "shot": {
+    "subject": "A dancer in a yellow raincoat in a grey studio",
+    "action": "performs the guide's dance",
+    "focus": "the dancer",
+    "camera": "track-right",
+    "duration": 8,
+    "references": [
+      {
+        "id": "character",
+        "kind": "image",
+        "role": "character",
+        "replaces": "the mannequin"
+      },
+      {
+        "id": "guide",
+        "kind": "video",
+        "role": "motion"
+      }
+    ]
+  }
 }

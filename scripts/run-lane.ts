@@ -22,6 +22,7 @@ import { runwareProvider } from "../providers/runware-api/index.ts";
 import { laneFromRun, type LanePlan, type LaneRequest } from "../providers/types.ts";
 import { appendCost } from "./lib/costs.ts";
 import { elide, loadMedia } from "./lib/media.ts";
+import { composeFromFile, describeComposed, type ComposedLane } from "./lib/shot.ts";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -33,6 +34,8 @@ Inputs:   --guide <mp4|https>  --first-frame <png|jpg|https>  --audio <wav|mp3|m
           --character <png|jpg|https>  (a still that replaces the guide's figure: a reference
           image beside the guide on Kling, Seedance, H3 and the router; never a frame image)
 Options:  --duration <s|auto>  --resolution <preset>  --camera <movement, LTX only>
+          --shot <shot.json>  (a neutral shot description: the composer writes the prompt,
+          camera parameter and duration for this model; --prompt etc. override it)
           --first-frame-variant A|B|C  --requirements <text, router>  --max-price <usd>
           --out <dir> (default runs/)  --timeout-min <n> (default 45)  --resume <taskUUID>
           --dry-run  --yes
@@ -68,6 +71,7 @@ export function parseCli(argv: string[]) {
       "first-frame": { type: "string" },
       "first-frame-variant": { type: "string" },
       character: { type: "string" },
+      shot: { type: "string" },
       audio: { type: "string" },
       duration: { type: "string" },
       resolution: { type: "string" },
@@ -103,24 +107,37 @@ function parseDuration(v: string | undefined): number | "auto" | undefined {
   return n;
 }
 
-export async function buildRequest(o: Cli): Promise<LaneRequest> {
+export async function buildRequest(o: Cli): Promise<LaneRequest & { composed?: ComposedLane }> {
   if (!o.model) fail("--model is required.\n\n" + HELP);
-  if (!o.prompt) fail("--prompt is required.");
   const model = findModel(o.model);
+  const composed = o.shot ? await composeFromFile(o.shot, model.key) : undefined;
+  if (composed && !o.prompt) {
+    // The composed prompt addresses each reference it uses; each must actually be sent.
+    const flag: Record<string, string | undefined> = { motion: o.guide, character: o.character, "first-frame": o["first-frame"], soundtrack: o.audio };
+    const flagName: Record<string, string> = { motion: "--guide", character: "--character", "first-frame": "--first-frame", soundtrack: "--audio" };
+    for (const u of composed.composed.used)
+      if (u.role in flag && !flag[u.role]) fail(`--shot uses "${u.ref}" (${u.role}) but ${flagName[u.role]} was not given; the prompt would address an input that is not sent.`);
+  }
+  const prompt = o.prompt ?? composed?.composed.prompt;
+  if (!prompt) fail("--prompt (or --shot) is required.");
+  const cParams = composed?.composed.params ?? {};
+  const cDuration = typeof cParams.duration === "number" ? cParams.duration : undefined;
+  const cCamera = typeof cParams["settings.cameraMovement"] === "string" ? (cParams["settings.cameraMovement"] as string) : undefined;
   const variant = o["first-frame-variant"];
   if (variant !== undefined && !["A", "B", "C"].includes(variant)) fail("--first-frame-variant must be A, B or C.");
   const maxPrice = parseMaxPrice(o["max-price"]);
   return {
     model: model.key,
-    prompt: o.prompt,
+    prompt: prompt!,
+    ...(composed ? { composed } : {}),
     ...(o.guide ? { guideVideo: await loadMedia(o.guide, "video") } : {}),
     ...(o["first-frame"] ? { firstFrame: await loadMedia(o["first-frame"], "image") } : {}),
     ...(variant ? { firstFrameVariant: variant as FirstFrameVariant } : {}),
     ...(o.character ? { character: await loadMedia(o.character, "image") } : {}),
     ...(o.audio ? { audio: await loadMedia(o.audio, "audio") } : {}),
-    ...(o.duration !== undefined ? { duration: parseDuration(o.duration) } : {}),
+    ...(o.duration !== undefined ? { duration: parseDuration(o.duration) } : cDuration !== undefined ? { duration: cDuration } : {}),
     ...(o.resolution ? { resolution: o.resolution } : {}),
-    ...(o.camera ? { camera: o.camera } : {}),
+    ...(o.camera ? { camera: o.camera } : cCamera ? { camera: cCamera } : {}),
     ...(model.key === "auto"
       ? { routing: { maxPrice: maxPrice ?? 0, ...(o.requirements ? { requirements: o.requirements } : {}) } }
       : {}),
@@ -171,7 +188,7 @@ export async function runLaneCli(argv: string[], deps: CliDeps = {}): Promise<vo
 
   const key = deps.key ?? (process.env.RUNWARE_API_KEY?.trim() || undefined);
   const provider = runwareProvider({ getKey: () => key });
-  let req: LaneRequest;
+  let req: LaneRequest & { composed?: ComposedLane };
   let plan: LanePlan;
   try {
     req = await buildRequest(o);
@@ -179,6 +196,7 @@ export async function runLaneCli(argv: string[], deps: CliDeps = {}): Promise<vo
   } catch (e) {
     fail(`Refused: ${(e as Error).message}`);
   }
+  if (req.composed) out(describeComposed(req.composed.composed) + "\n" + (o.prompt ? "  (--prompt given: it replaces the composed prompt)\n" : "") + "\n");
   out(describePlan(plan) + "\n");
   if (o["dry-run"]) return void out("\nDry run: nothing was sent.\n");
 
@@ -233,7 +251,11 @@ export async function runLaneCli(argv: string[], deps: CliDeps = {}): Promise<vo
   await writeFile(join(outDir, "output.mp4"), new Uint8Array(await res.arrayBuffer()));
 
   const lane = laneFromRun("lane-1", plan, req, result, "output.mp4");
-  const record: ArenaRecord = { schemaVersion: 1, id: `run-${taskUUID.slice(0, 8)}`, title: `${plan.modelName}: ${req.prompt.slice(0, 80)}`, createdAt: date, lanes: [lane] };
+  if (req.composed && !o.prompt) lane.composed = req.composed.marker;
+  const record: ArenaRecord = {
+    schemaVersion: 1, id: `run-${taskUUID.slice(0, 8)}`, title: `${plan.modelName}: ${req.prompt.slice(0, 80)}`, createdAt: date, lanes: [lane],
+    ...(req.composed ? { shot: req.composed.shot } : {}),
+  };
   await writeFile(join(outDir, "record.json"), JSON.stringify(record, null, 2));
   await appendCost(costsFile, {
     date: date.slice(0, 10), model: plan.modelId, modelRan: result.modelRan, taskUUID, duration: String(req.duration ?? "default"),

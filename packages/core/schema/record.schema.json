@@ -5,88 +5,398 @@
   "description": "One comparison: the guide, the lanes run from it (each saying exactly what its model was given, what ran, what it cost and how long it took), observations and a preferred lane.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "id", "title", "lanes"],
+  "required": [
+    "schemaVersion",
+    "id",
+    "title",
+    "lanes"
+  ],
   "properties": {
-    "schemaVersion": { "const": 1 },
-    "id": { "$ref": "#/$defs/slug" },
-    "title": { "type": "string", "minLength": 1, "maxLength": 200 },
-    "createdAt": { "type": "string", "format": "date-time" },
-    "guide": { "$ref": "urn:model-arena:guide-bundle:1" },
+    "schemaVersion": {
+      "const": 1
+    },
+    "id": {
+      "$ref": "#/$defs/slug"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "guide": {
+      "$ref": "urn:model-arena:guide-bundle:1"
+    },
     "lanes": {
       "type": "array",
       "minItems": 1,
       "maxItems": 12,
-      "items": { "$ref": "#/$defs/lane" }
+      "items": {
+        "$ref": "#/$defs/lane"
+      }
     },
     "observations": {
       "type": "array",
       "maxItems": 50,
-      "items": { "type": "string", "maxLength": 2000 }
+      "items": {
+        "type": "string",
+        "maxLength": 2000
+      }
     },
-    "preferredLane": { "$ref": "#/$defs/slug" }
+    "preferredLane": {
+      "$ref": "#/$defs/slug"
+    },
+    "shot": {
+      "$ref": "#/$defs/shot"
+    }
   },
   "$defs": {
-    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,63}$" },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+    },
     "inputSent": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["role", "src"],
+      "required": [
+        "role",
+        "src"
+      ],
       "properties": {
         "role": {
-          "enum": ["referenceVideo", "referenceImage", "referenceAudio", "frameImage", "audio", "video"]
+          "enum": [
+            "referenceVideo",
+            "referenceImage",
+            "referenceAudio",
+            "frameImage",
+            "audio",
+            "video"
+          ]
         },
-        "src": { "type": "string", "minLength": 1, "maxLength": 2048 },
-        "frame": { "type": ["string", "integer"] },
-        "label": { "type": "string", "maxLength": 200 }
+        "src": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "frame": {
+          "type": [
+            "string",
+            "integer"
+          ]
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 200
+        }
       }
     },
     "lane": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "provider", "model", "prompt", "inputsSent", "firstFrameVariant", "output", "costUsd", "generationSeconds", "modelRan"],
+      "required": [
+        "id",
+        "provider",
+        "model",
+        "prompt",
+        "inputsSent",
+        "firstFrameVariant",
+        "output",
+        "costUsd",
+        "generationSeconds",
+        "modelRan"
+      ],
       "properties": {
-        "id": { "$ref": "#/$defs/slug" },
-        "label": { "type": "string", "maxLength": 120 },
-        "provider": { "type": "string", "pattern": "^[a-z0-9-]{1,40}$" },
-        "model": { "type": "string", "minLength": 1, "maxLength": 120, "description": "The model asked for: an AIR id, or auto for the router." },
-        "modelName": { "type": "string", "maxLength": 120 },
-        "modelRan": { "type": ["string", "null"], "maxLength": 120, "description": "The model that actually ran; null when the provider did not say." },
-        "prompt": { "type": "string", "maxLength": 50000 },
-        "inputsSent": { "type": "array", "maxItems": 40, "items": { "$ref": "#/$defs/inputSent" } },
+        "id": {
+          "$ref": "#/$defs/slug"
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "provider": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]{1,40}$"
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "description": "The model asked for: an AIR id, or auto for the router."
+        },
+        "modelName": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "modelRan": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 120,
+          "description": "The model that actually ran; null when the provider did not say."
+        },
+        "prompt": {
+          "type": "string",
+          "maxLength": 50000
+        },
+        "inputsSent": {
+          "type": "array",
+          "maxItems": 40,
+          "items": {
+            "$ref": "#/$defs/inputSent"
+          }
+        },
         "firstFrameVariant": {
-          "enum": ["A", "B", "C"],
+          "enum": [
+            "A",
+            "B",
+            "C"
+          ],
           "description": "A raw frame 0 of the guide, B a restyled still, C no first frame."
         },
         "output": {
           "oneOf": [
-            { "type": "null" },
+            {
+              "type": "null"
+            },
             {
               "type": "object",
               "additionalProperties": false,
-              "required": ["src"],
+              "required": [
+                "src"
+              ],
               "properties": {
-                "src": { "type": "string", "minLength": 1, "maxLength": 2048 },
-                "contentType": { "type": "string", "maxLength": 100 },
-                "remoteUrl": { "type": "string", "maxLength": 2048 }
+                "src": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2048
+                },
+                "contentType": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "remoteUrl": {
+                  "type": "string",
+                  "maxLength": 2048
+                }
               }
             }
           ]
         },
-        "costUsd": { "type": ["number", "null"], "minimum": 0 },
-        "generationSeconds": { "type": ["number", "null"], "minimum": 0, "description": "Wall-clock seconds from submission to result." },
-        "durationSeconds": { "type": ["number", "string"], "description": "The clip length asked for, or auto." },
-        "taskUUID": { "type": "string", "format": "uuid" },
+        "costUsd": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "generationSeconds": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Wall-clock seconds from submission to result."
+        },
+        "durationSeconds": {
+          "type": [
+            "number",
+            "string"
+          ],
+          "description": "The clip length asked for, or auto."
+        },
+        "taskUUID": {
+          "type": "string",
+          "format": "uuid"
+        },
         "routing": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "maxPrice": { "type": "number", "minimum": 0 },
-            "requirements": { "type": "string", "maxLength": 3000 }
+            "maxPrice": {
+              "type": "number",
+              "minimum": 0
+            },
+            "requirements": {
+              "type": "string",
+              "maxLength": 3000
+            }
           }
         },
-        "settings": { "type": "object", "description": "Every non-media field of the task as sent." },
-        "status": { "enum": ["ready", "pending", "error", "placeholder"] },
-        "note": { "type": "string", "maxLength": 2000 }
+        "settings": {
+          "type": "object",
+          "description": "Every non-media field of the task as sent."
+        },
+        "status": {
+          "enum": [
+            "ready",
+            "pending",
+            "error",
+            "placeholder"
+          ]
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "composed": {
+          "description": "Set when the prompt came from the composer: the record's shot, written for this model.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "model"
+          ],
+          "properties": {
+            "model": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "notes": {
+              "type": "array",
+              "maxItems": 40,
+              "items": {
+                "type": "string",
+                "maxLength": 1000
+              }
+            },
+            "dropped": {
+              "type": "array",
+              "maxItems": 40,
+              "items": {
+                "type": "string",
+                "maxLength": 1000
+              }
+            }
+          }
+        }
+      }
+    },
+    "shot": {
+      "description": "The one neutral shot description behind every composed lane prompt (packages/core/src/compose.ts).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subject",
+        "action",
+        "camera",
+        "references",
+        "duration"
+      ],
+      "properties": {
+        "subject": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "action": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "camera": {
+          "enum": [
+            "static",
+            "push-in",
+            "pull-out",
+            "track-left",
+            "track-right",
+            "crane-up",
+            "crane-down",
+            "orbit",
+            "handheld",
+            "rack-focus"
+          ]
+        },
+        "references": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "kind",
+              "role"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,40}$"
+              },
+              "kind": {
+                "enum": [
+                  "image",
+                  "video",
+                  "audio"
+                ]
+              },
+              "role": {
+                "enum": [
+                  "first-frame",
+                  "last-frame",
+                  "keyframe",
+                  "character",
+                  "product",
+                  "garment",
+                  "style",
+                  "setting",
+                  "motion",
+                  "source",
+                  "soundtrack"
+                ]
+              },
+              "keep": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "replaces": {
+                "type": "string",
+                "maxLength": 200
+              }
+            }
+          }
+        },
+        "audio": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "duration": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 60
+        },
+        "focus": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "beats": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "start",
+              "end",
+              "text"
+            ],
+            "properties": {
+              "start": {
+                "type": "number",
+                "minimum": 0
+              },
+              "end": {
+                "type": "number"
+              },
+              "text": {
+                "type": "string",
+                "maxLength": 300
+              }
+            }
+          }
+        }
       }
     }
   }

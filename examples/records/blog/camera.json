@@ -64,6 +64,9 @@
         "duration": 8
       },
       "status": "placeholder",
+      "composed": {
+        "model": "kling-4"
+      },
       "note": "Placeholder clip; nothing has run."
     },
     {
@@ -95,6 +98,9 @@
         "duration": 8
       },
       "status": "placeholder",
+      "composed": {
+        "model": "seedance-2.5"
+      },
       "note": "Placeholder clip; nothing has run."
     },
     {
@@ -126,6 +132,9 @@
         "duration": 8
       },
       "status": "placeholder",
+      "composed": {
+        "model": "h3"
+      },
       "note": "Placeholder clip; nothing has run."
     },
     {
@@ -154,6 +163,12 @@
         }
       },
       "status": "placeholder",
+      "composed": {
+        "model": "ltx-2.5",
+        "dropped": [
+          "product: A reference image is accepted only beside audio."
+        ]
+      },
       "note": "Placeholder clip; nothing has run. Not sent: product (A reference image is accepted only beside audio.)"
     },
     {
@@ -179,6 +194,12 @@
         "duration": 8
       },
       "status": "placeholder",
+      "composed": {
+        "model": "flux-3-video",
+        "dropped": [
+          "product: FLUX 3 Video takes no reference images."
+        ]
+      },
       "note": "Placeholder clip; nothing has run. Not sent: product (FLUX 3 Video takes no reference images.)"
     },
     {
@@ -210,10 +231,28 @@
         "duration": 8
       },
       "status": "placeholder",
+      "composed": {
+        "model": "kling-4-flash"
+      },
       "note": "Placeholder clip; nothing has run."
     }
   ],
   "observations": [
     "Placeholder clips: no model has run. Prompts, inputs and camera parameters are the composer's real output."
-  ]
+  ],
+  "shot": {
+    "subject": "A matte white ceramic speaker on a concrete plinth in a dim studio",
+    "action": "stands still while a soft key light sweeps across it",
+    "focus": "the speaker",
+    "camera": "push-in",
+    "duration": 8,
+    "references": [
+      {
+        "id": "product",
+        "kind": "image",
+        "role": "product"
+      }
+    ],
+    "audio": "a low room tone and a soft mechanical hum"
+  }
 }

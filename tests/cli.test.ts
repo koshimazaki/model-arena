@@ -92,3 +92,29 @@ describe("run-lane end to end against a fake API", () => {
     expect(printed + row + JSON.stringify(record)).not.toContain(KEY);
   });
 });
+
+describe("run-lane --shot", () => {
+  const SHOT = join(ROOT, "examples/shots/motion-swap.json");
+  const GUIDE = join(ROOT, "tests/fixtures/tiny-64x36-24fps.mp4");
+  it("writes the prompt from the composer and says what it did", () => {
+    // URLs: the tiny local fixtures are below Seedance's minimum size; a dry run sends nothing.
+    const { code, out } = lane(["--model", "seedance-2.5", "--shot", SHOT, "--guide", "https://example.com/guide.mp4", "--character", "https://example.com/character.png", "--dry-run"]);
+    expect(code).toBe(0);
+    expect(out).toContain("Composer:  prompt written for Seedance 2.5");
+    expect(out).toMatch(/@Video1/);
+    expect(out).toMatch(/@Image1/);
+    expect(out).toContain('"duration": 5');
+  });
+  it("puts the camera move into LTX's parameter", () => {
+    const shot = join(ROOT, "tests/fixtures/shot-still-push-in.json");
+    const { code, out } = lane(["--model", "ltx-2.5", "--shot", shot, "--first-frame", PNG, "--dry-run"]);
+    expect(code).toBe(0);
+    expect(out).toContain('"cameraMovement": "dolly_in"');
+    expect(out).toContain('"duration": 6');
+  });
+  it("refuses when the shot uses a reference the flags do not send", () => {
+    const { code, out } = lane(["--model", "kling-4", "--shot", SHOT, "--guide", GUIDE, "--dry-run"]);
+    expect(code).toBe(2);
+    expect(out).toMatch(/--character was not given/);
+  });
+});

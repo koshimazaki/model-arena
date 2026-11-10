@@ -75,6 +75,15 @@
         "duration": 8
       },
       "status": "placeholder",
+      "composed": {
+        "model": "kling-4",
+        "notes": [
+          "The guide video carries the camera path; the prompt references it instead of describing the move."
+        ],
+        "dropped": [
+          "beat: Kling VIDEO 4.0 takes no reference audio."
+        ]
+      },
       "note": "Placeholder clip; nothing has run. Not sent: beat (Kling VIDEO 4.0 takes no reference audio.) The guide video carries the camera path; the prompt references it instead of describing the move."
     },
     {
@@ -121,6 +130,12 @@
         "duration": 8
       },
       "status": "placeholder",
+      "composed": {
+        "model": "seedance-2.5",
+        "notes": [
+          "still: sent as a reference image because Seedance 2.5 does not take a frame beside references (frames-alone)."
+        ]
+      },
       "note": "Placeholder clip; nothing has run. still: sent as a reference image because Seedance 2.5 does not take a frame beside references (frames-alone)."
     },
     {
@@ -167,6 +182,12 @@
         "duration": 8
       },
       "status": "placeholder",
+      "composed": {
+        "model": "h3",
+        "notes": [
+          "still: sent as a reference image because MiniMax H3 does not take a frame beside references (frames-alone)."
+        ]
+      },
       "note": "Placeholder clip; nothing has run. still: sent as a reference image because MiniMax H3 does not take a frame beside references (frames-alone)."
     },
     {
@@ -202,6 +223,14 @@
         }
       },
       "status": "placeholder",
+      "composed": {
+        "model": "ltx-2.5",
+        "dropped": [
+          "guide: LTX-2.5 Pro takes no reference video.",
+          "beat: With audio: no frameImages, no duration, no cameraMovement; exactly one reference image; size 1920×1080 or 1080×1920. The camera parameter was kept.",
+          "character: A reference image is accepted only beside audio."
+        ]
+      },
       "note": "Placeholder clip; nothing has run. Not sent: guide (LTX-2.5 Pro takes no reference video.) Not sent: beat (With audio: no frameImages, no duration, no cameraMovement; exactly one reference image; size 1920×1080 or 1080×1920. The camera parameter was kept.) Not sent: character (A reference image is accepted only beside audio.)"
     },
     {
@@ -234,10 +263,49 @@
         "duration": 8
       },
       "status": "placeholder",
+      "composed": {
+        "model": "flux-3-video",
+        "dropped": [
+          "character: FLUX 3 Video takes no reference images.",
+          "guide: FLUX 3 Video takes no reference video.",
+          "beat: FLUX 3 Video takes no reference audio."
+        ]
+      },
       "note": "Placeholder clip; nothing has run. Not sent: character (FLUX 3 Video takes no reference images.) Not sent: guide (FLUX 3 Video takes no reference video.) Not sent: beat (FLUX 3 Video takes no reference audio.)"
     }
   ],
   "observations": [
     "Placeholder clips: no model has run. Prompts, inputs and camera parameters are the composer's real output."
-  ]
+  ],
+  "shot": {
+    "subject": "A dancer in a yellow raincoat in a grey studio",
+    "action": "dances on the beat, a step on every kick",
+    "focus": "the dancer",
+    "camera": "push-in",
+    "duration": 8,
+    "references": [
+      {
+        "id": "still",
+        "kind": "image",
+        "role": "first-frame"
+      },
+      {
+        "id": "character",
+        "kind": "image",
+        "role": "character",
+        "replaces": "the mannequin"
+      },
+      {
+        "id": "guide",
+        "kind": "video",
+        "role": "motion"
+      },
+      {
+        "id": "beat",
+        "kind": "audio",
+        "role": "soundtrack"
+      }
+    ],
+    "audio": "a dry four-on-the-floor kick at 120 bpm"
+  }
 }

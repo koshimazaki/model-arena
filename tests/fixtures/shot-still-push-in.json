@@ -1,0 +1,7 @@
+{
+  "subject": "A ceramic cup on a wooden table",
+  "action": "steams gently in morning light",
+  "camera": "push-in",
+  "duration": 6,
+  "references": [{ "id": "still", "kind": "image", "role": "first-frame" }]
+}
