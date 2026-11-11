@@ -20,6 +20,12 @@ export interface MediaRef {
   label?: string;
 }
 
+/** One onset or peak: seconds from the clip's frame 0, strength 0-1. */
+export interface Onset {
+  seconds: number;
+  strength: number;
+}
+
 export interface GuideBundle {
   schemaVersion: 1;
   id?: string;
@@ -31,6 +37,12 @@ export interface GuideBundle {
   passes?: Record<string, MediaRef>;
   keyframes?: { time: number; src: string }[];
   beats?: number[];
+  /** Drum-band onsets from a Motion Studio 0.3.0 beats.json: low = kick, mid = snare, high = hat. */
+  onsets?: { low: Onset[]; mid: Onset[]; high: Onset[] };
+  /** Amplitude peaks from a Motion Studio 0.3.0 beats.json. */
+  peaks?: Onset[];
+  /** The camera track (a Motion Studio camera.json, 0.2.0). */
+  camera?: MediaRef;
   recipe?: Record<string, unknown>;
   meta?: {
     author?: string;
@@ -151,13 +163,34 @@ export function parseGuide(v: unknown, path = "guide"): GuideBundle {
   if (!isObj(v)) throw new RecordError(path, "must be an object");
   if (v.schemaVersion !== 1) throw new RecordError(`${path}.schemaVersion`, "must be 1");
   media(v.video, `${path}.video`);
-  for (const k of ["audio", "firstFrame", "firstFrameStyled"] as const)
+  for (const k of ["audio", "firstFrame", "firstFrameStyled", "camera"] as const)
     if (v[k] !== undefined) media(v[k], `${path}.${k}`);
   if (v.beats !== undefined) {
     if (!Array.isArray(v.beats) || v.beats.some((b) => typeof b !== "number" || b < 0))
       throw new RecordError(`${path}.beats`, "must be non-negative seconds");
   }
+  if (v.onsets !== undefined) onsetBands(v.onsets, `${path}.onsets`);
+  if (v.peaks !== undefined) onsetList(v.peaks, `${path}.peaks`);
   return v as unknown as GuideBundle;
+}
+
+/** Checks a list of `{ seconds, strength }`; shared with the bundle reader. */
+export function onsetList(v: unknown, path: string): Onset[] {
+  if (!Array.isArray(v) || v.length > 20000) throw new RecordError(path, "must be an array");
+  v.forEach((o, i) => {
+    if (!isObj(o) || typeof o.seconds !== "number" || !(o.seconds >= 0))
+      throw new RecordError(`${path}[${i}].seconds`, "must be non-negative seconds");
+    if (typeof o.strength !== "number" || !(o.strength >= 0 && o.strength <= 1))
+      throw new RecordError(`${path}[${i}].strength`, "must be 0-1");
+  });
+  return v as Onset[];
+}
+
+/** Checks `{ low, mid, high }` onset lists. */
+export function onsetBands(v: unknown, path: string): GuideBundle["onsets"] {
+  if (!isObj(v)) throw new RecordError(path, "must be an object");
+  for (const k of ["low", "mid", "high"] as const) onsetList(v[k], `${path}.${k}`);
+  return v as GuideBundle["onsets"];
 }
 
 function lane(v: unknown, path: string): Lane {

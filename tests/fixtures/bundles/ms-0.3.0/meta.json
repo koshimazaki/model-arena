@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "0.3.0",
+  "width": 1280,
+  "height": 720,
+  "fps": 24,
+  "frames": 49,
+  "durationSeconds": 2.0417,
+  "view": "rig",
+  "character": { "kind": "stick", "name": "Stick figure" },
+  "generator": { "name": "motion-studio", "version": "0.1.0", "motion": "audio-reactive" },
+  "audioInVideo": true,
+  "assets": [
+    { "role": "video", "name": "Rendered guide", "licence": "MIT (motion-studio)", "file": "guide.mp4" },
+    { "role": "audio", "name": "Test signal", "licence": "MIT (motion-studio)", "file": "audio.wav" },
+    { "role": "character", "name": "Stick figure", "licence": "MIT (motion-studio)" },
+    { "role": "camera", "name": "Audio-reactive camera track", "licence": "MIT (motion-studio)", "file": "camera.json" }
+  ]
+}

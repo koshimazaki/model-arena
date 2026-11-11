@@ -117,6 +117,7 @@ Rules for every package:
   - lanes, each with model, prompt, inputs sent, first-frame variant (A raw frame 0, B restyled still, C none), output URL, cost, seconds and the model that ran;
   - observations, preferred lane.
 - **Guide-bundle JSON Schema:** video, audio, firstFrame, firstFrameStyled, beats, recipe, meta with asset licences. This is the contract `motion-studio` exports against.
+- **Synced with Motion Studio 0.3.0 (11 November):** the schema now holds two forms, the inline guide a record embeds (schemaVersion 1) and the Motion Studio `bundle.json` manifest with its `beats`, `meta` and `camera` defs (optional camera track, onsets, peaks, `stick` and `blob`); `packages/core/src/bundle.ts` reads a bundle into the inline form without dropping them.
 - **Acceptance:** `npm test` green. The schema validates the mannequin-and-two-fruits guide packed as a bundle (from the owner's Downloads: `mannequin-two-fruits-guide-1024x576-24fps.mp4`, the first-frame PNG, the depth MP4).
 
 ### MA-1, Runware API provider (Sun 8 Nov, one day)

@@ -28,7 +28,7 @@
       "format": "date-time"
     },
     "guide": {
-      "$ref": "urn:model-arena:guide-bundle:1"
+      "$ref": "urn:model-arena:guide-bundle:1#/$defs/inline"
     },
     "lanes": {
       "type": "array",
