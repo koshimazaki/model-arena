@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:model-arena:guide-bundle:1",
   "title": "Model Arena guide bundle",
-  "description": "The guide a comparison starts from: a clip, its audio, its first frame (raw and restyled), beats, the recipe that made it and the licences of its assets. Two forms: the inline guide a record embeds (schemaVersion 1) and the Motion Studio bundle manifest (schemaVersion 0.x.y, synced at 0.3.0: optional camera track from 0.2.0; optional onsets and peaks in beats.json and the stick and blob characters from 0.3.0). motion-studio keeps a pinned copy of the manifest form and its $defs.",
+  "description": "The guide a comparison starts from: a clip, its audio, its first frame (raw and restyled), beats, the recipe that made it and the licences of its assets. Two forms: the inline guide a record embeds (schemaVersion 1) and the Motion Studio bundle manifest (schemaVersion 0.x.y, synced at 0.4.0: optional camera track from 0.2.0; optional onsets and peaks in beats.json and the stick and blob characters from 0.3.0; the full camera mode list from 0.4.0). motion-studio keeps a pinned copy of the manifest form and its $defs.",
   "oneOf": [{ "$ref": "#/$defs/inline" }, { "$ref": "#/$defs/manifest" }],
   "$defs": {
     "inline": {
@@ -84,7 +84,7 @@
       }
     },
     "manifest": {
-      "description": "Form 2, schemaVersion \"x.y.z\": a Motion Studio bundle.json manifest naming each file in the bundle directory. Synced with motion-studio 0.3.0; beats.json, meta.json and camera.json validate against $defs/beats, $defs/meta and $defs/camera.",
+      "description": "Form 2, schemaVersion \"x.y.z\": a Motion Studio bundle.json manifest naming each file in the bundle directory. Synced with motion-studio 0.4.0; beats.json, meta.json and camera.json validate against $defs/beats, $defs/meta and $defs/camera.",
       "type": "object",
       "required": ["schemaVersion", "video", "firstFrame", "beats", "recipe", "meta"],
       "additionalProperties": false,
@@ -252,7 +252,7 @@
               "modes": {
                 "type": "array",
                 "items": {
-                  "enum": ["static", "orbit", "pushIn", "pullOut", "rise", "lead", "chase", "path"]
+                  "enum": ["static", "orbit", "pushIn", "pullOut", "rise", "lead", "chase", "side", "threeQuarter", "top", "fixed", "path", "truck"]
                 }
               }
             }

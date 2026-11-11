@@ -1,6 +1,6 @@
 /**
  * Motion Studio bundle reader: the manifest form of the guide-bundle schema
- * (`bundle.json` naming each file, schemaVersion "0.x.y", synced at 0.3.0) and
+ * (`bundle.json` naming each file, schemaVersion "0.x.y", synced at 0.4.0) and
  * the conversion to the inline guide a record embeds. Dependency-free, like
  * `parseRecord`; the JSON Schema `$defs/manifest`, `beats`, `meta` and `camera`
  * are the published contract.
@@ -9,7 +9,7 @@
 import { onsetBands, onsetList, RecordError, type GuideBundle, type Onset } from "./record.ts";
 
 /** The Motion Studio schema version this reader was synced with. */
-export const BUNDLE_SCHEMA_VERSION = "0.3.0";
+export const BUNDLE_SCHEMA_VERSION = "0.4.0";
 
 export interface BundleManifest {
   schemaVersion: string;

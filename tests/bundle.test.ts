@@ -38,6 +38,14 @@ describe("guide-bundle schema, Motion Studio 0.3.0 manifest form", () => {
     valid("camera", fixture("0.3.0", "camera.json"));
   });
 
+  it("accepts every Motion Studio 0.4.0 camera mode", () => {
+    const camera = structuredClone(fixture("0.3.0", "camera.json")) as { modes: { fromBeat: number; toBeat: number; modes: string[] }[] };
+    camera.modes = [{ fromBeat: 0, toBeat: 4, modes: ["side", "threeQuarter", "top", "fixed", "truck"] }];
+    valid("camera", camera);
+    camera.modes = [{ fromBeat: 0, toBeat: 4, modes: ["crane"] }];
+    expect(schema("camera")(camera)).toBe(false);
+  });
+
   it("still validates a 0.2.0 bundle with no camera and no onsets", () => {
     valid(undefined, fixture("0.2.0", "bundle.json"));
     valid("beats", fixture("0.2.0", "beats.json"));
