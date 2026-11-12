@@ -178,7 +178,7 @@
           "required": ["kind", "name"],
           "additionalProperties": false,
           "properties": {
-            "kind": { "enum": ["mannequin", "block", "stick", "blob", "file", "rigged"] },
+            "kind": { "enum": ["mannequin", "block", "stick", "blob", "glider", "file", "rigged"] },
             "name": { "type": "string" }
           }
         },

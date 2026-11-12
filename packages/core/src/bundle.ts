@@ -9,7 +9,7 @@
 import { onsetBands, onsetList, RecordError, type GuideBundle, type Onset } from "./record.ts";
 
 /** The Motion Studio schema version this reader was synced with. */
-export const BUNDLE_SCHEMA_VERSION = "0.4.0";
+export const BUNDLE_SCHEMA_VERSION = "0.5.0";
 
 export interface BundleManifest {
   schemaVersion: string;
@@ -37,7 +37,7 @@ export interface BundleBeats {
   peaks?: Onset[];
 }
 
-export const CHARACTER_KINDS = ["mannequin", "block", "stick", "blob", "file", "rigged"] as const;
+export const CHARACTER_KINDS = ["mannequin", "block", "stick", "blob", "glider", "file", "rigged"] as const;
 export type CharacterKind = (typeof CHARACTER_KINDS)[number];
 
 export const ASSET_ROLES = [
