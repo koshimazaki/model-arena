@@ -31,6 +31,7 @@ ${IMAGE_MODELS.map((m) => `  ${m.key.padEnd(24)} ${m.name} (${m.air}); up to ${m
 Options:  --reference <file|https>     repeat for several, in order
           --width <px> --height <px>  or --resolution <preset>, as the model's size rule allows
           --transparent  --format PNG|JPG|WEBP (default PNG)
+          --quality <level>            GPT-Image-2.6 only: auto (default), low, medium, high, xhigh, max
           --max-price <usd>  --out <dir> (default runs/)  --dry-run  --yes
           --allow-unpriced             run a token-priced model with no published bound
 
@@ -88,6 +89,7 @@ export async function makeStillCli(argv: string[], deps: StillDeps = {}): Promis
         reference: { type: "string", multiple: true },
         transparent: { type: "boolean", default: false },
         format: { type: "string" },
+        quality: { type: "string" },
         width: { type: "string" },
         height: { type: "string" },
         resolution: { type: "string" },
@@ -118,6 +120,7 @@ export async function makeStillCli(argv: string[], deps: StillDeps = {}): Promis
       ...(o.resolution ? { resolution: o.resolution } : {}),
       ...(o.transparent ? { transparent: true } : {}),
       ...(o.format ? { outputFormat: format(o.format) } : {}),
+      ...(o.quality ? { quality: o.quality } : {}),
     };
     plan = planImage(req);
   } catch (e) {
@@ -136,7 +139,9 @@ export async function makeStillCli(argv: string[], deps: StillDeps = {}): Promis
   const question =
     price.priced === "bound"
       ? `\nSpend up to $${price.usd} on this still? Type yes to continue: `
-      : `\n${plan.modelName} has no published upper bound (priced per token: ${price.rates}). Runware's examples: ${price.examples}. Run it anyway? Type yes to continue: `;
+      : price.priced === "estimate"
+        ? `\nSpend about $${price.usd} on this still (an estimate from approximate token counts, not a strict bound)? Type yes to continue: `
+        : `\n${plan.modelName} has no published upper bound (priced per token: ${price.rates}). Runware's examples: ${price.examples}. Run it anyway? Type yes to continue: `;
   if (price.priced === "unpriced") out(`\nNo published bound: ${price.basis}\n`);
   if (!o.yes && !(await confirm(question)))
     fail("Not confirmed; nothing was sent. (Pass --yes to skip this prompt.)", 1);

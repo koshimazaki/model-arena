@@ -19,6 +19,8 @@ export interface ImageModelInfo {
     /** Reference or edit images: how many, and each one's limits. */
     referenceImages: ReferenceRule;
     transparent: boolean;
+    /** `settings.quality` values and default, where the schema has them; null otherwise. */
+    quality: { values: string[]; default: string } | null;
     /** Output formats offered for a still (a subset of the schema's list). */
     outputFormats: string[];
     /** Schema features this planner does not send. */
@@ -51,6 +53,7 @@ function info(m: ImageModel): ImageModelInfo {
       text: true,
       referenceImages: { ...m.references },
       transparent: m.transparency,
+      quality: m.quality ? { values: [...m.quality.values], default: m.quality.default } : null,
       outputFormats: m.outputFormats.filter((f) => (STILL_FORMATS as readonly string[]).includes(f)),
       notOffered: [...(m.notOffered ?? [])],
     },

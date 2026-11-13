@@ -7,7 +7,7 @@
  * `additionalProperties: false`. Prices come from each schema's `x-pricing`.
  */
 import type { CostEstimate } from "../types.ts";
-import { tokenEstimate, type TokenPricing } from "./image-tokens.ts";
+import { tokenEstimate, type ApproxTokens, type TokenPricing } from "./image-tokens.ts";
 import { PlanError } from "./task.ts";
 
 const DOCS = "https://runware.ai/docs/models";
@@ -88,6 +88,8 @@ export interface ImageModel {
   outputFormats: string[];
   /** `settings.background: "transparent"` exists (and then needs PNG or WEBP). */
   transparency: boolean;
+  /** `settings.quality`, where the schema has it: the values and the schema default. */
+  quality?: { values: string[]; default: string };
   pricing: ImagePricing;
   estimate(q: PriceQuery): CostEstimate;
   /** Token-priced models: the published rates and examples, for the bound and the unpriced path. */
@@ -236,6 +238,8 @@ const gptImage = (variant: "Flare" | "Sunburst", examples: TokenPricing["example
     size: { kind: "grid", min: 16, max: 3840, multipleOf: 16, default: [1280, 720], area: { min: 655360, max: 8294400 }, ratio: { min: 1 / 3, max: 3 } },
     outputFormats: ["JPG", "PNG", "WEBP", "SVG", "GIF"],
     transparency: true,
+    // settings.quality enum and default from the schema; the quality guide: quality and size set the output tokens.
+    quality: { values: ["auto", "max", "xhigh", "high", "medium", "low"], default: "auto" },
     pricing: { kind: "token", summary: `Per token: ${GPT_RATES_TEXT}`, source: `${DOCS}/${slug}/schema.json x-pricing`, read: NEW_READ },
     tokens,
     estimate: (q) => tokenEstimate(tokens, q),
@@ -253,18 +257,40 @@ export const GPT_IMAGE_26_SUNBURST = gptImage("Sunburst", [
   { mode: "inpaint", usd: 0.0771 }, { mode: "transparent-background", usd: 0.0788 }, { mode: "reference-to-image", usd: 0.192 },
 ]);
 
+/**
+ * The model pages' "Pricing" paragraph (both variants, 13 Nov 2026): up to about 4 MP about 4,100 image tokens
+ * (1K and 2K cost about the same), 4K about 16,400, about 2,050 per reference. The 4 MP edge is set at 4,200,000 px
+ * so the guide's 2K return of 1536×2720 falls in it; the 4K edge is the guide's 4K return, 5472×3072. Custom
+ * sizes between the two take the 4K figure (the dearer reading); above 4K nothing is published.
+ */
+const H3_APPROX = (slug: string): ApproxTokens => ({
+  output: [
+    { upToPixels: 4_200_000, tokens: 4100, label: "up to about 4 MP", presets: ["1K", "2K"] },
+    { upToPixels: 5472 * 3072, tokens: 16400, label: "4K", presets: ["4K"] },
+  ],
+  perReference: 2050,
+  margin: 0.25,
+  source: `${DOCS}/${slug} (Pricing), read ${NEW_READ}`,
+});
+
 const h3Image = (highspeed: boolean): ImageModel => {
   const slug = highspeed ? "minimax-h3-image-highspeed" : "minimax-h3-image";
+  // examples.json (13 Nov 2026): text-to-image at 1280×1024 (Highspeed 1536×1024), reference-to-image at 2K with two
+  // references; all are outputs of up to about 4 MP, so about 4,100 output tokens each.
+  const t2i = (usd: number) => ({ mode: "text-to-image", usd, references: 0, outputTokens: 4100 });
+  const r2i = (usd: number) => ({ mode: "reference-to-image", usd, references: 2, outputTokens: 4100 });
   const tokens: TokenPricing = highspeed
     ? {
         rates: { textInput: 2.3e-6, imageInput: 3e-6, imageOutput: 7.6e-6 },
         ratesText: "text input $2.30, image input $3.00, image output $7.60 per 1M tokens",
-        examples: [{ mode: "text-to-image", usd: 0.0418 }, { mode: "text-to-image", usd: 0.0422 }, { mode: "reference-to-image", usd: 0.0725 }, { mode: "reference-to-image", usd: 0.0743 }],
+        examples: [t2i(0.0418), t2i(0.0422), r2i(0.0725), r2i(0.0743)],
+        approx: H3_APPROX(slug),
       }
     : {
         rates: { textInput: 2.3e-6, imageInput: 1.5e-6, imageOutput: 3.8e-6 },
         ratesText: "text input $2.30, image input $1.50, image output $3.80 per 1M tokens",
-        examples: [{ mode: "text-to-image", usd: 0.0176 }, { mode: "text-to-image", usd: 0.0189 }, { mode: "reference-to-image", usd: 0.0432 }, { mode: "reference-to-image", usd: 0.0432 }],
+        examples: [t2i(0.0176), t2i(0.0189), r2i(0.0432), r2i(0.0432)],
+        approx: H3_APPROX(slug),
       };
   return {
     key: highspeed ? "h3-image-highspeed" : "h3-image",
@@ -281,7 +307,12 @@ const h3Image = (highspeed: boolean): ImageModel => {
     size: { kind: "grid", min: 468, max: 7745, multipleOf: 1, default: [1280, 720], area: { min: 655360, max: 20000000 }, ratio: { min: 1 / 3, max: 3 }, resolution: { values: ["1K", "2K", "4K"] } },
     outputFormats: ["JPG", "PNG", "WEBP"],
     transparency: false,
-    pricing: { kind: "token", summary: `Per token: ${tokens.ratesText}`, source: `${DOCS}/${slug}/schema.json x-pricing`, read: NEW_READ },
+    pricing: {
+      kind: "token",
+      summary: `Per token: ${tokens.ratesText}; about 4,100 image tokens up to about 4 MP, about 16,400 at 4K, about 2,050 per reference (estimate with a 25% margin)`,
+      source: `${DOCS}/${slug}/schema.json x-pricing and the model page's Pricing paragraph`,
+      read: NEW_READ,
+    },
     tokens,
     estimate: (q) => tokenEstimate(tokens, q),
     notOffered: ["settings.promptOptimizer (must stay on without width/height or with references)"],

@@ -157,15 +157,25 @@ describe("make-still CLI against a fake API", () => {
     }) as unknown as typeof fetch;
     let printed = "";
     const deps = { fetch: fake, key: "test-key-not-real-0123456789", costsFile: costs, write: (t: string) => (printed += t), poll: { sleep: async () => {}, initialDelayMs: 0 } };
-    const args = ["--model", "h3-image", "--prompt", "A courier.", "--yes", "--out", dir];
+    const args = ["--model", "gpt-image-2.6-sunburst", "--prompt", "A courier.", "--quality", "low", "--yes", "--out", dir];
     await expect(makeStillCli([...args, "--max-price", "1"], deps)).rejects.toThrow(/--allow-unpriced/);
-    await expect(makeStillCli([...args, "--max-price", "0.04", "--allow-unpriced"], deps)).rejects.toThrow(/highest published example, \$0\.0432/);
+    await expect(makeStillCli([...args, "--max-price", "0.1", "--allow-unpriced"], deps)).rejects.toThrow(/highest published example, \$0\.192/);
     expect(sent).toHaveLength(0);
-    await makeStillCli([...args, "--max-price", "0.05", "--allow-unpriced"], deps);
+    await makeStillCli([...args, "--max-price", "0.2", "--allow-unpriced"], deps);
     expect(printed).toMatch(/No published bound/);
+    expect(printed).toMatch(/"quality": "low"/);
     expect(sent).toEqual(["imageInference", "getResponse"]);
     const row = await readFile(costs, "utf8");
-    expect(row).toContain("minimax:h3@image");
+    expect(row).toContain("openai:gpt-image@2.6-sunburst");
     expect(row).toContain("$0.0310");
+
+    // MiniMax H3 Image has an approximate estimate: no flag needed, the cap still applies.
+    sent.length = 0;
+    const h3 = ["--model", "h3-image", "--prompt", "A courier.", "--yes", "--out", dir];
+    await expect(makeStillCli([...h3, "--max-price", "0.01"], deps)).rejects.toThrow(/Estimated \$0\.02\d+ \(about/);
+    expect(sent).toHaveLength(0);
+    await makeStillCli([...h3, "--max-price", "0.05"], deps);
+    expect(sent).toEqual(["imageInference", "getResponse"]);
+    expect(await readFile(costs, "utf8")).toContain("minimax:h3@image");
   });
 });

@@ -52,6 +52,17 @@ describe("every image model agrees with its saved schema", () => {
       valid(m.slug, plan(m.key).task);
       valid(m.slug, plan(m.key, { reference: frame }).task);
     }
+  }, 30_000); // compiles nine schemas; slow on a loaded machine
+
+  it("GPT-Image-2.6 takes settings.quality from its schema; other models refuse it", () => {
+    const low = plan("gpt-image-2.6-flare", { quality: "low", transparent: true });
+    expect(low.task.settings).toEqual({ background: "transparent", quality: "low" });
+    valid("openai-gpt-image-2-6-flare", low.task);
+    valid("openai-gpt-image-2-6-sunburst", plan("gpt-image-2.6-sunburst", { quality: "max" }).task);
+    expect(() => plan("gpt-image-2.6-flare", { quality: "ultra" })).toThrow(/auto, max, xhigh, high, medium, low \(default auto\)/);
+    expect(() => plan("seedream-5.5", { quality: "low" })).toThrow(/no quality setting/);
+    expect(imageModels().find((m) => m.key === "gpt-image-2.6-flare")!.accepts.quality).toEqual({ values: ["auto", "max", "xhigh", "high", "medium", "low"], default: "auto" });
+    expect(imageModels().find((m) => m.key === "h3-image")!.accepts.quality).toBeNull();
   });
 
   it("the schema check has teeth for each new fixture", () => {
@@ -84,14 +95,26 @@ describe("new image models: sizes, inputs and refusals", () => {
     expect(() => plan("gpt-image-2.6-flare", { resolution: "2K" })).toThrow(/no resolution preset/);
   });
 
-  it("token-priced models plan but carry no estimate, with the published rates in the basis", () => {
-    for (const key of ["gpt-image-2.6-flare", "gpt-image-2.6-sunburst", "h3-image", "h3-image-highspeed"]) {
+  it("GPT-Image-2.6 plans but carries no estimate, with the published rates in the basis", () => {
+    for (const key of ["gpt-image-2.6-flare", "gpt-image-2.6-sunburst"]) {
       const p = plan(key);
       expect(p.estimate.usd).toBeNull();
       expect(p.estimate.basis).toMatch(/per token.*per 1M tokens/);
       expect(p.notes.join(" ")).toMatch(/no published upper bound.*allowUnpriced/);
     }
+  });
+
+  it("MiniMax H3 Image: an approximate estimate up to 4K, labelled as such, and none above it", () => {
+    for (const key of ["h3-image", "h3-image-highspeed"]) {
+      const p = plan(key);
+      expect(p.estimate).toMatchObject({ approximate: true, basis: expect.stringMatching(/^about \$[\d.]+: an estimate, not a strict bound.*about 4,100 image tokens.*25% margin/) });
+      expect(p.notes.join(" ")).not.toMatch(/allowUnpriced/);
+    }
     expect(plan("h3-image-highspeed").estimate.basis).toContain("image output $7.60");
+    expect(plan("h3-image", { resolution: "4K" }).estimate.basis).toContain("about 16,400 image tokens");
+    const none = plan("h3-image", { width: 4472, height: 4472 });
+    expect(none.estimate.usd).toBeNull();
+    expect(none.notes.join(" ")).toMatch(/allowUnpriced/);
   });
 
   it("MiniMax H3 Image: a resolution preset or a free size; refuses both, small sides and transparency", () => {

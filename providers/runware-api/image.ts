@@ -34,6 +34,8 @@ export interface ImageRequest {
   transparent?: boolean;
   /** PNG by default. */
   outputFormat?: StillFormat;
+  /** `settings.quality`, where the schema has it (GPT-Image-2.6); left out, the schema default applies. */
+  quality?: string;
 }
 
 export interface ImagePlan {
@@ -145,6 +147,11 @@ export function planImage(req: ImageRequest, taskUUID: string = globalThis.crypt
     if (format === "JPG") throw new PlanError(`${m.name} makes a transparent background only as PNG or WEBP.`);
     task.settings = { background: "transparent" };
   }
+  if (req.quality !== undefined) {
+    if (!m.quality) throw new PlanError(`${m.name} has no quality setting in its schema.`);
+    if (!m.quality.values.includes(req.quality)) throw new PlanError(`${m.name} quality: ${m.quality.values.join(", ")} (default ${m.quality.default}).`);
+    task.settings = { ...(task.settings as object | undefined), quality: req.quality };
+  }
 
   Object.assign(task, { outputType: "URL", outputFormat: format, numberResults: 1, deliveryMethod: "async", includeCost: true });
   const estimate = m.estimate({
@@ -214,7 +221,7 @@ function planList(m: ImageModel, s: List, req: ImageRequest, hasRef: boolean, ta
 }
 
 export type PriceCheck =
-  | { ok: true; usd: number; basis: string; priced: "bound" | "unpriced"; rates?: string; examples?: string }
+  | { ok: true; usd: number; basis: string; priced: "bound" | "estimate" | "unpriced"; rates?: string; examples?: string }
   | { ok: false; code: "no-estimate" | "over-price"; message: string };
 
 /**
@@ -226,7 +233,7 @@ export function checkImagePrice(plan: ImagePlan, maxPrice: number, allowUnpriced
   const e = plan.estimate;
   if (e.usd !== null) {
     if (e.usd > maxPrice) return { ok: false, code: "over-price", message: `Estimated $${e.usd.toFixed(4)} (${e.basis}) is over your cap of $${maxPrice.toFixed(2)}.` };
-    return { ok: true, usd: e.usd, basis: e.basis, priced: "bound" };
+    return { ok: true, usd: e.usd, basis: e.basis, priced: e.approximate ? "estimate" : "bound" };
   }
   const u = plan.unpriced;
   if (!u) return { ok: false, code: "no-estimate", message: `No price estimate for ${plan.modelName} (${e.basis}); it cannot be checked against maxPrice.` };

@@ -46,6 +46,8 @@ export interface CostEstimate {
   /** Upper bound in USD for what this plan should cost, or null if unknown. */
   usd: number | null;
   basis: string;
+  /** True when `usd` is an estimate from approximate published figures, not a strict bound. */
+  approximate?: boolean;
 }
 
 export interface LanePlan {

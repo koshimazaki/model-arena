@@ -4,6 +4,7 @@ import { generateImage, type GenerateImageOptions } from "../providers/runware-a
 import { checkImagePrice, GPT_IMAGE_26_FLARE, IMAGE_MODELS, planImage, tokenBound, tokenEstimate, type TokenPricing } from "../providers/runware-api/image.ts";
 import type { CostQuestion } from "../providers/runware-api/generate.ts";
 import { characterPng, FAKE_KEY, fakeRunware, fastPoll } from "./embed-helpers.ts";
+import { frame } from "./helpers.ts";
 
 const TOKEN_KEYS = ["gpt-image-2.6-flare", "gpt-image-2.6-sunburst", "h3-image", "h3-image-highspeed"];
 const rates = { textInput: 5e-6, imageInput: 8e-6, imageOutput: 3e-5 };
@@ -104,5 +105,34 @@ describe("generateImage on token-priced models", () => {
       delete tokens.outputTokensPerImage;
       delete tokens.inputTokensPerImage;
     }
+  });
+});
+
+describe("MiniMax H3 Image: an estimate from the model page's approximate token counts", () => {
+  it("covers every published example of the same mode, and says it is an estimate with a margin", () => {
+    for (const key of ["h3-image", "h3-image-highspeed"]) {
+      const m = IMAGE_MODELS.find((x) => x.key === key)!;
+      const t2i = planImage({ model: key, prompt: "xy", width: 1280, height: 1024 }).estimate;
+      const r2i = planImage({ model: key, prompt: "xy", resolution: "2K", references: [frame, frame] }).estimate;
+      for (const e of m.tokens!.examples) expect((e.references ? r2i : t2i).usd!).toBeGreaterThanOrEqual(e.usd);
+      expect(r2i).toMatchObject({ approximate: true, basis: expect.stringMatching(/an estimate, not a strict bound.*2 × about 2,050 reference tokens.*25% margin/) });
+    }
+    // 4K takes about 16,400 output tokens: about four times the image cost of 2K.
+    const k4 = planImage({ model: "h3-image", prompt: "xy", resolution: "4K" }).estimate.usd!;
+    const k2 = planImage({ model: "h3-image", prompt: "xy", resolution: "2K" }).estimate.usd!;
+    expect(k4).toBeGreaterThan(2.5 * k2);
+  });
+
+  it("generateImage runs H3 without allowUnpriced, asks with priced 'estimate', and keeps the cap", async () => {
+    const api = fakeRunware({ imageURL: "https://im.runware.ai/image/h3.png", cost: 0.0201 });
+    const asked: CostQuestion[] = [];
+    const o: GenerateImageOptions = { model: "h3-image", prompt: "A courier in a yellow raincoat.", size: { resolution: "2K" }, maxPrice: 0.05, key: FAKE_KEY, confirm: (q) => (asked.push(q), true), fetch: api.fetch, poll: fastPoll };
+    const r = await generateImage(o);
+    expect(asked[0]).toMatchObject({ priced: "estimate", basis: expect.stringMatching(/^about \$/) });
+    expect(r.costUsd).toBe(0.0201);
+    expect(api.tasks("imageInference")[0]).toMatchObject({ resolution: "2K", includeCost: true });
+    const capped = fakeRunware({ imageURL: "x" });
+    await expect(generateImage({ ...o, fetch: capped.fetch, maxPrice: 0.01 })).rejects.toMatchObject({ code: "over-price" });
+    expect(capped.calls).toHaveLength(0);
   });
 });

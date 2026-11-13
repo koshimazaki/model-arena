@@ -28,6 +28,8 @@ export interface GenerateImageOptions {
   size?: { width: number; height: number } | { resolution: string };
   transparent?: boolean;
   outputFormat?: StillFormat;
+  /** GPT-Image-2.6 `settings.quality`: auto (the default), low, medium, high, xhigh or max. `low` suits cheap drafts. */
+  quality?: string;
   maxPrice: number;
   /**
    * Run a token-priced model that has no published upper bound. The cost
@@ -109,12 +111,16 @@ export async function generateImage(o: GenerateImageOptions): Promise<GenerateIm
         ...(size.width !== undefined || size.height !== undefined ? { width: size.width, height: size.height } : {}),
         ...(o.transparent ? { transparent: true } : {}),
         ...(o.outputFormat ? { outputFormat: o.outputFormat } : {}),
+        ...(o.quality !== undefined ? { quality: o.quality } : {}),
       },
       o.taskUUID,
     );
     const price = checkImagePrice(plan, o.maxPrice, o.allowUnpriced === true);
     if (!price.ok) throw new GenerateError(price.code, price.message);
-    progress({ stage: "confirm", message: price.priced === "bound" ? `up to $${price.usd.toFixed(4)}` : `no published bound; highest example $${price.usd}` });
+    progress({
+      stage: "confirm",
+      message: price.priced === "bound" ? `up to $${price.usd.toFixed(4)}` : price.priced === "estimate" ? `about $${price.usd.toFixed(4)} (estimate)` : `no published bound; highest example $${price.usd}`,
+    });
     const ok = await o.confirm({
       model: plan.modelId,
       modelName: plan.modelName,

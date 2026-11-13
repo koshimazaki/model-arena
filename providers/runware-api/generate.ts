@@ -50,11 +50,14 @@ export interface CostQuestion {
   inputs: InputSent[];
   prompt: string;
   /**
-   * Images only. "bound": `usd` is an upper bound. "unpriced": a token-priced
-   * model with no published bound, run with allowUnpriced; `usd` is then the
-   * highest published example, not a bound, and `rates` and `examples` say so.
+   * Images only. "bound": `usd` is an upper bound. "estimate": `usd` is an
+   * estimate from approximate published token counts plus a stated margin
+   * (MiniMax H3 Image), checked against the cap but not a strict bound.
+   * "unpriced": a token-priced model with no published figures, run with
+   * allowUnpriced; `usd` is then the highest published example, not a bound,
+   * and `rates` and `examples` say so.
    */
-  priced?: "bound" | "unpriced";
+  priced?: "bound" | "estimate" | "unpriced";
   rates?: string;
   examples?: string;
 }
