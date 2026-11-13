@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, beforeAll, describe, expect, it, vi } from "vitest";
 import type { ArenaGenerate } from "../packages/element/src/generate/arena-generate.ts";
 import type { ArenaGallery } from "../packages/element/src/gallery.ts";
 import type { ArenaKey } from "../packages/element/src/key-panel.ts";
@@ -38,12 +38,51 @@ function typeKey(k: ArenaKey, value: string, remember = false) {
   (root.querySelector("form") as HTMLFormElement).dispatchEvent(new Event("submit", { cancelable: true }));
 }
 
+// The key panel reads the balance on connect; tests never reach the network.
+beforeEach(() => {
+  vi.stubGlobal("fetch", async () => {
+    throw new Error("offline in tests");
+  });
+});
+
 describe("<arena-key>", () => {
   it("is a password field labelled as staying in the browser, with a get-a-key link", () => {
     const root = keyPanel().shadowRoot!;
     expect((root.querySelector('[data-field="key"]') as HTMLInputElement).type).toBe("password");
     expect(root.textContent).toContain("stays in your browser and is sent only to api.runware.ai");
     expect(root.querySelector("a")?.textContent).toBe("Get a key");
+  });
+
+  it("shows the balance after connecting and reads only the number", async () => {
+    const k = keyPanel();
+    const bodies: unknown[] = [];
+    k.fetch = async (_url, init) => {
+      const tasks = JSON.parse(init.body) as { taskUUID: string }[];
+      bodies.push(tasks);
+      return { ok: true, status: 200, json: async () => ({ data: [{ taskType: "accountManagement", taskUUID: tasks[0]!.taskUUID, balance: 241.5, team: [{ email: "someone@example.com" }], apiKeys: [{ apiKey: "another-secret-key-000000" }] }] }) };
+    };
+    const seen: unknown[] = [];
+    k.addEventListener("arena-balance-change", (e) => seen.push((e as CustomEvent).detail));
+    typeKey(k, FAKE_KEY);
+    await until(() => k.balance !== null);
+    expect(k.balance).toBe(241.5);
+    expect(k.shadowRoot!.querySelector('[data-field="balance"]')?.textContent).toBe("Balance 241.50 USD");
+    expect(bodies[0]).toMatchObject([{ taskType: "accountManagement", operation: "getDetails" }]);
+    expect(seen).toEqual([{ balance: 241.5 }]);
+    expect(k.shadowRoot!.innerHTML).not.toContain("someone@example.com");
+    expect(k.shadowRoot!.innerHTML).not.toContain("another-secret-key");
+    k.disconnect();
+    expect(k.balance).toBeNull();
+  });
+
+  it("stays connected and says so when the balance cannot be read", async () => {
+    const k = keyPanel();
+    typeKey(k, FAKE_KEY);
+    await until(() => Boolean(k.shadowRoot!.querySelector('[data-field="balance-note"]')?.textContent));
+    expect(k.connected).toBe(true);
+    expect(k.balance).toBeNull();
+    expect(k.shadowRoot!.querySelector('[data-field="balance-note"]')?.textContent).toContain("Balance not available");
+    expect(k.shadowRoot!.innerHTML).not.toContain(FAKE_KEY);
   });
 
   it("refuses a malformed key with a reason and sends no event", () => {

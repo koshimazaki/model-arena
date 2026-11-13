@@ -7,9 +7,15 @@
  * logged, never put in an attribute, a URL, an event or a record. Only
  * RunwareClient reads it, through `getKey()`, and sends it to api.runware.ai.
  *
+ * Once connected it asks Runware for the account balance and shows it;
+ * `refreshBalance()` reads it again (hosts call it after a run). Only the
+ * number is read from that response.
+ *
  * Attributes: `signup-url` (the "Get a key" link), `theme`.
- * Event: `arena-key-change`, detail `{ connected, remembered }` (never the key).
+ * Events: `arena-key-change`, detail `{ connected, remembered }` (never the key);
+ * `arena-balance-change`, detail `{ balance }` (USD, or null when unknown).
  */
+import { RunwareClient, type FetchLike } from "../../../providers/runware-api/client.ts";
 import { KeyStore } from "../../../providers/runware-api/key.ts";
 import { el } from "./captions.ts";
 import { tokens } from "./tokens.ts";
@@ -43,6 +49,8 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid 
 .err { font-size: 13px; color: var(--ma-warn); margin: 0; }
 .err:empty { display: none; }
 .state { font-weight: 600; }
+.balance { font: 13px var(--ma-mono); }
+.balance:empty { display: none; }
 .state::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: var(--ma-ok); }
 a { color: var(--ma-fg); }
 `;
@@ -52,6 +60,11 @@ export class ArenaKey extends HTMLElement {
   private store: KeyStore;
   private root: ShadowRoot;
   private remembered = false;
+  private balanceUsd: number | null = null;
+  private balanceNote = "";
+  private asked = 0;
+  /** Test seam: the fetch the balance call uses. */
+  fetch?: FetchLike;
 
   constructor() {
     super();
@@ -65,6 +78,32 @@ export class ArenaKey extends HTMLElement {
 
   connectedCallback() {
     this.render();
+    if (this.connected && this.balanceUsd === null) void this.refreshBalance();
+  }
+
+  /** The balance last read from Runware, in USD; null until known. */
+  get balance(): number | null {
+    return this.balanceUsd;
+  }
+
+  /** Reads the balance again. Resolves to the number, or null when it cannot be read. */
+  async refreshBalance(): Promise<number | null> {
+    const turn = ++this.asked;
+    if (!this.connected) return null;
+    let value: number | null = null;
+    let note = "";
+    try {
+      value = await new RunwareClient({ getKey: this.getKey, fetch: this.fetch }).balance();
+    } catch (e) {
+      const client = new RunwareClient({ getKey: this.getKey });
+      note = `Balance not available: ${client.redact(e instanceof Error ? e.message : "request failed")}`.slice(0, 200);
+    }
+    if (turn !== this.asked || !this.connected) return null;
+    this.balanceUsd = value;
+    this.balanceNote = note;
+    this.render();
+    this.dispatchEvent(new CustomEvent("arena-balance-change", { bubbles: true, composed: true, detail: { balance: value } }));
+    return value;
   }
 
   attributeChangedCallback() {
@@ -97,8 +136,12 @@ export class ArenaKey extends HTMLElement {
   }
 
   private changed() {
+    this.asked++;
+    this.balanceUsd = null;
+    this.balanceNote = "";
     this.render();
     this.dispatchEvent(new CustomEvent("arena-key-change", { bubbles: true, composed: true, detail: { connected: this.connected, remembered: this.remembered } }));
+    if (this.connected) void this.refreshBalance();
   }
 
   private signup(): HTMLAnchorElement {
@@ -123,6 +166,7 @@ export class ArenaKey extends HTMLElement {
           "div",
           { class: "panel", part: "panel", "data-state": "connected" },
           el("div", { class: "row" }, el("span", { class: "state" }, "Key connected"), el("span", { class: "note" }, this.remembered ? "remembered for this tab" : "held in memory until you leave"), off),
+          el("div", { class: "row" }, el("span", { class: "balance", "data-field": "balance" }, this.balanceUsd === null ? "" : `Balance ${this.balanceUsd.toFixed(2)} USD`), el("span", { class: "note", "data-field": "balance-note" }, this.balanceNote)),
           where,
         ),
       );

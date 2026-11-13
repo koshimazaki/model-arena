@@ -45,7 +45,9 @@ export class RunwareClient {
 
   constructor(opts: { getKey: () => string | undefined; fetch?: FetchLike }) {
     this.getKey = opts.getKey;
-    this.fetchImpl = opts.fetch ?? (globalThis.fetch as unknown as FetchLike);
+    // The browser's fetch throws "Illegal invocation" when called as a method of
+    // another object, so the default is wrapped and never stored bare.
+    this.fetchImpl = opts.fetch ?? ((input, init) => (globalThis.fetch as unknown as FetchLike)(input, init));
   }
 
   /** Redacts the key from any text before it is shown. */
@@ -93,6 +95,21 @@ export class RunwareClient {
     const row = data.find((d) => d.taskUUID === taskUUID) ?? data[0];
     if (!row || typeof row.mediaUUID !== "string") throw new Error("mediaStorage upload returned no mediaUUID.");
     return { mediaUUID: row.mediaUUID, mediaURL: String(row.mediaURL ?? "") };
+  }
+
+  /**
+   * The account's current balance in USD. The same response lists the team and
+   * the API keys; only the number is read and nothing else is kept or returned.
+   */
+  async balance(signal?: AbortSignal): Promise<number> {
+    const taskUUID = globalThis.crypto.randomUUID();
+    const { data, errors } = await this.post([{ taskType: "accountManagement", taskUUID, operation: "getDetails" }], signal);
+    const mine = errors.filter((e) => !e.taskUUID || e.taskUUID === taskUUID);
+    if (mine.length) throw new RunwareApiError(400, mine);
+    const value = (data.find((d) => d.taskUUID === taskUUID) ?? data[0])?.balance;
+    const n = typeof value === "string" ? Number(value) : value;
+    if (typeof n !== "number" || !Number.isFinite(n)) throw new Error("Runware returned no balance.");
+    return n;
   }
 
   /** Reads back the stored request for a task; used to learn which model the router chose. */

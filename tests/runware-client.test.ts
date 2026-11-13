@@ -114,3 +114,20 @@ describe("browser key store", () => {
     expect(bag.size).toBe(0);
   });
 });
+
+describe("default fetch", () => {
+  it("calls the global fetch unbound, as a browser requires", async () => {
+    const original = globalThis.fetch;
+    // A stand-in that, like window.fetch, refuses to run as another object's method.
+    globalThis.fetch = function (this: unknown) {
+      if (this !== undefined && this !== globalThis) throw new TypeError("Illegal invocation");
+      return Promise.resolve(new Response(JSON.stringify({ data: [] }), { status: 200 }));
+    } as typeof fetch;
+    try {
+      const client = new RunwareClient({ getKey: () => KEY });
+      await expect(client.post([{ taskType: "getResponse", taskUUID: FIXED_UUID }])).resolves.toBeDefined();
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+});

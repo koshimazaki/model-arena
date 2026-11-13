@@ -2,7 +2,7 @@
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, beforeAll, describe, expect, it, vi } from "vitest";
 import type { ArenaRecord } from "../packages/core/src/record.ts";
 import type { ArenaGallery } from "../packages/element/src/gallery.ts";
 import type { ArenaGenerate } from "../packages/element/src/generate/arena-generate.ts";
@@ -46,6 +46,13 @@ const normal = (task: unknown) =>
       .replace(/00000000-0000-4000-8000-0*(\d+)/g, "U$1")
       .replace(/"taskUUID":"[^"]+"/, '"taskUUID":"T"'),
   );
+
+// The key panel reads the balance on connect; tests never reach the network.
+beforeEach(() => {
+  vi.stubGlobal("fetch", async () => {
+    throw new Error("offline in tests");
+  });
+});
 
 describe("the CLI and the element send the same task for the same bundle", () => {
   for (const model of ["kling-4", "seedance-2.5", "h3"]) {
