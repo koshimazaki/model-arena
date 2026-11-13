@@ -64,7 +64,7 @@
     </main>
 
     <script type="module">
-      // The fake provider: answers mediaStorage, videoInference and getResponse like the API,
+      // The fake provider: answers mediaStorage, accountManagement, videoInference and getResponse like the API,
       // and returns a local placeholder clip. It never calls the network.
       const result = new URL("media/embed-result.mp4", location.href).href;
       let n = 0;
@@ -74,6 +74,7 @@
         const tasks = JSON.parse(init.body);
         const data = tasks.map((t) => {
           if (t.taskType === "mediaStorage") return { taskType: "mediaStorage", taskUUID: t.taskUUID, mediaUUID: `00000000-0000-4000-8000-${String(++n).padStart(12, "0")}` };
+          if (t.taskType === "accountManagement") return { taskType: "accountManagement", taskUUID: t.taskUUID, balance: 250 };
           if (t.taskType === "videoInference") return { taskType: "videoInference", taskUUID: t.taskUUID };
           if (t.taskType === "getResponse") return ++polls % 2 ? { taskUUID: t.taskUUID, status: "processing", progress: 50 } : { taskType: "videoInference", taskUUID: t.taskUUID, status: "success", videoURL: result, cost: 0.94 };
           return { taskUUID: t.taskUUID };
@@ -86,6 +87,8 @@
       const gallery = document.getElementById("gallery");
       const player = document.getElementById("player");
       gen.fetch = fakeFetch;
+      // The key panel reads the balance on connect; in this demo it asks the fake provider too.
+      document.getElementById("key").fetch = fakeFetch;
       gen.pollOptions = { initialDelayMs: 100, intervalMs: 100, maxIntervalMs: 200 };
       gen.addEventListener("arena-gallery-add", (e) => gallery.add(e.detail.record, e.detail.base));
       gen.addEventListener("arena-generate-result", (e) => player.setAttribute("src", e.detail.videoURL));
