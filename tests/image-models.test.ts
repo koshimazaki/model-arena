@@ -89,7 +89,7 @@ describe("new image models: sizes, inputs and refusals", () => {
       const p = plan(key);
       expect(p.estimate.usd).toBeNull();
       expect(p.estimate.basis).toMatch(/per token.*per 1M tokens/);
-      expect(p.notes.join(" ")).toMatch(/no price estimate/);
+      expect(p.notes.join(" ")).toMatch(/no published upper bound.*allowUnpriced/);
     }
     expect(plan("h3-image-highspeed").estimate.basis).toContain("image output $7.60");
   });

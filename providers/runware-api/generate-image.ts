@@ -13,7 +13,7 @@ import type { CostEstimate, LaneMedia } from "../types.ts";
 import { RunwareClient, type FetchLike } from "./client.ts";
 import { blobEntry, classify, GenerateError, type CostQuestion, type GenerateProgress } from "./generate.ts";
 import { loadImage, typeOf } from "./guide-bundle.ts";
-import { planImage, runImage, type ImagePlan, type StillFormat } from "./image.ts";
+import { checkImagePrice, planImage, runImage, type ImagePlan, type StillFormat } from "./image.ts";
 import type { PollOptions } from "./poll.ts";
 
 /** A reference as a Blob (a File keeps its name), an https URL, or a Blob with the URL a reader can see it at. */
@@ -29,6 +29,12 @@ export interface GenerateImageOptions {
   transparent?: boolean;
   outputFormat?: StillFormat;
   maxPrice: number;
+  /**
+   * Run a token-priced model that has no published upper bound. The cost
+   * question then says so, shows the rates and Runware's examples, and
+   * maxPrice is compared with the highest published example.
+   */
+  allowUnpriced?: boolean;
   key: string | (() => string | undefined) | { getKey(): string | undefined };
   confirm: (q: CostQuestion) => boolean | Promise<boolean>;
   signal?: AbortSignal;
@@ -106,18 +112,19 @@ export async function generateImage(o: GenerateImageOptions): Promise<GenerateIm
       },
       o.taskUUID,
     );
-    if (plan.estimate.usd === null) throw new GenerateError("no-estimate", `No price estimate for ${plan.modelName} (${plan.estimate.basis}); it cannot be checked against maxPrice.`);
-    if (plan.estimate.usd > o.maxPrice)
-      throw new GenerateError("over-price", `Estimated $${plan.estimate.usd.toFixed(4)} (${plan.estimate.basis}) is over your cap of $${o.maxPrice.toFixed(2)}.`);
-    progress({ stage: "confirm", message: `estimated $${plan.estimate.usd.toFixed(4)}` });
+    const price = checkImagePrice(plan, o.maxPrice, o.allowUnpriced === true);
+    if (!price.ok) throw new GenerateError(price.code, price.message);
+    progress({ stage: "confirm", message: price.priced === "bound" ? `up to $${price.usd.toFixed(4)}` : `no published bound; highest example $${price.usd}` });
     const ok = await o.confirm({
       model: plan.modelId,
       modelName: plan.modelName,
-      usd: plan.estimate.usd,
-      basis: plan.estimate.basis,
+      usd: price.usd,
+      basis: price.basis,
       maxPrice: o.maxPrice,
       inputs: plan.inputsSent,
       prompt: String(plan.task.positivePrompt),
+      priced: price.priced,
+      ...(price.rates ? { rates: price.rates, examples: price.examples } : {}),
     });
     if (!ok) throw new GenerateError("not-confirmed", "Not confirmed; nothing was sent.");
     if (o.signal?.aborted) throw new GenerateError("aborted", "Stopped. Nothing was submitted.");
@@ -152,6 +159,8 @@ export async function generateImage(o: GenerateImageOptions): Promise<GenerateIm
     };
     const notes = [...plan.notes];
     if (references.length) notes.push(`${references.length === 1 ? "The reference was" : `All ${references.length} references were`} sent as given: none resized or dropped.`);
+    if (price.priced === "unpriced")
+      notes.push(`Ran without a published bound (allowUnpriced): the cap was compared with the highest published example, $${price.usd}; the cost Runware reported is ${result.cost === null ? "missing" : `$${result.cost}`}.`);
     if (result.cost !== null && result.cost > o.maxPrice) notes.push(`Reported cost $${result.cost} is over the cap of $${o.maxPrice}.`);
     progress({ stage: "done", message: "done" });
     return {

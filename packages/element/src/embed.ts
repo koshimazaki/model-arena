@@ -23,8 +23,8 @@ export { generateImage } from "../../../providers/runware-api/generate-image.ts"
 export type { GenerateImageOptions, GenerateImageResult, ImageReference } from "../../../providers/runware-api/generate-image.ts";
 export { imageModels, imageFamilies } from "../../../providers/runware-api/image-catalogue.ts";
 export type { ImageModelInfo, ImageFamilyInfo } from "../../../providers/runware-api/image-catalogue.ts";
-export { planImage, runImage, describeSize, STILL_FORMATS } from "../../../providers/runware-api/image.ts";
-export type { ImageRequest, ImagePlan, StillFormat, ImageFamily, SizeRule, ReferenceRule, ImagePricing } from "../../../providers/runware-api/image.ts";
+export { planImage, runImage, describeSize, checkImagePrice, tokenBound, STILL_FORMATS } from "../../../providers/runware-api/image.ts";
+export type { ImageRequest, ImagePlan, PriceCheck, TokenPricing, StillFormat, ImageFamily, SizeRule, ReferenceRule, ImagePricing } from "../../../providers/runware-api/image.ts";
 export { RunwareClient } from "../../../providers/runware-api/client.ts";
 export { presetFromRecord, parsePreset } from "./generate/preset.ts";
 export type { GeneratePreset } from "./generate/preset.ts";

@@ -137,4 +137,35 @@ describe("make-still CLI against a fake API", () => {
     expect(row).toContain("$0.0012");
     expect(printed + row).not.toContain(KEY);
   });
+
+  it("a token-priced model needs --allow-unpriced, is capped by the highest published example, and records the reported cost", async () => {
+    const { makeStillCli } = await import("../scripts/make-still.ts");
+    const dir = await mkdtemp(join(tmpdir(), "ma-still-"));
+    const costs = join(dir, "costs.md");
+    await writeFile(costs, "| header |\n");
+    const sent: string[] = [];
+    const fake = (async (url: string, init?: { body?: string }) => {
+      if (url === "https://im.runware.ai/still.png") return new Response(new Uint8Array([137, 80, 78, 71]));
+      const task = JSON.parse(init!.body!)[0];
+      sent.push(task.taskType);
+      if (task.taskType === "imageInference") expect(task.includeCost).toBe(true);
+      const reply =
+        task.taskType === "imageInference"
+          ? { data: [{ taskType: "imageInference", taskUUID: task.taskUUID }] }
+          : { data: [{ taskType: "imageInference", taskUUID: task.taskUUID, status: "success", imageURL: "https://im.runware.ai/still.png", cost: 0.031 }] };
+      return new Response(JSON.stringify(reply), { headers: { "content-type": "application/json" } });
+    }) as unknown as typeof fetch;
+    let printed = "";
+    const deps = { fetch: fake, key: "test-key-not-real-0123456789", costsFile: costs, write: (t: string) => (printed += t), poll: { sleep: async () => {}, initialDelayMs: 0 } };
+    const args = ["--model", "h3-image", "--prompt", "A courier.", "--yes", "--out", dir];
+    await expect(makeStillCli([...args, "--max-price", "1"], deps)).rejects.toThrow(/--allow-unpriced/);
+    await expect(makeStillCli([...args, "--max-price", "0.04", "--allow-unpriced"], deps)).rejects.toThrow(/highest published example, \$0\.0432/);
+    expect(sent).toHaveLength(0);
+    await makeStillCli([...args, "--max-price", "0.05", "--allow-unpriced"], deps);
+    expect(printed).toMatch(/No published bound/);
+    expect(sent).toEqual(["imageInference", "getResponse"]);
+    const row = await readFile(costs, "utf8");
+    expect(row).toContain("minimax:h3@image");
+    expect(row).toContain("$0.0310");
+  });
 });

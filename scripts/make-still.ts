@@ -16,7 +16,7 @@ import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { RunwareClient } from "../providers/runware-api/client.ts";
-import { describeSize, IMAGE_MODELS, planImage, runImage, STILL_FORMATS, type ImagePlan, type ImageRequest, type StillFormat } from "../providers/runware-api/image.ts";
+import { checkImagePrice, describeSize, IMAGE_MODELS, planImage, runImage, STILL_FORMATS, type ImagePlan, type ImageRequest, type StillFormat } from "../providers/runware-api/image.ts";
 import { appendCost } from "./lib/costs.ts";
 import { elide, loadMedia } from "./lib/media.ts";
 import { CliExit } from "./run-lane.ts";
@@ -32,8 +32,10 @@ Options:  --reference <file|https>     repeat for several, in order
           --width <px> --height <px>  or --resolution <preset>, as the model's size rule allows
           --transparent  --format PNG|JPG|WEBP (default PNG)
           --max-price <usd>  --out <dir> (default runs/)  --dry-run  --yes
+          --allow-unpriced             run a token-priced model with no published bound
 
-Token-priced models (GPT-Image-2.6, MiniMax H3 Image) have no estimate, so a real run is refused; --dry-run works.
+Token-priced models (GPT-Image-2.6, MiniMax H3 Image) have no published upper bound: a real run needs
+--allow-unpriced, and --max-price is then compared with the highest published example price.
 `;
 
 const fail = (msg: string, code = 2): never => {
@@ -90,6 +92,7 @@ export async function makeStillCli(argv: string[], deps: StillDeps = {}): Promis
         height: { type: "string" },
         resolution: { type: "string" },
         "max-price": { type: "string" },
+        "allow-unpriced": { type: "boolean", default: false },
         out: { type: "string" },
         "dry-run": { type: "boolean", default: false },
         yes: { type: "boolean", default: false },
@@ -126,11 +129,16 @@ export async function makeStillCli(argv: string[], deps: StillDeps = {}): Promis
   const maxPrice = o["max-price"] === undefined ? undefined : Number(o["max-price"]);
   if (maxPrice === undefined) fail("\nRefused: a real run needs --max-price <usd>.");
   if (!Number.isFinite(maxPrice) || maxPrice! <= 0 || maxPrice! > 10) fail("--max-price must be a positive number of USD up to 10.");
-  if (plan.estimate.usd === null || plan.estimate.usd > maxPrice!)
-    fail(`\nRefused: estimate ${plan.estimate.usd === null ? "unknown" : `$${plan.estimate.usd}`} is over --max-price $${maxPrice}.`);
+  const price = checkImagePrice(plan, maxPrice!, o["allow-unpriced"]);
+  if (!price.ok) return fail(`\nRefused: ${price.message.replace("allowUnpriced: true", "--allow-unpriced")}`);
   const key = deps.key ?? (process.env.RUNWARE_API_KEY?.trim() || undefined);
   if (!key) fail("\nRefused: set RUNWARE_API_KEY in the environment (it is read from nowhere else).");
-  if (!o.yes && !(await confirm(`\nSpend up to $${plan.estimate.usd} on this still? Type yes to continue: `)))
+  const question =
+    price.priced === "bound"
+      ? `\nSpend up to $${price.usd} on this still? Type yes to continue: `
+      : `\n${plan.modelName} has no published upper bound (priced per token: ${price.rates}). Runware's examples: ${price.examples}. Run it anyway? Type yes to continue: `;
+  if (price.priced === "unpriced") out(`\nNo published bound: ${price.basis}\n`);
+  if (!o.yes && !(await confirm(question)))
     fail("Not confirmed; nothing was sent. (Pass --yes to skip this prompt.)", 1);
 
   const taskUUID = String(plan.task.taskUUID);

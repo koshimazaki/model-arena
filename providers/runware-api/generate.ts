@@ -49,6 +49,14 @@ export interface CostQuestion {
   maxPrice: number;
   inputs: InputSent[];
   prompt: string;
+  /**
+   * Images only. "bound": `usd` is an upper bound. "unpriced": a token-priced
+   * model with no published bound, run with allowUnpriced; `usd` is then the
+   * highest published example, not a bound, and `rates` and `examples` say so.
+   */
+  priced?: "bound" | "unpriced";
+  rates?: string;
+  examples?: string;
 }
 
 export interface GenerateProgress {

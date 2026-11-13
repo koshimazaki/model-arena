@@ -8,10 +8,12 @@ import type { InputSent } from "../../packages/core/src/record.ts";
 import type { CostEstimate, LaneMedia } from "../types.ts";
 import { RunwareApiError, type RunwareClient } from "./client.ts";
 import { allPairs, findImageModel, IMAGE_MODELS, tierOf, type ImageModel, type SizeRule } from "./image-models.ts";
+import { examplesText, highestExample } from "./image-tokens.ts";
 import { pollImage, type PollOptions } from "./poll.ts";
 import { fillUploads, PlanError, uploadPlaceholder } from "./task.ts";
 
 export * from "./image-models.ts";
+export { tokenBound, tokenEstimate, type TokenPricing, type TokenQuery } from "./image-tokens.ts";
 
 /** A still is a raster; these are the formats offered where the schema lists them. */
 export const STILL_FORMATS = ["PNG", "JPG", "WEBP"] as const;
@@ -41,6 +43,11 @@ export interface ImagePlan {
   task: Record<string, unknown>;
   inputsSent: InputSent[];
   estimate: CostEstimate;
+  /**
+   * Token-priced with no published bound: what a caller shows instead of a
+   * price, and the highest published example its cap is compared with.
+   */
+  unpriced?: { highestExampleUsd: number; rates: string; examples: string };
   notes: string[];
 }
 
@@ -145,9 +152,14 @@ export function planImage(req: ImageRequest, taskUUID: string = globalThis.crypt
     height: task.height as number | undefined,
     resolution: task.resolution as string | undefined,
     references: refs.length,
+    prompt,
   });
-  if (estimate.usd === null) notes.push(`${m.name}: no price estimate (${estimate.basis}). A run with a price cap is refused.`);
-  return { modelId: m.air, modelName: m.name, uploads, task, inputsSent, estimate, notes };
+  let unpriced: ImagePlan["unpriced"];
+  if (estimate.usd === null && m.tokens) {
+    unpriced = { highestExampleUsd: highestExample(m.tokens), rates: m.tokens.ratesText, examples: examplesText(m.tokens) };
+    notes.push(`${m.name}: no published upper bound (${estimate.basis}). A run needs allowUnpriced (CLI --allow-unpriced); the cap is then compared with the highest published example, $${unpriced.highestExampleUsd}.`);
+  } else if (estimate.usd === null) notes.push(`${m.name}: no price estimate (${estimate.basis}). A run with a price cap is refused.`);
+  return { modelId: m.air, modelName: m.name, uploads, task, inputsSent, estimate, ...(unpriced ? { unpriced } : {}), notes };
 }
 
 function planGrid(m: ImageModel, s: Grid, req: ImageRequest, first: LaneMedia | undefined, task: Record<string, unknown>, notes: string[]) {
@@ -199,6 +211,37 @@ function planList(m: ImageModel, s: List, req: ImageRequest, hasRef: boolean, ta
   task.height = h;
   const tier = tierOf(s, w, h);
   if (tier && Object.keys(s.pairs).length > 1) notes.push(`${w}×${h} is a ${tier} size.`);
+}
+
+export type PriceCheck =
+  | { ok: true; usd: number; basis: string; priced: "bound" | "unpriced"; rates?: string; examples?: string }
+  | { ok: false; code: "no-estimate" | "over-price"; message: string };
+
+/**
+ * Whether a plan may run under `maxPrice`. A bound is checked against the cap.
+ * A token-priced plan with no published bound runs only with `allowUnpriced`,
+ * and then the cap is compared with the highest published example price.
+ */
+export function checkImagePrice(plan: ImagePlan, maxPrice: number, allowUnpriced = false): PriceCheck {
+  const e = plan.estimate;
+  if (e.usd !== null) {
+    if (e.usd > maxPrice) return { ok: false, code: "over-price", message: `Estimated $${e.usd.toFixed(4)} (${e.basis}) is over your cap of $${maxPrice.toFixed(2)}.` };
+    return { ok: true, usd: e.usd, basis: e.basis, priced: "bound" };
+  }
+  const u = plan.unpriced;
+  if (!u) return { ok: false, code: "no-estimate", message: `No price estimate for ${plan.modelName} (${e.basis}); it cannot be checked against maxPrice.` };
+  if (!allowUnpriced)
+    return { ok: false, code: "no-estimate", message: `${plan.modelName} is priced per token (${u.rates}) and Runware publishes no upper bound for it. Pass allowUnpriced: true to run it with the cap compared to the highest published example ($${u.highestExampleUsd}).` };
+  if (u.highestExampleUsd > maxPrice)
+    return { ok: false, code: "over-price", message: `${plan.modelName} has no published bound, and its highest published example, $${u.highestExampleUsd}, is over your cap of $${maxPrice.toFixed(2)}.` };
+  return {
+    ok: true,
+    usd: u.highestExampleUsd,
+    basis: `no published upper bound: priced per token (${u.rates}); highest published example $${u.highestExampleUsd} (examples: ${u.examples}). The real cost may be higher.`,
+    priced: "unpriced",
+    rates: u.rates,
+    examples: u.examples,
+  };
 }
 
 /** Uploads the references, submits, polls `imageURL`. Never resubmits. */

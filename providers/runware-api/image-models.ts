@@ -7,6 +7,7 @@
  * `additionalProperties: false`. Prices come from each schema's `x-pricing`.
  */
 import type { CostEstimate } from "../types.ts";
+import { tokenEstimate, type TokenPricing } from "./image-tokens.ts";
 import { PlanError } from "./task.ts";
 
 const DOCS = "https://runware.ai/docs/models";
@@ -59,6 +60,8 @@ export interface PriceQuery {
   height?: number;
   resolution?: string;
   references: number;
+  /** The prompt, for models whose bound counts its tokens. */
+  prompt?: string;
 }
 
 export interface ImagePricing {
@@ -87,6 +90,8 @@ export interface ImageModel {
   transparency: boolean;
   pricing: ImagePricing;
   estimate(q: PriceQuery): CostEstimate;
+  /** Token-priced models: the published rates and examples, for the bound and the unpriced path. */
+  tokens?: TokenPricing;
   /** What the schema has that this planner does not send. */
   notOffered?: string[];
   schemaUrl: string;
@@ -211,17 +216,11 @@ export const FLUX_3_IMAGE: ImageModel = {
   notOffered: ["settings.boundingBoxes", "settings.grounding", "settings.safetyTolerance"],
 };
 
-/** Token-priced models: output tokens are unknown before a run, so there is no upper bound to check a cap against. */
-function tokenEstimate(rates: string, examples: string) {
-  return () => ({
-    usd: null,
-    basis: `priced per token (${rates}); the output token count is not known before a run, so there is no upper bound. Published examples: ${examples}`,
-  });
-}
-
-const GPT_RATES = "text input $5.00, image input $8.00, image output $30.00 per 1M tokens";
-const gptImage = (variant: "Flare" | "Sunburst", examples: string): ImageModel => {
+const GPT_RATES = { textInput: 5e-6, imageInput: 8e-6, imageOutput: 3e-5 };
+const GPT_RATES_TEXT = "text input $5.00, image input $8.00, image output $30.00 per 1M tokens";
+const gptImage = (variant: "Flare" | "Sunburst", examples: TokenPricing["examples"]): ImageModel => {
   const slug = `openai-gpt-image-2-6-${variant.toLowerCase()}`;
+  const tokens: TokenPricing = { rates: GPT_RATES, ratesText: GPT_RATES_TEXT, examples };
   return {
     key: `gpt-image-2.6-${variant.toLowerCase()}`,
     air: `openai:gpt-image@2.6-${variant.toLowerCase()}`,
@@ -237,20 +236,36 @@ const gptImage = (variant: "Flare" | "Sunburst", examples: string): ImageModel =
     size: { kind: "grid", min: 16, max: 3840, multipleOf: 16, default: [1280, 720], area: { min: 655360, max: 8294400 }, ratio: { min: 1 / 3, max: 3 } },
     outputFormats: ["JPG", "PNG", "WEBP", "SVG", "GIF"],
     transparency: true,
-    pricing: { kind: "token", summary: `Per token: ${GPT_RATES}`, source: `${DOCS}/${slug}/schema.json x-pricing`, read: NEW_READ },
-    estimate: tokenEstimate(GPT_RATES, examples),
+    pricing: { kind: "token", summary: `Per token: ${GPT_RATES_TEXT}`, source: `${DOCS}/${slug}/schema.json x-pricing`, read: NEW_READ },
+    tokens,
+    estimate: (q) => tokenEstimate(tokens, q),
     notOffered: ["inputs.maskImage", "inputs.markupImage", "outputFormat SVG and GIF (no references allowed beside them)", "settings.quality", "settings.thinkingLevel"],
   };
 };
 
-export const GPT_IMAGE_26_FLARE = gptImage("Flare", "text-to-image $0.167, reference-to-image $0.193, transparent background $0.175");
-export const GPT_IMAGE_26_SUNBURST = gptImage("Sunburst", "text-to-image $0.0431, reference-to-image $0.192, transparent background $0.0788");
+// x-pricing.examples, 13 Nov 2026.
+export const GPT_IMAGE_26_FLARE = gptImage("Flare", [
+  { mode: "inpaint", usd: 0.0587 }, { mode: "text-to-gif", usd: 0.118 }, { mode: "text-to-image", usd: 0.167 },
+  { mode: "text-to-vector", usd: 0.174 }, { mode: "transparent-background", usd: 0.175 }, { mode: "reference-to-image", usd: 0.193 },
+]);
+export const GPT_IMAGE_26_SUNBURST = gptImage("Sunburst", [
+  { mode: "text-to-gif", usd: 0.0374 }, { mode: "text-to-image", usd: 0.0431 }, { mode: "text-to-vector", usd: 0.0634 },
+  { mode: "inpaint", usd: 0.0771 }, { mode: "transparent-background", usd: 0.0788 }, { mode: "reference-to-image", usd: 0.192 },
+]);
 
 const h3Image = (highspeed: boolean): ImageModel => {
   const slug = highspeed ? "minimax-h3-image-highspeed" : "minimax-h3-image";
-  const rates = highspeed
-    ? "text input $2.30, image input $3.00, image output $7.60 per 1M tokens"
-    : "text input $2.30, image input $1.50, image output $3.80 per 1M tokens";
+  const tokens: TokenPricing = highspeed
+    ? {
+        rates: { textInput: 2.3e-6, imageInput: 3e-6, imageOutput: 7.6e-6 },
+        ratesText: "text input $2.30, image input $3.00, image output $7.60 per 1M tokens",
+        examples: [{ mode: "text-to-image", usd: 0.0418 }, { mode: "text-to-image", usd: 0.0422 }, { mode: "reference-to-image", usd: 0.0725 }, { mode: "reference-to-image", usd: 0.0743 }],
+      }
+    : {
+        rates: { textInput: 2.3e-6, imageInput: 1.5e-6, imageOutput: 3.8e-6 },
+        ratesText: "text input $2.30, image input $1.50, image output $3.80 per 1M tokens",
+        examples: [{ mode: "text-to-image", usd: 0.0176 }, { mode: "text-to-image", usd: 0.0189 }, { mode: "reference-to-image", usd: 0.0432 }, { mode: "reference-to-image", usd: 0.0432 }],
+      };
   return {
     key: highspeed ? "h3-image-highspeed" : "h3-image",
     air: highspeed ? "minimax:h3@image-highspeed" : "minimax:h3@image",
@@ -266,8 +281,9 @@ const h3Image = (highspeed: boolean): ImageModel => {
     size: { kind: "grid", min: 468, max: 7745, multipleOf: 1, default: [1280, 720], area: { min: 655360, max: 20000000 }, ratio: { min: 1 / 3, max: 3 }, resolution: { values: ["1K", "2K", "4K"] } },
     outputFormats: ["JPG", "PNG", "WEBP"],
     transparency: false,
-    pricing: { kind: "token", summary: `Per token: ${rates}`, source: `${DOCS}/${slug}/schema.json x-pricing`, read: NEW_READ },
-    estimate: tokenEstimate(rates, highspeed ? "text-to-image $0.0418-$0.0422, reference-to-image $0.0725-$0.0743" : "text-to-image $0.0176-$0.0189, reference-to-image $0.0432"),
+    pricing: { kind: "token", summary: `Per token: ${tokens.ratesText}`, source: `${DOCS}/${slug}/schema.json x-pricing`, read: NEW_READ },
+    tokens,
+    estimate: (q) => tokenEstimate(tokens, q),
     notOffered: ["settings.promptOptimizer (must stay on without width/height or with references)"],
   };
 };
