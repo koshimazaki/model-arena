@@ -35,6 +35,8 @@ export function captionText(r: GenerateResult): string {
     `Cost: ${usd(r.costUsd)}${r.costUsd === null ? "" : " reported"} (estimate ${usd(r.estimate.usd)})`,
     `Seconds: ${secs(r.generationSeconds)} to generate`,
     `Model ran: ${r.modelRan ?? "not reported by the provider"}`,
+    // An input the model was not sent belongs in the caption itself, not only in the notes.
+    ...r.notes.filter((n) => n.startsWith("Music not sent")),
   ].join(" · ");
 }
 

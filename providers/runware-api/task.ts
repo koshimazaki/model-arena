@@ -84,6 +84,7 @@ export function planTask(req: LaneRequest, taskUUID = randomUUID()): LanePlan {
       firstFrame: req.firstFrame,
       character: req.character,
       environment: req.environment,
+      requireAudio: req.requireAudio,
       audio: req.audio,
       keyframes: req.keyframes,
     });

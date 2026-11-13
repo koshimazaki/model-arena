@@ -82,6 +82,8 @@ export interface GenerateOptions {
   fetch?: FetchLike;
   poll?: Omit<PollOptions, "signal" | "onProgress" | "urlField">;
   resolution?: string;
+  /** Refuse instead of sending the guide without its separate audio (MiniMax H3 over 15 s together). */
+  requireAudio?: boolean;
   laneId?: string;
   /** Fixes the task UUID (tests). */
   taskUUID?: string;
@@ -182,7 +184,7 @@ export async function generateFromGuide(o: GenerateOptions): Promise<GenerateRes
     const guide = isLoaded(o.guide) ? o.guide : await loadGuideBundle(entriesOf(o.guide));
     const character = await reference(o.references?.character, "character");
     const environment = await reference(o.references?.environment, "environment");
-    const lane: GuideLanePlan = planGuideLane({ guide, model: o.model, shot: o.shot, prompt: o.prompt, character, environment, resolution: o.resolution }, o.taskUUID);
+    const lane: GuideLanePlan = planGuideLane({ guide, model: o.model, shot: o.shot, prompt: o.prompt, character, environment, resolution: o.resolution, requireAudio: o.requireAudio }, o.taskUUID);
     const { plan } = lane;
     if (plan.estimate.usd === null) throw new GenerateError("no-estimate", `No price estimate for ${plan.modelName}; it cannot be checked against maxPrice.`);
     if (plan.estimate.usd > o.maxPrice)

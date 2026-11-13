@@ -41,6 +41,8 @@ Inputs:   --guide <mp4|https>  --first-frame <png|jpg|https>  --audio <wav|mp3|m
           --character <png|jpg|https>  (a still that replaces the guide's figure: a reference
           image beside the guide on Kling, Seedance, H3 and the router; never a frame image)
           --environment <png|jpg|https>  (an environment still: the next reference image)
+          --require-audio  (refuse instead of sending the guide without --audio when video and
+          audio together pass a model's cap: MiniMax H3, 15 s)
 Options:  --duration <s|auto>  --resolution <preset>  --camera <movement, LTX only>
           --shot <shot.json>  (a neutral shot description: the composer writes the prompt,
           camera parameter and duration for this model; --prompt etc. override it)
@@ -81,6 +83,7 @@ export function parseCli(argv: string[]) {
       "first-frame-variant": { type: "string" },
       character: { type: "string" },
       environment: { type: "string" },
+      "require-audio": { type: "boolean", default: false },
       shot: { type: "string" },
       audio: { type: "string" },
       duration: { type: "string" },
@@ -146,6 +149,7 @@ export async function buildRequest(o: Cli): Promise<LaneRequest & { composed?: C
     ...(o.character ? { character: await loadMedia(o.character, "image") } : {}),
     ...(o.environment ? { environment: await loadMedia(o.environment, "image") } : {}),
     ...(o.audio ? { audio: await loadMedia(o.audio, "audio") } : {}),
+    ...(o["require-audio"] ? { requireAudio: true } : {}),
     ...(o.duration !== undefined ? { duration: parseDuration(o.duration) } : cDuration !== undefined ? { duration: cDuration } : {}),
     ...(o.resolution ? { resolution: o.resolution } : {}),
     ...(o.camera ? { camera: o.camera } : cCamera ? { camera: cCamera } : {}),
@@ -203,7 +207,7 @@ export async function runLaneCli(argv: string[], deps: CliDeps = {}): Promise<vo
   let plan: LanePlan;
   try {
     if (o.bundle && !o.model) fail("--model is required.\n\n" + HELP);
-    req = o.bundle ? await buildBundleRequest({ ...o, bundle: o.bundle, model: o.model! }) : await buildRequest(o);
+    req = o.bundle ? await buildBundleRequest({ ...o, bundle: o.bundle, model: o.model!, requireAudio: o["require-audio"] }) : await buildRequest(o);
     plan = provider.plan(req);
   } catch (e) {
     fail(`Refused: ${(e as Error).message}`);

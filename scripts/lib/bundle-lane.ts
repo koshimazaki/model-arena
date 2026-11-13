@@ -26,6 +26,7 @@ export interface BundleFlags {
   character?: string;
   environment?: string;
   resolution?: string;
+  requireAudio?: boolean;
   guide?: string;
   audio?: string;
   "first-frame"?: string;
@@ -56,7 +57,7 @@ export async function buildBundleRequest(o: BundleFlags): Promise<BundleRequest>
   }
   const character = o.character ? await loadImage(await fileEntry(o.character)) : undefined;
   const environment = o.environment ? await loadImage(await fileEntry(o.environment)) : undefined;
-  const lp = planGuideLane({ guide, model: o.model, shot, prompt: o.prompt, character, environment, resolution: o.resolution });
+  const lp = planGuideLane({ guide, model: o.model, shot, prompt: o.prompt, character, environment, resolution: o.resolution, requireAudio: o.requireAudio });
   return {
     ...lp.request,
     composed: { shot: lp.shot, composed: lp.composed, marker: lp.marker ?? { model: lp.composed.model } },

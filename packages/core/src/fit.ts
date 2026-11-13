@@ -50,6 +50,8 @@ export interface FitInput<M extends FitMedia> {
   environment?: M;
   audio?: M;
   keyframes?: { media: M; frame: number | "first" | "last" }[];
+  /** Refuse rather than drop the audio when a model's shared seconds cap is passed. */
+  requireAudio?: boolean;
 }
 
 export interface FitResult<M> {
@@ -106,23 +108,24 @@ const sum = (list: FitMedia[]) =>
   list.reduce<number | undefined>((n, m) => (n === undefined || m.info?.seconds === undefined ? undefined : n + m.info.seconds), 0);
 
 /**
- * The shared video + audio seconds rule: fine, drop the separate audio (when
- * the guide already carries its sound), or a refusal when nothing can go.
+ * The shared video + audio seconds rule. Over the cap, the separate audio is
+ * not sent and a note says so (the guide video carries the timing); only a
+ * caller that requires the audio gets a refusal instead.
  */
-export function sharedSeconds(model: string, caps: ModelCaps, videos: FitMedia[], audios: FitMedia[]): { drop: boolean; note?: string; problem?: string } {
+export function sharedSeconds(model: string, caps: ModelCaps, videos: FitMedia[], audios: FitMedia[], requireAudio = false): { drop: boolean; note?: string; problem?: string } {
   const max = caps.sharedSeconds?.max;
   const vs = sum(videos);
   const as = sum(audios);
   if (max === undefined || !audios.length || vs === undefined || as === undefined || vs + as <= max) return { drop: false };
   const fmt = (n: number) => `${Math.round(n * 100) / 100} s`;
-  if (videos.some((v) => v.info?.hasAudio))
+  if (requireAudio)
     return {
-      drop: true,
-      note: `${model} takes reference video and audio up to ${max} s together; the guide (${fmt(vs)}) already carries its sound, so the separate audio (${fmt(as)}) is not sent.`,
+      drop: false,
+      problem: `${model} takes reference video and audio up to ${max} s together; got ${fmt(vs)} of video and ${fmt(as)} of audio, and the audio is required. Use a guide of ${fmt(Math.max(0, max - as))} or less, or allow the lane to run without the separate audio.`,
     };
   return {
-    drop: false,
-    problem: `${model} takes reference video and audio up to ${max} s together; got ${fmt(vs)} of video and ${fmt(as)} of audio. Use a guide of ${fmt(Math.max(0, max - as))} or less, put the sound in the guide video, or send it without the separate audio.`,
+    drop: true,
+    note: `Music not sent to ${model}: video and audio together may not exceed ${max} s; timing comes from the guide video (${fmt(vs)} of video, ${fmt(as)} of audio).`,
   };
 }
 
@@ -175,7 +178,7 @@ export function fitLane<M extends FitMedia>(caps: ModelCaps, input: FitInput<M>)
         out.referenceAudios.push(audio);
       }
     }
-    const shared = sharedSeconds(model, caps, out.referenceVideos, out.referenceAudios);
+    const shared = sharedSeconds(model, caps, out.referenceVideos, out.referenceAudios, input.requireAudio);
     if (shared.problem) refuse(shared.problem);
     if (shared.drop) {
       out.referenceAudios = [];

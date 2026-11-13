@@ -87,6 +87,8 @@ export interface GuideFacts {
   audioInVideo?: boolean;
   /** Seconds of the separate audio; the guide's length when not given. */
   audioSeconds?: number;
+  /** Refuse instead of dropping the audio over a shared seconds cap. */
+  requireAudio?: boolean;
 }
 
 /** The composer's shot for one model: the guide's references, placed for how that model uses the guide. */
@@ -101,7 +103,7 @@ export function shotFor(g: GuideShot, model: string, facts: GuideFacts): { shot:
     if (facts.hasEnvironment) refs.push({ id: "environment", kind: "image", role: "setting", replaces: "the guide's background" });
     // The same rule fitLane applies, decided here so the prompt never names audio that is not sent.
     const rule = facts.hasAudio
-      ? sharedSeconds(m.name, findModel(m.key).caps, [{ name: "guide", info: { seconds: facts.seconds, hasAudio: facts.audioInVideo } }], [{ name: "audio", info: { seconds: facts.audioSeconds ?? facts.seconds } }])
+      ? sharedSeconds(m.name, findModel(m.key).caps, [{ name: "guide", info: { seconds: facts.seconds, hasAudio: facts.audioInVideo } }], [{ name: "audio", info: { seconds: facts.audioSeconds ?? facts.seconds } }], facts.requireAudio)
       : { drop: false };
     if (rule.problem) throw new PlanError(rule.problem);
     if (rule.drop) notes.push(rule.note!);
@@ -195,6 +197,7 @@ export interface GuideLaneInput {
   character?: LaneMedia;
   environment?: LaneMedia;
   resolution?: string;
+  requireAudio?: boolean;
 }
 
 export interface GuideLanePlan {
@@ -213,7 +216,7 @@ export function planGuideLane(input: GuideLaneInput, taskUUID?: string): GuideLa
   const override = input.prompt?.trim() || undefined;
   const g = input.shot ?? guide.shot ?? (override ? { subject: override, action: "" } : undefined);
   if (!g || !g.subject.trim()) throw new PlanError("Describe the shot (subject and action), or write a prompt.");
-  const facts: GuideFacts = { seconds: guide.seconds, hasAudio: Boolean(guide.audio), hasCharacter: Boolean(character), hasEnvironment: Boolean(environment), audioInVideo: guide.meta.audioInVideo === true, audioSeconds: guide.audio?.info?.seconds };
+  const facts: GuideFacts = { seconds: guide.seconds, hasAudio: Boolean(guide.audio), hasCharacter: Boolean(character), hasEnvironment: Boolean(environment), audioInVideo: guide.meta.audioInVideo === true, audioSeconds: guide.audio?.info?.seconds, requireAudio: input.requireAudio };
   const { model, composed, shot, notes } = previewPrompt(g, input.model, facts);
   if (model.use === "audio-first-frame" && !guide.audio)
     throw new PlanError(`${model.name} is driven by the guide's audio, and this bundle has no audio file.`);
@@ -236,6 +239,7 @@ export function planGuideLane(input: GuideLaneInput, taskUUID?: string): GuideLa
   const cam = composed.params["settings.cameraMovement"];
   if (typeof cam === "string") req.camera = cam;
   if (input.resolution) req.resolution = input.resolution;
+  if (input.requireAudio) req.requireAudio = true;
 
   const plan = planTask(req, taskUUID);
   return {

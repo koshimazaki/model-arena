@@ -160,6 +160,28 @@ describe("<arena-generate>", () => {
     expect(JSON.stringify([added, results])).not.toContain(FAKE_KEY);
   });
 
+  it("an 8 s guide still runs on MiniMax H3: video only, and the caption says the music was not sent", async () => {
+    const key = keyPanel();
+    typeKey(key, FAKE_KEY);
+    const g = document.createElement("arena-generate") as ArenaGenerate;
+    g.setAttribute("model", "h3");
+    const api = fakeRunware();
+    g.fetch = api.fetch;
+    g.pollOptions = fastPoll;
+    g.confirm = () => true;
+    document.body.append(g);
+    g.guide = makeBundle({ seconds: 8 });
+    await until(() => Boolean(g.guide));
+    const root = g.shadowRoot!;
+    (root.querySelector('[data-action="run"]') as HTMLButtonElement).click();
+    await until(() => Boolean(root.querySelector("[data-caption]")));
+    const caption = root.querySelector("[data-caption]")!.textContent!;
+    expect(caption).toContain("Inputs sent: reference video guide.mp4 ·");
+    expect(caption).not.toContain("reference audio");
+    expect(caption).toContain("Music not sent to MiniMax H3: video and audio together may not exceed 15 s; timing comes from the guide video");
+    expect(JSON.stringify(api.tasks("videoInference")[0]!.inputs)).not.toContain("referenceAudios");
+  });
+
   it("shows a refusal for a character sheet the model cannot take, before any request", async () => {
     const { g, root, api } = await mountGenerate();
     const input = root.querySelector('[data-field="character"]') as HTMLInputElement;

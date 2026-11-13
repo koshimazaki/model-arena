@@ -65,13 +65,13 @@ describe("guide models and composed prompts", () => {
     }
   });
 
-  it("H3 keeps reference video plus audio within 15 s: 5 s sends both, 8 s drops audio the guide already carries, else refuses", () => {
+  it("H3 keeps reference video plus audio within 15 s: 5 s sends both, 8 s sends the video only with a note", () => {
     expect(previewPrompt(SHOT, "h3", facts).composed.used.map((u) => u.ref)).toContain("audio");
-    const dropped = previewPrompt(SHOT, "h3", { ...facts, seconds: 8, audioInVideo: true });
-    expect(dropped.composed.used.map((u) => u.ref)).not.toContain("audio");
-    expect(dropped.composed.prompt).not.toContain("reference audio");
-    expect(dropped.notes.join(" ")).toContain("already carries its sound, so the separate audio (8 s) is not sent");
-    expect(() => previewPrompt(SHOT, "h3", { ...facts, seconds: 8 })).toThrow(/up to 15 s together; got 8 s of video and 8 s of audio/);
+    const eight = previewPrompt(SHOT, "h3", { ...facts, seconds: 8 });
+    expect(eight.composed.used.map((u) => u.ref)).not.toContain("audio");
+    expect(eight.composed.prompt).not.toContain("reference audio");
+    expect(eight.notes.join(" ")).toContain("Music not sent to MiniMax H3: video and audio together may not exceed 15 s; timing comes from the guide video");
+    expect(() => previewPrompt(SHOT, "h3", { ...facts, seconds: 8, requireAudio: true })).toThrow(/the audio is required/);
   });
 
   it("plans Kling with the clip as a reference video and the character as a reference image", async () => {
@@ -178,31 +178,32 @@ describe("character sheet and environment image, per model, with zero, one and t
 });
 
 describe("the H3 shared-seconds rule reaches every caller", () => {
-  const video = (seconds: number, hasAudio?: boolean) => ({ name: "guide.mp4", contentType: "video/mp4", ref: "https://example.com/g.mp4", info: { width: 1280, height: 720, fps: 24, seconds, hasAudio } });
+  const video = (seconds: number) => ({ name: "guide.mp4", contentType: "video/mp4", ref: "https://example.com/g.mp4", info: { width: 1280, height: 720, fps: 24, seconds } });
   const wav = (seconds: number) => ({ name: "audio.wav", contentType: "audio/wav", ref: "https://example.com/a.wav", info: { seconds } });
+  const NOTE = "Music not sent to MiniMax H3: video and audio together may not exceed 15 s; timing comes from the guide video";
 
-  it("planTask (the CLI path): 5 s + 5 s is sent, 8 s + 8 s drops the audio when the guide has sound, refuses otherwise", async () => {
+  it("planTask (the CLI path): 5 s + 5 s sends both; 8 s + 8 s sends the video only, with the note; requireAudio refuses", async () => {
     const { planTask } = await import("../providers/runware-api/task.ts");
     const ok = planTask({ model: "h3", prompt: "Follow it.", guideVideo: video(5), audio: wav(5), duration: 5 });
-    expect((ok.task.inputs as Record<string, unknown>).referenceAudios).toHaveLength(1);
-    const drop = planTask({ model: "h3", prompt: "Follow it.", guideVideo: video(8, true), audio: wav(8), duration: 5 });
+    expect(ok.inputsSent.map((i) => i.role)).toEqual(["referenceVideo", "referenceAudio"]);
+    const drop = planTask({ model: "h3", prompt: "Follow it.", guideVideo: video(8), audio: wav(8), duration: 5 });
     expect((drop.task.inputs as Record<string, unknown>).referenceAudios).toBeUndefined();
     expect(drop.inputsSent.map((i) => i.role)).toEqual(["referenceVideo"]);
-    expect(drop.notes.join(" ")).toContain("is not sent");
-    expect(() => planTask({ model: "h3", prompt: "Follow it.", guideVideo: video(8), audio: wav(8), duration: 5 })).toThrow(/up to 15 s together/);
-    // Other models have no shared cap.
-    expect(() => planTask({ model: "seedance-2.5", prompt: "Follow it.", guideVideo: video(8), audio: wav(8), duration: 5 })).not.toThrow();
+    expect(drop.notes.join(" ")).toContain(NOTE);
+    expect(() => planTask({ model: "h3", prompt: "Follow it.", guideVideo: video(8), audio: wav(8), duration: 5, requireAudio: true })).toThrow(/the audio is required/);
+    expect(planTask({ model: "seedance-2.5", prompt: "Follow it.", guideVideo: video(8), audio: wav(8), duration: 5 }).inputsSent).toHaveLength(2);
   });
 
   it("generateFromGuide (the element path) with 5 s and 8 s bundles", async () => {
     const five = await generateFromGuide(opts({ model: "h3", guide: makeBundle({ seconds: 5 }) }).o);
-    expect(five.inputsSent.map((i) => i.role)).toContain("referenceAudio");
-    const eight = opts({ model: "h3", guide: makeBundle({ seconds: 8 }) });
-    await expect(generateFromGuide(eight.o)).rejects.toMatchObject({ code: "refused", message: expect.stringContaining("up to 15 s together") });
-    expect(eight.api.calls).toHaveLength(0);
-    const withSound = await generateFromGuide(opts({ model: "h3", guide: makeBundle({ seconds: 8, audioInVideo: true }) }).o);
-    expect(withSound.inputsSent.map((i) => i.role)).toEqual(["referenceVideo"]);
-    expect(withSound.notes.join(" ")).toContain("already carries its sound");
+    expect(five.inputsSent.map((i) => i.role)).toEqual(["referenceVideo", "referenceAudio"]);
+    const eight = await generateFromGuide(opts({ model: "h3", guide: makeBundle({ seconds: 8 }) }).o);
+    expect(eight.inputsSent.map((i) => i.role)).toEqual(["referenceVideo"]);
+    expect(eight.lane.inputsSent.map((i) => i.role)).toEqual(["referenceVideo"]);
+    expect(eight.notes.join(" ")).toContain(NOTE);
+    const strict = opts({ model: "h3", guide: makeBundle({ seconds: 8 }), requireAudio: true });
+    await expect(generateFromGuide(strict.o)).rejects.toMatchObject({ code: "refused" });
+    expect(strict.api.calls).toHaveLength(0);
   });
 });
 
