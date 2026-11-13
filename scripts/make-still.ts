@@ -7,7 +7,7 @@
  *
  * --dry-run prints the exact task and sends nothing. A real run needs
  * --max-price, refuses when the estimate is over it, asks for confirmation
- * (or --yes), then writes runs/<date>-still-<model>-<id>/still.png and
+ * (or --yes), then writes runs/<date>-still-<model>-<id>/still.<format> and
  * appends a row to docs/costs.md. The key is read only from RUNWARE_API_KEY.
  */
 import { mkdir, writeFile } from "node:fs/promises";
@@ -16,20 +16,24 @@ import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { RunwareClient } from "../providers/runware-api/client.ts";
-import { IMAGE_MODELS, planImage, runImage, type ImagePlan, type ImageRequest } from "../providers/runware-api/image.ts";
+import { describeSize, IMAGE_MODELS, planImage, runImage, STILL_FORMATS, type ImagePlan, type ImageRequest, type StillFormat } from "../providers/runware-api/image.ts";
 import { appendCost } from "./lib/costs.ts";
 import { elide, loadMedia } from "./lib/media.ts";
 import { CliExit } from "./run-lane.ts";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-const HELP = `Usage: npm run still -- --model <key> --prompt <text> [--reference <png|jpg|https>] [options]
+const HELP = `Usage: npm run still -- --model <key> --prompt <text> [--reference <png|jpg|https>]... [options]
 
-Models: ${IMAGE_MODELS.map((m) => `${m.key} (${m.air})`).join(", ")}
+Models:
+${IMAGE_MODELS.map((m) => `  ${m.key.padEnd(24)} ${m.name} (${m.air}); up to ${m.references.max} reference${m.references.max > 1 ? "s" : ""}; ${describeSize(m.size)}${m.transparency ? "; transparent" : ""}`).join("\n")}
 
-Options:  --width <px> --height <px>  (klein: multiples of 16; Kling without a reference: fixed pairs)
-          --resolution 1K|2K           (Kling with a reference)
+Options:  --reference <file|https>     repeat for several, in order
+          --width <px> --height <px>  or --resolution <preset>, as the model's size rule allows
+          --transparent  --format PNG|JPG|WEBP (default PNG)
           --max-price <usd>  --out <dir> (default runs/)  --dry-run  --yes
+
+Token-priced models (GPT-Image-2.6, MiniMax H3 Image) have no estimate, so a real run is refused; --dry-run works.
 `;
 
 const fail = (msg: string, code = 2): never => {
@@ -57,6 +61,12 @@ export function describeImagePlan(plan: ImagePlan): string {
   return lines.join("\n");
 }
 
+const format = (v: string): StillFormat => {
+  const f = v.toUpperCase();
+  if (!(STILL_FORMATS as readonly string[]).includes(f)) fail(`--format must be one of ${STILL_FORMATS.join(", ")}; got "${v}".`);
+  return f as StillFormat;
+};
+
 const int = (v: string | undefined, name: string) => {
   if (v === undefined) return undefined;
   const n = Number(v);
@@ -73,7 +83,9 @@ export async function makeStillCli(argv: string[], deps: StillDeps = {}): Promis
       options: {
         model: { type: "string" },
         prompt: { type: "string" },
-        reference: { type: "string" },
+        reference: { type: "string", multiple: true },
+        transparent: { type: "boolean", default: false },
+        format: { type: "string" },
         width: { type: "string" },
         height: { type: "string" },
         resolution: { type: "string" },
@@ -98,9 +110,11 @@ export async function makeStillCli(argv: string[], deps: StillDeps = {}): Promis
     const req: ImageRequest = {
       model: o.model!,
       prompt: o.prompt!,
-      ...(o.reference ? { reference: await loadMedia(o.reference, "image") } : {}),
+      ...(o.reference?.length ? { references: await Promise.all(o.reference.map((r) => loadMedia(r, "image"))) } : {}),
       ...(o.width ? { width: int(o.width, "width"), height: int(o.height, "height") } : {}),
       ...(o.resolution ? { resolution: o.resolution } : {}),
+      ...(o.transparent ? { transparent: true } : {}),
+      ...(o.format ? { outputFormat: format(o.format) } : {}),
     };
     plan = planImage(req);
   } catch (e) {
@@ -127,7 +141,7 @@ export async function makeStillCli(argv: string[], deps: StillDeps = {}): Promis
   const client = new RunwareClient({ getKey: () => key, fetch: deps.fetch as never });
   const costsFile = deps.costsFile ?? join(ROOT, "docs/costs.md");
   const size = String(plan.task.resolution ?? `${plan.task.width}x${plan.task.height}`);
-  const row = { date: date.slice(0, 10), model: plan.modelId, taskUUID, duration: "-", resolution: size, inputs: plan.uploads.length || o.reference ? "referenceImage" : "prompt", estimateUsd: plan.estimate.usd };
+  const row = { date: date.slice(0, 10), model: plan.modelId, taskUUID, duration: "-", resolution: size, inputs: plan.inputsSent.length ? plan.inputsSent.map((i) => i.role).join("+") : "prompt", estimateUsd: plan.estimate.usd };
   const started = Date.now();
   let res;
   try {
@@ -140,7 +154,7 @@ export async function makeStillCli(argv: string[], deps: StillDeps = {}): Promis
   const fetchImpl = deps.fetch ?? globalThis.fetch;
   const img = await fetchImpl(res.result.imageURL);
   if (!img.ok) fail(`Could not download ${res.result.imageURL} (HTTP ${img.status}).`, 1);
-  const file = join(dir, "still.png");
+  const file = join(dir, `still.${String(plan.task.outputFormat).toLowerCase()}`);
   await writeFile(file, new Uint8Array(await img.arrayBuffer()));
   await writeFile(join(dir, "task.json"), JSON.stringify([res.task], null, 2));
   const seconds = (Date.now() - started) / 1000;
