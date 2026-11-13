@@ -8,6 +8,7 @@ export const generateStyles = /* css */ `
 ${tokens}
 :host { display: block; width: 100%; max-width: 100%; color: var(--ma-fg); background: var(--ma-card); border: 1px solid var(--ma-line); border-radius: var(--ma-radius-lg); font: 400 14px/1.5 var(--ma-font); container-type: inline-size; overflow: hidden; }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 .wrap { display: grid; gap: 14px; padding: 16px; min-width: 0; }
 h3 { margin: 0; font-size: 15px; font-weight: 600; }
 fieldset { border: 1px solid var(--ma-line); border-radius: var(--ma-radius); margin: 0; padding: 10px 12px; display: grid; gap: 8px; min-width: 0; }

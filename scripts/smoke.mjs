@@ -6,12 +6,15 @@
 // For every <model-arena> on each page: every lane video reaches readyState >= 2
 // with a non-zero duration; "Play all" moves the shared clock and every video's
 // currentTime together; "Play alone" plays one and pauses the rest. For every
-// <model-specs>: the composer panel renders one prompt per model. Local only:
-// no key, no network beyond localhost. Exit code 1 on any failure.
+// <model-specs>: the composer panel renders one prompt per model. Then
+// examples/embed.html from the built dist/embed/ file, served statically under
+// a sub-path (scripts/smoke-embed.mjs): fake key, faked run, result plays.
+// Local only: no key, no network beyond localhost. Exit code 1 on any failure.
 import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer-core";
+import { checkEmbed } from "./smoke-embed.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const CHROME = process.env.CHROME_PATH ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
@@ -185,6 +188,7 @@ try {
     log(errors.length === 0, `${path}: no page errors${errors.length ? `: ${errors.join(" | ")}` : ""}`);
     await page.close();
   }
+  await checkEmbed(browser, log, ROOT);
 } finally {
   await browser.close();
   await server?.close();

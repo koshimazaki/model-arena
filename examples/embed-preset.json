@@ -1,0 +1,14 @@
+{
+  "bundle": "media/embed-bundle/",
+  "references": {
+    "character": "media/embed-refs/character.png",
+    "environment": "media/embed-refs/environment.png"
+  },
+  "shot": {
+    "subject": "A courier in a yellow raincoat",
+    "environment": "a rain-soaked city crossing at dusk",
+    "action": "runs along the drawn path and leaps on the downbeat",
+    "legend": "The orange figure is the character"
+  },
+  "model": "kling-4"
+}

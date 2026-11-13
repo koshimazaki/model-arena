@@ -2,7 +2,8 @@
 # Makes a Beat Path-style guide bundle for examples/embed.html and the smoke
 # test: a 5 s 1280x720 24 fps guide (an orange dot on a drawn path), its
 # audio, frame 0 and the JSON files, in examples/media/embed-bundle/
-# (gitignored), plus a labelled clip the fake provider returns as the result.
+# (gitignored), two placeholder reference images in examples/media/embed-refs/,
+# and a labelled clip the fake provider returns as the result.
 # Needs ffmpeg. Nothing here sends a request.
 set -eu
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -18,6 +19,13 @@ ffmpeg -loglevel error -y -i "$OUT/guide.mp4" -frames:v 1 "$OUT/frame0.png"
 ffmpeg -loglevel error -y -f lavfi -i "testsrc2=size=1280x720:rate=24:duration=5" \
   -vf "drawtext=text='fake provider result':fontcolor=white:fontsize=36:box=1:boxcolor=black@0.6:x=(w-text_w)/2:y=h-80" \
   -c:v libx264 -crf 32 -pix_fmt yuv420p -an "$ROOT/examples/media/embed-result.mp4"
+
+REFS="$ROOT/examples/media/embed-refs"
+mkdir -p "$REFS"
+ffmpeg -loglevel error -y -f lavfi -i "color=c=0xffd23f:size=768x1024" -frames:v 1 \
+  -vf "drawtext=text='character sheet · placeholder':fontcolor=black:fontsize=32:x=(w-text_w)/2:y=h/2" "$REFS/character.png"
+ffmpeg -loglevel error -y -f lavfi -i "color=c=0x24476b:size=1280x720" -frames:v 1 \
+  -vf "drawtext=text='environment · placeholder':fontcolor=white:fontsize=36:x=(w-text_w)/2:y=h/2" "$REFS/environment.png"
 
 cat > "$OUT/bundle.json" <<'JSON'
 { "schemaVersion": "0.5.0", "video": "guide.mp4", "audio": "audio.wav", "firstFrame": "frame0.png", "beats": "beats.json", "recipe": "recipe.json", "meta": "meta.json" }

@@ -28,7 +28,7 @@ function one(p: ReturnType<typeof previewPrompt>, compact = false): HTMLElement 
   return el(
     "div",
     { class: compact ? "prompt-card compact" : "prompt-card", "data-model": p.model.key },
-    el("div", { class: "row spread" }, el("strong", {}, p.model.name), el("a", { href: p.model.guide.url, target: "_blank", rel: "noopener noreferrer" }, `Prompting guide: ${p.model.guide.title}`)),
+    el("div", { class: "row spread" }, el("strong", {}, p.model.name), el("a", { href: p.model.guide.url, target: "_blank", rel: "noopener noreferrer" }, /^prompting$/i.test(p.model.guide.title) ? "Prompting guide" : `Prompting guide: ${p.model.guide.title}`)),
     compact ? null : el("p", { class: "line" }, p.model.line),
     el("pre", { "data-prompt": p.model.key }, p.composed.prompt),
     el("p", { class: "tags" }, tags(p)),
