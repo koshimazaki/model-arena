@@ -99,7 +99,7 @@ Models: `kling-4`, `kling-4-flash`, `seedance-2.5`, `h3`, `ltx-2.5`, `ltx-2.5-fa
 
 - `--shot shot.json` lets the composer write the prompt, camera parameter and duration for that model; the run's record keeps the shot.
 - `--character still.png` sends a still that replaces the guide's figure: a reference image beside the guide on Kling, Seedance, H3 and the router, never a frame image. LTX and FLUX 3 Video refuse it.
-- `npm run still -- --model <key> --prompt ... [--reference frame0.png] --max-price 0.05` makes that still with any of nine image models (FLUX.2 [klein] 9B, FLUX 3 Image and Image Klein, GPT-Image-2.6 Flare and Sunburst, MiniMax H3 Image and Highspeed, Seedream 5.5, Kling IMAGE 3.0; `--help` lists them); same refusals, confirmation and cost row as a lane. Token-priced models have no published bound: they run with `--allow-unpriced`, capped against the highest published example.
+- `npm run still -- --model <key> --prompt ... [--reference frame0.png] --max-price 0.05` makes that still with any of nine image models (FLUX.2 [klein] 9B, FLUX 3 Image and Image Klein, GPT-Image-2.6 Flare and Sunburst, MiniMax H3 Image and Highspeed, Seedream 5.5, Kling IMAGE 3.0; `--help` lists them); same refusals, confirmation and cost row as a lane. GPT-Image-2.6 has no published bound and runs with `--allow-unpriced`, capped against the highest published example (`--quality low` for drafts); MiniMax H3 Image runs on an estimate from its approximate token counts.
 
 ## Your key
 

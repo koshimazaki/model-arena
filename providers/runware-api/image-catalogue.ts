@@ -5,6 +5,7 @@
  */
 import type { CostEstimate } from "../types.ts";
 import { describeSize, STILL_FORMATS } from "./image.ts";
+import { imageGuide, type ImageGuide } from "./image-guides.ts";
 import { IMAGE_FAMILIES, IMAGE_MODELS, type ImageFamily, type ImageModel, type ImagePricing, type ReferenceRule, type SizeRule } from "./image-models.ts";
 
 export interface ImageModelInfo {
@@ -31,6 +32,10 @@ export interface ImageModelInfo {
   /** The estimate for a text-to-image still at the default size; `usd: null` means none, and a capped run is refused. */
   estimate: CostEstimate;
   pricing: ImagePricing;
+  /** The Runware prompting guide this model's prompts follow, or url null with "no model guide published". */
+  guide: ImageGuide["guide"];
+  /** Three or four short lines for under a prompt box. */
+  tips: string[];
   schemaUrl: string;
   pageUrl: string;
 }
@@ -42,6 +47,7 @@ export interface ImageFamilyInfo {
 
 function info(m: ImageModel): ImageModelInfo {
   const def = m.size.default;
+  const guide = imageGuide(m.key)!;
   return {
     key: m.key,
     name: m.name,
@@ -61,6 +67,8 @@ function info(m: ImageModel): ImageModelInfo {
     size: { rule: structuredClone(m.size), summary: describeSize(m.size), default: [def[0], def[1]] },
     estimate: m.estimate({ width: def[0], height: def[1], references: 0 }),
     pricing: { ...m.pricing },
+    guide: { ...guide.guide, related: [...guide.guide.related] },
+    tips: [...guide.tips],
     schemaUrl: m.schemaUrl,
     pageUrl: m.pageUrl,
   };

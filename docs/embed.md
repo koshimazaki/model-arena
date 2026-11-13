@@ -5,7 +5,7 @@ summary: How a host app vendors the embed bundle — the key panel, the generate
 
 # Embedding Model Arena in another app
 
-Written 13 November 2026. `npm run build:embed` writes one ES module, `dist/embed/model-arena-embed.js` (about 223 kB, 63 kB gzipped), and its types (`dist/embed/model-arena-embed.d.ts` plus `dist/embed/types/`). Styles live in each element's shadow root, so there is no CSS file. Vendor the folder, load the file by a **relative** URL, and it works from any sub-path of a static host: no server, no absolute paths, no framework.
+Written 13 November 2026. `npm run build:embed` writes one ES module, `dist/embed/model-arena-embed.js` (about 245 kB, 69 kB gzipped), and its types (`dist/embed/model-arena-embed.d.ts` plus `dist/embed/types/`). Styles live in each element's shadow root, so there is no CSS file. Vendor the folder, load the file by a **relative** URL, and it works from any sub-path of a static host: no server, no absolute paths, no framework.
 
 **Live path unverified.** Every check here runs against a fake provider (`npm test`, `npm run smoke`). No paid call has been made through the browser flow, and no real key has been used.
 
@@ -102,12 +102,12 @@ Written 13 November 2026. `npm run build:embed` writes one ES module, `dist/embe
 | FLUX | `klein-9b` | `runware:400@2` | text; up to 4 references | 128-2048 px, multiples of 16 | compute time; bounded by the highest example, $0.00338 |
 | FLUX | `flux-3-image` | `bfl:flux@3-image` | text; up to 10 references | 60 fixed pairs (0.75K-4K); with a reference, `resolution` or a listed pair | per image: $0.041-$0.607 by tier |
 | FLUX | `flux-3-image-klein` | `bfl:flux@3-image-klein` | text; up to 4 references | 128-4096 px, multiples of 16 | compute time; bounded by measured runs, none for reference runs over 1.57 MP |
-| OpenAI GPT Image | `gpt-image-2.6-flare`, `gpt-image-2.6-sunburst` | `openai:gpt-image@2.6-flare`, `@2.6-sunburst` | text; up to 16 references; transparent | 16-3840 px, multiples of 16, 0.66-8.29 MP, aspect 1:3-3:1 | per token; no published bound |
-| MiniMax H3 | `h3-image`, `h3-image-highspeed` | `minimax:h3@image`, `minimax:h3@image-highspeed` | text; up to 16 references | 468-7745 px, 0.66-20 MP, aspect 1:3-3:1, or `resolution` 1K/2K/4K | per token; no published bound |
+| OpenAI GPT Image | `gpt-image-2.6-flare`, `gpt-image-2.6-sunburst` | `openai:gpt-image@2.6-flare`, `@2.6-sunburst` | text; up to 16 references; transparent | 16-3840 px, multiples of 16, 0.66-8.29 MP, aspect 1:3-3:1 | per token; no published bound; `quality` auto (default) to max |
+| MiniMax H3 | `h3-image`, `h3-image-highspeed` | `minimax:h3@image`, `minimax:h3@image-highspeed` | text; up to 16 references | 468-7745 px, 0.66-20 MP, aspect 1:3-3:1, or `resolution` 1K/2K/4K | per token; an estimate from the page's approximate token counts, +25% margin |
 | ByteDance Seedream | `seedream-5.5` | `bytedance:seedream@5.5` | text; up to 10 references; transparent | 256-16383 px, 0.92-4.62 MP, or `resolution` 1K/1.5K/2K | per image: $0.02 or $0.035, + $0.008 per input image |
 | Kling IMAGE | `kling-image-3` | `klingai:kling-image@3` | text; one reference | 16 fixed pairs; with a reference, `resolution` 1K/2K | $0.028 per image |
 
-**Token-priced models** (GPT-Image-2.6, H3 Image). A bound would be the rates times the largest published output-token count, plus input-image tokens. On 13 November 2026 Runware publishes no token count for these models (schema, `x-pricing` and `examples.json` checked), so none of them has a bound. Without `allowUnpriced: true` a run is refused with `no-estimate`. With it, `maxPrice` is compared with the highest published example, and the cost question has `priced: "unpriced"`, `usd` set to that example (not a bound), `rates` and `examples`, so the host can say there is no published bound. Every task asks for `includeCost`, and `result.costUsd` is what Runware reports. Once a token count is published, the bound comes back as `priced: "bound"` and reads "up to $X (priced per token: …)".
+**Token-priced models.** *MiniMax H3 Image and Highspeed:* the model pages say an output up to about 4 MP is about 4,100 image tokens (1K and 2K cost about the same), 4K about 16,400, each reference about 2,050 input tokens, and the optimiser's rewritten prompt is billed as text. The rewrite's length is not published, so the estimate allows the largest text-token count the published examples imply for the same mode (text to image or with references), then adds 25%. The cost question has `priced: "estimate"` and a basis that starts "about $X: an estimate, not a strict bound". It is checked against `maxPrice` and needs no flag. Custom sizes above 4K have no published figure and fall back to the unpriced path. *GPT-Image-2.6:* no token count is published (its quality guide says to measure before budgeting). Without `allowUnpriced: true` a run is refused with `no-estimate`. With it, `maxPrice` is compared with the highest published example, and the cost question has `priced: "unpriced"`, `usd` set to that example (not a bound), `rates` and `examples`. `quality` (`auto` by default, then `low` to `max`) sets the output tokens, so `quality: "low"` suits cheap drafts. Every task asks for `includeCost`, and `result.costUsd` is what Runware reports.
 
 ```js
 import { imageFamilies, generateImage } from "./vendor/model-arena/model-arena-embed.js";
@@ -125,6 +125,29 @@ const r = await generateImage({
 // r.imageURL (Runware keeps it about 7 days), r.costUsd, r.taskUUID, r.modelRan, r.estimate, r.inputsSent, r.notes, r.costRowText
 // Feed it back as a reference: pass r.imageURL to generateImage, or fetch it into a Blob for
 // generateFromGuide({ references: { character } }); whether the image host allows a browser fetch is not checked yet.
+```
+
+### Prompts written for the chosen model
+
+`composeImagePrompt({ model, kind, subject, style?, light?, camera?, references?, orientation? })` returns `{ prompt, notes }`. It writes one request the way that model's Runware guide asks, deterministically and within its prompt limit. `kind` is `"character"` (a sheet of three full-body views, front, side and back, in a neutral pose on a plain background, with even light and no text), `"environment"` (the place with no people, in the given `light` and seen from the given `camera` height, with no text) or `"free"`. Each reference is `{ role: "character" | "environment" | "other", note? }`, in the order the images are sent. The prompt addresses each one the way the guide says and carries a keep list: face, hair, build and clothing for a character; layout, architecture and materials for a place. A reference of the other kind, such as the environment image beside a character sheet, is used only for its colour palette or art style. The notes say when the order or the size matters for that model.
+
+`imageModels()` entries carry `guide` (`url`, `read`, `related`, and `note: "no model guide published"` where there is none) and `tips`, three or four lines for under the prompt box. `imageGuides()` returns the same for every key.
+
+| Model | Guide followed | How the prompt is written |
+| --- | --- | --- |
+| GPT-Image-2.6 Flare, Sunburst | Flare prompting, editing, quality; Sunburst detailed editing | the deliverable first, one clause per area, a roll call "Image 1 is …", a keep list, exclusions last |
+| MiniMax H3 Image, Highspeed | H3 Image prompting, multi-reference, prompt optimiser | the task, then arrangement, camera, empty space and light, "Use image 1 as …", keep as categories, what may change, exclusions last |
+| Seedream 5.5 | prompting, multi-reference | a brief: use, subject, setting, light, lens and framing, "Image 1 is …", a keep list, exclusions last |
+| FLUX 3 Image | prompting, multi-reference | subject, action, place, composition, style; no exclusions (none are read), only what is there; the scene's light wins |
+| FLUX 3 Image Klein | prompting, multi-reference | framing, subject, background, lighting, then a style line; absences as states; the reference's details restated |
+| FLUX.2 [klein] 9B, Kling IMAGE 3.0 | no model guide published | plain clauses |
+
+```js
+const { prompt, notes } = composeImagePrompt({
+  model: "seedream-5.5", kind: "character", subject: "a courier in a yellow raincoat, black boots and a grey messenger bag",
+  references: [{ role: "character", note: "a pencil sketch" }],
+});
+const sheet = await generateImage({ model: "seedream-5.5", prompt, references: [sketchFile], size: { resolution: "2K" }, maxPrice: 0.1, key, confirm });
 ```
 
 ## The guide bundle and the shot

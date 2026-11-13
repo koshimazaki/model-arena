@@ -123,6 +123,39 @@ export async function checkEmbed(browser, log, ROOT) {
     await page.evaluate(() => document.getElementById("host-play").click());
     log(f.video > 0.5 && Math.abs(f.host - f.video) <= 1 / 24 + 0.02, `${tag}: player follows the host clock (host ${f.host.toFixed(3)} s, video ${f.video.toFixed(3)} s)`);
 
+    // Image models from the built bundle: one model per family, a composed prompt with and without a reference,
+    // run through generateImage on an in-page fake fetch (nothing leaves the page).
+    const stills = await page.evaluate(async (key) => {
+      const embed = await import(new URL("../dist/embed/model-arena-embed.js", location.href).href);
+      const png = (w, h) => {
+        const b = new Uint8Array(33);
+        b.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52]);
+        new DataView(b.buffer).setUint32(16, w);
+        new DataView(b.buffer).setUint32(20, h);
+        return new File([b], "character.png", { type: "image/png" });
+      };
+      const out = [];
+      for (const family of embed.imageFamilies()) {
+        const m = family.models.find((x) => x.estimate.usd !== null || x.accepts.referenceImages.max > 0);
+        for (const withRef of [false, true]) {
+          const composed = embed.composeImagePrompt({ model: m.key, kind: withRef ? "environment" : "character", subject: "a courier in a yellow raincoat", light: "dusk light", camera: "at eye level", references: withRef ? [{ role: "character" }] : [] });
+          const sent = [];
+          const fetch = async (_url, init) => {
+            const tasks = JSON.parse(init.body);
+            sent.push(...tasks);
+            const t = tasks[0];
+            const row = t.taskType === "mediaStorage" ? { taskUUID: t.taskUUID, mediaUUID: "00000000-0000-4000-8000-000000000077" } : t.taskType === "getResponse" ? { taskUUID: t.taskUUID, status: "success", imageURL: "https://im.runware.ai/image/s.png", cost: 0.02 } : { taskUUID: t.taskUUID };
+            return { ok: true, status: 200, json: async () => ({ data: [row] }) };
+          };
+          const r = await embed.generateImage({ model: m.key, prompt: composed.prompt, references: withRef ? [png(1024, 1024)] : [], maxPrice: 1, allowUnpriced: true, key, confirm: () => true, fetch, poll: { initialDelayMs: 0, intervalMs: 0, sleep: async () => {} } });
+          const task = sent.find((t) => t.taskType === "imageInference");
+          out.push({ family: family.family, model: m.key, withRef, ok: task.positivePrompt === composed.prompt && r.imageURL.endsWith("s.png") && sent.some((t) => t.taskType === "mediaStorage") === withRef, tips: m.tips.length, guide: Boolean(m.guide) });
+        }
+      }
+      return out;
+    }, FAKE_KEY);
+    log(stills.length === 10 && stills.every((s) => s.ok && s.tips >= 3 && s.guide), `${tag}: composed image prompts run through generateImage for every family, with and without a reference (${stills.filter((s) => s.ok).length}/${stills.length})`);
+
     const leaked = await page.evaluate((key) => document.documentElement.outerHTML.includes(key) || location.href.includes(key) || JSON.stringify(localStorage).includes(key), FAKE_KEY);
     log(!leaked, `${tag}: the key is in no markup, URL or localStorage`);
     log([...hosts].every((h) => h === origin), `${tag}: every request stayed on the static server (${[...hosts].join(", ")})`);
