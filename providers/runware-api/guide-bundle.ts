@@ -15,6 +15,7 @@ import {
   type BundleMeta,
 } from "../../packages/core/src/bundle.ts";
 import type { GuideBundle } from "../../packages/core/src/record.ts";
+import type { ShotCamera } from "../../packages/core/src/compose.ts";
 import { CAMERA_MOVES, type CameraMove } from "../../packages/core/src/specs/types.ts";
 import type { LaneMedia } from "../types.ts";
 
@@ -32,7 +33,8 @@ export interface GuideShot {
   action: string;
   /** How to read the guide's colours, e.g. "The orange figure is the character." */
   legend?: string;
-  camera?: CameraMove;
+  /** A neutral move; left out (or "guide"), the camera comes from the guide video. */
+  camera?: ShotCamera;
 }
 
 export interface LoadedGuide {
@@ -84,10 +86,18 @@ export function base64(bytes: Uint8Array): string {
   return btoa(s);
 }
 
-/** Width and height from a PNG or baseline/progressive JPEG header; undefined otherwise. */
+/** Width and height from a PNG, JPEG or WebP header; undefined otherwise. */
 export function imageSize(b: Uint8Array): { width: number; height: number } | undefined {
   const v = new DataView(b.buffer, b.byteOffset, b.byteLength);
   if (b.length > 24 && b[0] === 0x89 && b[1] === 0x50) return { width: v.getUint32(16), height: v.getUint32(20) };
+  if (b.length > 30 && String.fromCharCode(...b.subarray(0, 4)) === "RIFF" && String.fromCharCode(...b.subarray(8, 12)) === "WEBP") {
+    const chunk = String.fromCharCode(...b.subarray(12, 16));
+    if (chunk === "VP8 ") return { width: v.getUint16(26, true) & 0x3fff, height: v.getUint16(28, true) & 0x3fff };
+    if (chunk === "VP8L")
+      return { width: 1 + (((b[22]! & 0x3f) << 8) | b[21]!), height: 1 + (((b[24]! & 0x0f) << 10) | (b[23]! << 2) | ((b[22]! & 0xc0) >> 6)) };
+    if (chunk === "VP8X") return { width: 1 + (b[24]! | (b[25]! << 8) | (b[26]! << 16)), height: 1 + (b[27]! | (b[28]! << 8) | (b[29]! << 16)) };
+    return undefined;
+  }
   if (b.length > 4 && b[0] === 0xff && b[1] === 0xd8) {
     let p = 2;
     while (p + 9 < b.length) {
@@ -117,11 +127,24 @@ async function media(entry: BundleEntry, kind: "video" | "image" | "audio", info
   };
 }
 
+/** The image types a reference may be: the header must give its size so each model's limits are checked before upload. */
+export const REFERENCE_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
+
 /**
- * A character sheet or environment still for the lane, its size read from the
- * header. `src` is where a record reader can see it (a URL); the name otherwise.
+ * A character sheet or environment still for the lane, its type checked and
+ * its size read from the header, so each model's pixel, aspect and file-size
+ * limits are checked before anything is uploaded. `src` is where a record
+ * reader can see it (a URL); the name otherwise.
  */
-export const loadImage = (entry: BundleEntry, src?: string) => media(entry, "image", {}, src ?? entry.name);
+export async function loadImage(entry: BundleEntry, src?: string): Promise<LaneMedia> {
+  const type = typeOf(entry.name);
+  if (!type || !REFERENCE_IMAGE_TYPES.includes(type))
+    throw new GuideError(`${entry.name}: a reference image must be a PNG, JPEG or WebP file (the name ends in .png, .jpg, .jpeg or .webp).`);
+  const m = await media(entry, "image", {}, src ?? entry.name);
+  if (!m.info?.width || !m.info.height)
+    throw new GuideError(`${entry.name}: its width and height could not be read, so the model's size limits cannot be checked. Re-save it as a PNG or JPEG.`);
+  return m;
+}
 
 async function json(entry: BundleEntry | undefined, name: string): Promise<unknown> {
   if (!entry) throw new GuideError(`The bundle has no ${name}.`);
@@ -143,7 +166,7 @@ export function parseGuideShot(v: unknown): GuideShot | undefined {
   const shot: GuideShot = { subject: (o.subject as string).trim(), action: typeof o.action === "string" ? o.action.trim() : "" };
   if (str(o.environment, 500)) shot.environment = (o.environment as string).trim();
   if (str(o.legend, 300)) shot.legend = (o.legend as string).trim();
-  if (CAMERA_MOVES.includes(o.camera as CameraMove)) shot.camera = o.camera as CameraMove;
+  if (o.camera === "guide" || CAMERA_MOVES.includes(o.camera as CameraMove)) shot.camera = o.camera as ShotCamera;
   return shot;
 }
 
@@ -175,7 +198,7 @@ export async function loadGuideBundle(entries: Iterable<BundleEntry>, opts: { ba
   };
   const seconds = meta.durationSeconds;
   if (typeof seconds !== "number" || !(seconds > 0 && seconds <= 600)) throw new GuideError("meta.json: durationSeconds must be 0-600 seconds.");
-  const video = await media(need(manifest.video), "video", { width: meta.width, height: meta.height, seconds, fps: meta.fps }, shown(manifest.video));
+  const video = await media(need(manifest.video), "video", { width: meta.width, height: meta.height, seconds, fps: meta.fps, hasAudio: meta.audioInVideo === true }, shown(manifest.video));
   const firstFrame = await media(need(manifest.firstFrame), "image", {}, shown(manifest.firstFrame));
   const audio = manifest.audio ? await media(need(manifest.audio), "audio", { seconds }, shown(manifest.audio)) : undefined;
   const guide = guideFromBundle({ manifest, beats, meta, ...(recipe ? { recipe } : {}) }, base, undefined);

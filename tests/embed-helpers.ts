@@ -19,6 +19,8 @@ export interface BundleOpts {
   height?: number;
   audio?: boolean;
   shot?: GuideShot | null;
+  /** meta.audioInVideo: the guide video carries its own sound. */
+  audioInVideo?: boolean;
 }
 
 /** The six files Beat Path exports (plus recipe.json with a shot), as name → Blob. */
@@ -48,7 +50,7 @@ export function makeBundle(o: BundleOpts = {}): Record<string, Blob> {
       view: "top",
       character: { kind: "glider", name: "Path glider" },
       generator: { name: "beat-path", version: "0.1.0", motion: "path" },
-      audioInVideo: false,
+      audioInVideo: o.audioInVideo ?? false,
       assets: [{ role: "video", name: "Rendered guide", licence: "MIT", file: "guide.mp4" }],
     }),
     "beats.json": j({ bpm: 120, offsetSeconds: 0, beatsPerBar: 4, source: "analysis", beats: [0, 0.5, 1, 1.5], downbeats: [0] }),

@@ -311,6 +311,7 @@
         },
         "camera": {
           "enum": [
+            "guide",
             "static",
             "push-in",
             "pull-out",
@@ -321,7 +322,8 @@
             "orbit",
             "handheld",
             "rack-focus"
-          ]
+          ],
+          "description": "A neutral camera move, or \"guide\" to take the camera from the guide video."
         },
         "references": {
           "type": "array",

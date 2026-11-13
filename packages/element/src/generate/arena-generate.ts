@@ -226,6 +226,8 @@ export class ArenaGenerate extends HTMLElement {
       hasAudio: this.loaded ? Boolean(this.loaded.audio) : true,
       hasCharacter: Boolean(this.refs.character),
       hasEnvironment: Boolean(this.refs.environment),
+      audioInVideo: this.loaded?.meta.audioInVideo === true,
+      audioSeconds: this.loaded?.audio?.info?.seconds,
     };
     ui.preview.replaceChildren(promptPreview({ shot: this.shot(), override: ui.override.value, model: ui.model(), facts }));
     let text = "Load a guide bundle to see the estimate.";

@@ -11,7 +11,7 @@ import type { ArenaRecord, InputSent, Lane } from "../../packages/core/src/recor
 import { costRow, resolutionCell, type CostRow } from "../cost-row.ts";
 import { laneFromRun, type CostEstimate, type LaneResult } from "../types.ts";
 import { RunwareApiError, type FetchLike } from "./client.ts";
-import { GuideError, loadGuideBundle, loadImage, type BundleEntry, type GuideShot, type LoadedGuide } from "./guide-bundle.ts";
+import { GuideError, loadGuideBundle, loadImage, typeOf, type BundleEntry, type GuideShot, type LoadedGuide } from "./guide-bundle.ts";
 import { planGuideLane, type GuideLanePlan } from "./guide-plan.ts";
 import { runwareProvider } from "./index.ts";
 import type { PollOptions } from "./poll.ts";
@@ -123,9 +123,15 @@ export async function reference(r: ReferenceInput | undefined, role: "character"
   if (!IMAGE_TYPES.includes(blob.type)) throw new GenerateError("refused", `The ${role} image must be PNG, JPEG or WebP; got ${blob.type || "an unknown type"}.`);
   if (blob.size > IMAGE_MAX) throw new GenerateError("refused", `The ${role} image is over 30 MB.`);
   const given = r instanceof Blob ? (r as File).name : (r.name ?? (r.blob as File).name);
-  const name = (given || `${role}.${EXT[blob.type] ?? "png"}`).split(/[\\/]/).pop()!;
+  let name = (given || role).split(/[\\/]/).pop()!;
+  // The file name decides the content type sent; make it agree with the Blob's type.
+  if (typeOf(name) !== blob.type) name = `${name.replace(/\.[A-Za-z0-9]{1,5}$/, "")}.${EXT[blob.type]}`;
   const src = r instanceof Blob ? undefined : r.src;
-  return loadImage(blobEntry(blob, name), src && /^https?:\/\//.test(src) ? src : undefined);
+  try {
+    return await loadImage(blobEntry(blob, name), src && /^https?:\/\//.test(src) ? src : undefined);
+  } catch (e) {
+    throw new GenerateError("refused", `The ${role} image: ${(e as Error).message}`);
+  }
 }
 
 export function blobEntry(blob: Blob, name: string): BundleEntry {

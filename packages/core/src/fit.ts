@@ -30,11 +30,14 @@ export interface ModelCaps {
   startFrameWithReferences: boolean;
   /** LTX-style audio drive: the audio plus one reference image. */
   drivingAudio?: MediaLimits;
+  /** A cap on reference video plus reference audio seconds together (H3: 15 s). */
+  sharedSeconds?: { max: number };
 }
 
 export interface FitMedia {
   name: string;
-  info?: { width?: number; height?: number; seconds?: number; fps?: number | null; bytes?: number };
+  /** `hasAudio`: whether a video already carries its own sound track. */
+  info?: { width?: number; height?: number; seconds?: number; fps?: number | null; bytes?: number; hasAudio?: boolean };
 }
 
 export interface FitInput<M extends FitMedia> {
@@ -71,15 +74,21 @@ export function checkMedia(model: string, role: string, m: FitMedia, lim: MediaL
   const i = m.info;
   if (!i) return out;
   const { width: w, height: h, seconds: s, fps, bytes } = i;
+  // Images and clips need different fixes: a resize or crop in any editor, or an ffmpeg scale.
+  const image = /image/.test(role);
   if (lim.minSide && w && h && (w < lim.minSide || h < lim.minSide))
     out.push(
       `${model} needs ${role} at least ${lim.minSide} px on each side; ${m.name} is ${w}×${h}. ` +
-        `Scale it first, e.g. ffmpeg -i in.mp4 -vf scale=-2:${lim.minSide <= 720 ? 720 : lim.minSide} -c:a copy out.mp4`,
+        (image
+          ? `Use a larger image: export or resize it so its shorter side is at least ${lim.minSide} px (1024 px is a safe size).`
+          : `Scale it first, e.g. ffmpeg -i in.mp4 -vf scale=-2:${lim.minSide <= 720 ? 720 : lim.minSide} -c:a copy out.mp4`),
     );
   if (lim.maxSide && w && h && (w > lim.maxSide || h > lim.maxSide))
-    out.push(`${model} takes ${role} up to ${lim.maxSide} px a side; ${m.name} is ${w}×${h}.`);
+    out.push(`${model} takes ${role} up to ${lim.maxSide} px a side; ${m.name} is ${w}×${h}.${image ? ` Resize it so its longer side is ${lim.maxSide} px or less.` : ""}`);
   if (lim.minRatio && w && h && (w / h < lim.minRatio || w / h > (lim.maxRatio ?? Infinity)))
-    out.push(`${model} takes ${role} with aspect ${lim.minRatio}-${lim.maxRatio}; ${m.name} is ${(w / h).toFixed(2)}.`);
+    out.push(
+      `${model} takes ${role} with aspect ${lim.minRatio}-${lim.maxRatio}; ${m.name} is ${(w / h).toFixed(2)}.${image ? " Crop it closer to square: no side more than 2.5 times the other." : ""}`,
+    );
   if (s !== undefined && lim.minSeconds !== undefined && s < lim.minSeconds)
     out.push(`${model} needs ${role} of at least ${lim.minSeconds} s; ${m.name} is ${s.toFixed(2)} s.`);
   if (s !== undefined && lim.maxSeconds !== undefined && s > lim.maxSeconds)
@@ -87,8 +96,34 @@ export function checkMedia(model: string, role: string, m: FitMedia, lim: MediaL
   if (fps && lim.minFps && (fps < lim.minFps || fps > (lim.maxFps ?? Infinity)))
     out.push(`${model} takes ${role} at ${lim.minFps}-${lim.maxFps} fps; ${m.name} is ${fps} fps.`);
   if (bytes && lim.maxBytes && bytes > lim.maxBytes)
-    out.push(`${model} takes ${role} up to ${Math.round(lim.maxBytes / 1048576)} MB; ${m.name} is ${(bytes / 1048576).toFixed(1)} MB.`);
+    out.push(
+      `${model} takes ${role} up to ${Math.round(lim.maxBytes / 1048576)} MB; ${m.name} is ${(bytes / 1048576).toFixed(1)} MB.${image ? " Save it as a JPEG or at a smaller size." : ""}`,
+    );
   return out;
+}
+
+const sum = (list: FitMedia[]) =>
+  list.reduce<number | undefined>((n, m) => (n === undefined || m.info?.seconds === undefined ? undefined : n + m.info.seconds), 0);
+
+/**
+ * The shared video + audio seconds rule: fine, drop the separate audio (when
+ * the guide already carries its sound), or a refusal when nothing can go.
+ */
+export function sharedSeconds(model: string, caps: ModelCaps, videos: FitMedia[], audios: FitMedia[]): { drop: boolean; note?: string; problem?: string } {
+  const max = caps.sharedSeconds?.max;
+  const vs = sum(videos);
+  const as = sum(audios);
+  if (max === undefined || !audios.length || vs === undefined || as === undefined || vs + as <= max) return { drop: false };
+  const fmt = (n: number) => `${Math.round(n * 100) / 100} s`;
+  if (videos.some((v) => v.info?.hasAudio))
+    return {
+      drop: true,
+      note: `${model} takes reference video and audio up to ${max} s together; the guide (${fmt(vs)}) already carries its sound, so the separate audio (${fmt(as)}) is not sent.`,
+    };
+  return {
+    drop: false,
+    problem: `${model} takes reference video and audio up to ${max} s together; got ${fmt(vs)} of video and ${fmt(as)} of audio. Use a guide of ${fmt(Math.max(0, max - as))} or less, put the sound in the guide video, or send it without the separate audio.`,
+  };
 }
 
 export function fitLane<M extends FitMedia>(caps: ModelCaps, input: FitInput<M>): FitResult<M> {
@@ -139,6 +174,12 @@ export function fitLane<M extends FitMedia>(caps: ModelCaps, input: FitInput<M>)
         problems.push(...checkMedia(model, "reference audio", audio, caps.referenceAudios));
         out.referenceAudios.push(audio);
       }
+    }
+    const shared = sharedSeconds(model, caps, out.referenceVideos, out.referenceAudios);
+    if (shared.problem) refuse(shared.problem);
+    if (shared.drop) {
+      out.referenceAudios = [];
+      out.notes.push(shared.note!);
     }
     if (keyframes.length) refuse(`${model} is fed the whole clip; keyframes belong to the FLUX 3 Video lane.`);
   } else if (caps.approach === "audio-first-frame") {

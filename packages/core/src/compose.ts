@@ -12,6 +12,12 @@ import type { CameraMove, InputKind, ModelSpec } from "./specs/types.ts";
 
 export type ReferenceKind = "image" | "video" | "audio";
 
+/**
+ * The camera of a shot: a neutral move, or "guide" to take it from the guide
+ * video (its camera path and pacing) in each model's own reference wording.
+ */
+export type ShotCamera = CameraMove | "guide";
+
 /** What a reference is for, in neutral terms. */
 export type ReferenceRole =
   | "first-frame"
@@ -53,7 +59,7 @@ export interface ShotDescription {
    * written beside the reference that carries the guide.
    */
   legend?: string;
-  camera: CameraMove;
+  camera: ShotCamera;
   references: ShotReference[];
   /** What the sound should be, in words. */
   audio?: string;
@@ -94,7 +100,7 @@ export interface DroppedInput {
 export type CameraMode = "parameter" | "guide-video" | "prompt";
 
 export interface ComposedCamera {
-  move: CameraMove;
+  move: ShotCamera;
   mode: CameraMode;
   /** The parameter path and value, when mode is "parameter". */
   field?: string;
@@ -208,7 +214,7 @@ function placeInputs(spec: ModelSpec, shot: ShotDescription, opts: ComposeOption
   return { slots, dropped, notes };
 }
 
-function cameraValue(spec: ModelSpec, move: CameraMove): string | undefined {
+function cameraValue(spec: ModelSpec, move: ShotCamera): string | undefined {
   return spec.camera.kind === "parameter" ? spec.camera.values.find((v) => v.move === move)?.value : undefined;
 }
 
@@ -276,11 +282,22 @@ export function composeFor(model: string | ModelSpec, shot: ShotDescription, opt
   const forbiddenBeside = spec.camera.kind === "parameter" ? spec.camera.forbiddenWith.some((k) => used.some((u) => u.input === k)) : true;
   const guideVideo = used.some((u) => u.input === "referenceVideos" && u.role === "motion");
   let camera: ComposedCamera;
-  if (spec.camera.kind === "parameter" && value && !forbiddenBeside) {
+  if (shot.camera === "guide") {
+    const guideRef = used.find((u) => u.input === "referenceVideos" && u.role === "motion");
+    if (guideRef) {
+      // Seedance opens with the camera clause (its prompting guide); Kling and MiniMax name the camera in the guide reference.
+      const text = spec.prompting.addressing.style === "at-mentions" && guideRef.address ? `Camera: follow the camera move of ${guideRef.address}.` : null;
+      notes.push("The camera comes from the guide video: its camera path and pacing, named in the guide reference; no camera move is written.");
+      camera = { move: "guide", mode: "guide-video", text };
+    } else {
+      notes.push("No guide video reaches this model, so no camera move is written; set shot.camera to choose one.");
+      camera = { move: "guide", mode: "prompt", text: null };
+    }
+  } else if (spec.camera.kind === "parameter" && value && !forbiddenBeside) {
     params[spec.camera.field] = value;
     camera = { move: shot.camera, mode: "parameter", field: spec.camera.field, value, text: null };
   } else {
-    const words = cameraSentence(spec, shot.camera, shot.focus);
+    const words = cameraSentence(spec, shot.camera as CameraMove, shot.focus);
     if (words.note) notes.push(words.note);
     if (spec.camera.kind === "parameter" && !value) notes.push(`${spec.camera.field} has no value for "${shot.camera}"; the move is written into the prompt.`);
     if (spec.camera.kind === "parameter" && value && forbiddenBeside) notes.push(`${spec.camera.field} is not allowed beside these inputs; the move is written into the prompt.`);

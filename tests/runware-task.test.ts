@@ -23,7 +23,8 @@ const lanes: [string, LaneRequest][] = [
   ["kling-4", { model: "kling-4", prompt: "Follow <<<video_1>>>.", guideVideo: guide720, duration: 5 }],
   ["kling-4 + first frame", { model: "kling-4", prompt: "Follow <<<video_1>>>.", guideVideo: guide720, firstFrame: frame, duration: 5 }],
   ["seedance-2.5", { model: "seedance-2.5", prompt: "Follow @Video1.", guideVideo: guide720, firstFrame: frame, audio, duration: 5 }],
-  ["h3", { model: "h3", prompt: "Follow the clip.", guideVideo: guide720, firstFrame: frame, audio, duration: 5 }],
+  // A 5 s guide: H3 caps reference video plus audio at 15 s together, so the 8 s guide and 8 s audio would be refused.
+  ["h3", { model: "h3", prompt: "Follow the clip.", guideVideo: { ...guide720, info: { ...guide720.info, seconds: 5 } }, firstFrame: frame, audio: { ...audio, info: { seconds: 5 } }, duration: 5 }],
   ["ltx-2.5 audio", { model: "ltx-2.5", prompt: "A mannequin dances.", firstFrame: frame, audio }],
   ["ltx-2.5 first frame + camera", { model: "ltx-2.5", prompt: "A mannequin dances.", firstFrame: frame, duration: 6, camera: "dolly_in" }],
   ["ltx-2.5-fast audio", { model: "ltx-2.5-fast", prompt: "A mannequin dances.", firstFrame: frame, audio }],

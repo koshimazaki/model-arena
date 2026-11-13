@@ -5,7 +5,7 @@ summary: How a host app vendors the embed bundle — the key panel, the generate
 
 # Embedding Model Arena in another app
 
-Written 13 November 2026. `npm run build:embed` writes one ES module, `dist/embed/model-arena-embed.js` (about 190 kB, 52 kB gzipped), and its types (`dist/embed/model-arena-embed.d.ts` plus `dist/embed/types/`). Styles live in each element's shadow root, so there is no CSS file. Vendor the folder, load the file by a **relative** URL, and it works from any sub-path of a static host: no server, no absolute paths, no framework.
+Written 13 November 2026. `npm run build:embed` writes one ES module, `dist/embed/model-arena-embed.js` (about 195 kB, 54 kB gzipped), and its types (`dist/embed/model-arena-embed.d.ts` plus `dist/embed/types/`). Styles live in each element's shadow root, so there is no CSS file. Vendor the folder, load the file by a **relative** URL, and it works from any sub-path of a static host: no server, no absolute paths, no framework.
 
 **Live path unverified.** Every check here runs against a fake provider (`npm test`, `npm run smoke`). No paid call has been made through the browser flow, and no real key has been used.
 
@@ -100,8 +100,12 @@ What each model gets, read from the schema fixtures in `tests/fixtures/runware-s
 | --- | --- | --- | --- | --- |
 | Kling 4.0 | `referenceVideos` (3-30 s, 700-4553 px, 24-60 fps) | none | up to 10 (frame plus reference images), character then environment | `<<<video_1>>>`, `<<<image_1>>>`, `<<<image_2>>>` |
 | Seedance 2.5 | `referenceVideos` (2-30 s) | `referenceAudios` | up to 30 | `@Video1`, `@Image1`, `@Image2`, `@Audio1` |
-| MiniMax H3 | `referenceVideos` (2-15 s) | `referenceAudios` only while clip plus audio fit 15 s together (an 8 s guide drops its audio) | up to 9 (12 files in all) | "Video 1", "Image 1", "Image 2" |
+| MiniMax H3 | `referenceVideos` (2-15 s) | `referenceAudios` while clip plus audio fit 15 s together (schema x-constraints). Over that, the separate audio is dropped with a note when the guide video carries its own sound (`meta.audioInVideo`), and refused otherwise: an 8 s guide with a separate 8 s audio is refused on H3. The same rule applies in `fit.ts`, so the CLI behaves the same | up to 9 (12 files in all) | "Video 1", "Image 1", "Image 2" |
 | LTX-2.5 Pro | not used | `inputs.audio` drives the clip (2-10 s) | exactly one image: frame 0, the character sheet or the environment image; both is refused | none |
+
+**Camera.** With no `camera` in the shot, the camera comes from the guide video, in each model's reference wording: Kling "Reference only the motion, camera path and pacing of `<<<video_1>>>`", Seedance opens with "Camera: follow the camera move of `@Video1`", and MiniMax's "Video 1 is the motion reference: follow its body motion, timing and camera move". A neutral move in `shot.camera` overrides this on Seedance and H3. LTX-2.5 sees no guide video and gets no camera words.
+
+**Reference images** are checked before any upload: PNG, JPEG or WebP whose header gives the size, then each model's limits from its schema fixture (Kling and Seedance at least 300 px a side, H3 256 px; aspect 0.4-2.5; 30 MB). A refusal names the model and the limit, and says how to fix the image (resize, crop or re-save).
 
 A free-text prompt (`prompt`) replaces the composed one; the lane then has no `composed` marker. Refusals come back as `GenerateError` with a code: `bad-bundle`, `refused` (an input the model cannot take, with the reason), `over-price`, `no-estimate`, `not-confirmed`, `invalid-key`, `timeout` (with `taskUUID`; poll it, do not resubmit), `aborted` (says whether the task may still be billed), `provider`.
 

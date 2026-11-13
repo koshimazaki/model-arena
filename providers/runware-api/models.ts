@@ -181,6 +181,8 @@ export const H3: RunwareModel = {
     frameImages: { ...imageLimits, max: 2, minSide: 256, maxSide: 5760, indexPositions: false },
     // allOf: frameImages is forbidden beside any reference input.
     startFrameWithReferences: false,
+    // x-constraints: duration over inputs.referenceVideos + inputs.referenceAudios, maximum 15, no per-item scope.
+    sharedSeconds: { max: 15 },
   },
   prompt: { min: 2, max: 7000 },
   duration: { kind: "range", min: 4, max: 15, auto: false },

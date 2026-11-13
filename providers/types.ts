@@ -17,7 +17,7 @@ export interface LaneMedia {
   ref: string;
   /** Where a reader of the record can see it (local path or URL). */
   displaySrc?: string;
-  info?: { width?: number; height?: number; seconds?: number; fps?: number | null; bytes?: number };
+  info?: { width?: number; height?: number; seconds?: number; fps?: number | null; bytes?: number; hasAudio?: boolean };
 }
 
 export interface LaneRequest {

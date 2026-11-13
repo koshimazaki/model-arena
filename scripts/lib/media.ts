@@ -2,6 +2,7 @@
 import { readFile, stat } from "node:fs/promises";
 import { basename, extname } from "node:path";
 import { probeMp4 } from "../../packages/core/src/mp4.ts";
+import { imageSize } from "../../providers/runware-api/guide-bundle.ts";
 import type { LaneMedia } from "../../providers/types.ts";
 
 const TYPES: Record<string, string> = {
@@ -68,9 +69,10 @@ export async function loadMedia(pathOrUrl: string, kind: "video" | "image" | "au
       if (kind === "video") throw new Error(`${pathOrUrl}: ${(e as Error).message}`, { cause: e });
     }
   }
-  if (ext === ".png" && bytes.byteLength > 24) {
-    const v = new DataView(bytes.buffer, bytes.byteOffset);
-    media.info = { ...media.info, width: v.getUint32(16), height: v.getUint32(20) };
+  if (kind === "image") {
+    // PNG, JPEG or WebP header: each model's pixel and aspect limits are then checked before upload.
+    const size = imageSize(bytes);
+    if (size) media.info = { ...media.info, ...size };
   }
   if (ext === ".wav") {
     const s = wavSeconds(bytes);

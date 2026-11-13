@@ -52,6 +52,7 @@ Built for a sibling path-drawing app that exports Motion Studio bundles (schema 
 - **Same task from the CLI.** `run-lane --bundle <dir> --character --environment` goes through the same planner (`providers/runware-api/guide-plan.ts`); a test compares the CLI's task with the element's.
 - **Composer.** `ShotDescription` gains optional `environment` and `legend`; lanes may carry their own `shot` (schema version stays 1).
 - **Checked by** `tests/generate.test.ts`, `tests/embed-elements.test.ts`, `tests/embed-parts.test.ts` and the smoke run of `examples/embed.html` from the built file under a static sub-path.
+- **Before the first real run (13 Nov follow-up):** the camera comes from the guide video by default (no "static" camera words beside a guide on Seedance or H3); `fit.ts` enforces H3's 15 s cap on reference video plus audio for every caller (drop the separate audio when the guide carries sound, refuse otherwise); reference images get image-specific refusals and are checked for type, size and dimensions before upload.
 - **Open:** the first paid browser run (the live path, including how an invalid key is reported and whether the output CDN allows a cross-origin download); the real sign-up URL for "Get a key" (it points at runware.ai's home page).
 
 ### What changed from the 7 November assumptions

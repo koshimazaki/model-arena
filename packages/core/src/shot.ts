@@ -45,7 +45,8 @@ export function parseShot(v: unknown, path = "shot"): ShotDescription {
   text(v.legend, `${path}.legend`, 300, true);
   text(v.focus, `${path}.focus`, 200, true);
   text(v.audio, `${path}.audio`, 500, true);
-  if (!CAMERA_MOVES.includes(v.camera as CameraMove)) throw new ShotError(`${path}.camera`, `must be one of ${CAMERA_MOVES.join(", ")}`);
+  if (v.camera !== "guide" && !CAMERA_MOVES.includes(v.camera as CameraMove))
+    throw new ShotError(`${path}.camera`, `must be "guide" or one of ${CAMERA_MOVES.join(", ")}`);
   if (typeof v.duration !== "number" || !(v.duration > 0 && v.duration <= 60)) throw new ShotError(`${path}.duration`, "must be 1-60 seconds");
   if (!Array.isArray(v.references) || v.references.length > 20) throw new ShotError(`${path}.references`, "must be an array of up to 20");
   v.references.forEach((r, i) => {
@@ -70,7 +71,7 @@ export function parseShot(v: unknown, path = "shot"): ShotDescription {
 /** One line for a caption: the intent in plain words. */
 export function shotSummary(s: ShotDescription): string {
   const refs = s.references.map((r) => `${r.role} ${r.kind}`).join(", ");
-  return `${s.subject} ${s.action}${s.environment ? `, ${s.environment}` : ""}. Camera: ${s.camera}. ${s.duration} s${refs ? `. References: ${refs}` : ""}${s.audio ? `. Sound: ${s.audio}` : ""}.`;
+  return `${s.subject} ${s.action}${s.environment ? `, ${s.environment}` : ""}. Camera: ${s.camera === "guide" ? "from the guide" : s.camera}. ${s.duration} s${refs ? `. References: ${refs}` : ""}${s.audio ? `. Sound: ${s.audio}` : ""}.`;
 }
 
 /** The record marker for a lane whose prompt came from the composer. */
