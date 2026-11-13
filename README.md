@@ -67,10 +67,15 @@ Media paths in a record resolve against the record's URL; a record set's tab pat
 Layouts:
 
 - `arena`: the same shot from several models. The reader picks 2-5 models and a layout, swaps any tile's model from its menu, and plays all or one alone. `src` may be a record set, shown as test tabs.
+- `inputs`: the reference images as a strip, the guide and one to three outputs on one playhead with their prompts, the guide's audio once.
 - `guidance`: the Motion Studio guide beside one model's output on one clock, how that model is steered (camera parameter, guide video or prompt words), what it received and its composed prompt. `model="<lane id>"` picks the first lane shown.
 - `three-up` (default): every lane with its full caption.
 
-The element fills its container's width and collapses to one column below 640 px. Colours, fonts and radii are `--ma-*` custom properties (defaults: the Runware blog's dark tokens); `theme="auto"` follows the reader's light or dark setting.
+The element fills its container's width and collapses to one column below 640 px. Colours, fonts and radii are `--ma-*` custom properties with neutral defaults (the dark lime look is `packages/element/themes/dark-lime.css`); `theme="auto"` follows the reader's light or dark setting.
+
+## Embed in another app
+
+`npm run build:embed` writes one file, `dist/embed/model-arena-embed.js`: a key panel, the generate flow as a function and as an element, a player that follows a host clock, and a gallery. See [docs/embed.md](docs/embed.md); `examples/embed.html` shows all of it against a fake provider (`npm run demo:embed` first).
 
 ## Blog demo records
 

@@ -37,10 +37,22 @@ Branch `feat/ma-floor`, not pushed. No paid run has been made: `docs/costs.md` h
 | MA-10 character still | Done (`9b6d7a9`): `npm run still` (FLUX.2 [klein] 9B, Kling IMAGE 3.0), `run-lane --character`, Kling 4.0 Flash lane |
 | MA-11 browser smoke test | Done (`e6284bf`): `npm run smoke` in headless Google Chrome; playback and the shared clock verified |
 | MA-3 keyframes | Not started |
-| MA-4 embed, capture mode, themes | Partly: the build is one file (`dist/model-arena.js`); themes are `--ma-*` properties with the Runware blog tokens as defaults. `templates/embed.html` and capture mode are not built |
-| MA-4b key panel, galleries | Galleries partly, as record-set tabs; the key panel is not built |
+| MA-4 embed, capture mode, themes | Partly: the build is one file (`dist/model-arena.js`); the embed bundle for host apps is built (13 Nov, below); themes are `--ma-*` properties with neutral defaults, the dark lime look moved to `packages/element/themes/dark-lime.css`. `templates/embed.html` and capture mode are not built |
+| MA-4b key panel, galleries | Built against a fake provider (13 Nov): `<arena-key>`, `generateFromGuide`, `<arena-generate>`, `<arena-gallery>`, `<arena-player>`. Live path unverified: no paid browser run yet. The Serverless recipe is not written |
 | MA-5 | Not started (needs Serverless access) |
 | MA-6 | README and docs done; the four published records wait on paid runs |
+
+### Embed for a host app (13 November)
+
+Built for a sibling path-drawing app that exports Motion Studio bundles (schema 0.5.0). One file, `npm run build:embed` → `dist/embed/model-arena-embed.js`, with types; how a host uses it is in [embed.md](embed.md).
+
+- **Parts first.** `generateFromGuide()` (bundle files plus optional character sheet and environment image, a neutral shot `{ subject, environment, action, legend }` with `recipe.json`'s shot as the default, a price cap, a confirm callback, progress events, the key by reference from `<arena-key>`); `offeredModels()` and `composePrompt()` for hosts with their own controls; `<arena-player>` follows the host's clock within a frame.
+- **All in one.** `<arena-generate>`: model picker (Kling 4.0, Seedance 2.5, MiniMax H3, then LTX-2.5 marked "audio + first frame only"), shot fields, own-prompt override, two reference slots, the composed prompt with its tags and the model's prompting guide, "Compare prompts", estimate, inline cost confirmation, result on one clock with the honest caption, Download, "Add to gallery", the costs.md row. Opens with a preset (`preset` attribute or `loadPreset`).
+- **Gallery.** `<arena-gallery>`: records as a switcher, layout `inputs` (reference strip, guide and one to three outputs on one playhead, the guide's audio once, clip sound off by default), "Run this yourself" back into the generate element; empty state "No published runs yet".
+- **Same task from the CLI.** `run-lane --bundle <dir> --character --environment` goes through the same planner (`providers/runware-api/guide-plan.ts`); a test compares the CLI's task with the element's.
+- **Composer.** `ShotDescription` gains optional `environment` and `legend`; lanes may carry their own `shot` (schema version stays 1).
+- **Checked by** `tests/generate.test.ts`, `tests/embed-elements.test.ts`, `tests/embed-parts.test.ts` and the smoke run of `examples/embed.html` from the built file under a static sub-path.
+- **Open:** the first paid browser run (the live path, including how an invalid key is reported and whether the output CDN allows a cross-origin download); the real sign-up URL for "Get a key" (it points at runware.ai's home page).
 
 ### What changed from the 7 November assumptions
 
