@@ -59,6 +59,11 @@ const sentence = (s: string) => {
 const keepOf = (u: UsedInput, shot: ShotDescription) => shot.references.find((r) => r.id === u.ref)?.keep ?? ROLE[u.role].keep;
 const join = (parts: (string | null | undefined | false)[], sep = " ") => parts.filter(Boolean).join(sep);
 
+/** Subject and action, then the environment when the shot names one. */
+const scene = (shot: ShotDescription, body = sentence(`${shot.subject} ${shot.action}`)) =>
+  join([body, shot.environment ? sentence(shot.environment) : null]);
+const legend = (shot: ShotDescription) => (shot.legend ? sentence(shot.legend) : null);
+
 const range = (b: { start: number; end: number }) => `${b.start}–${b.end} s`;
 
 function tags(spec: ModelSpec, shot: ShotDescription, used: UsedInput[], cam: ComposedCamera): string {
@@ -79,7 +84,7 @@ function tags(spec: ModelSpec, shot: ShotDescription, used: UsedInput[], cam: Co
   }
   const beats = shot.beats?.length ? shot.beats.map((b) => `${range(b)}: ${sentence(b.text)}`).join("\n") : null;
   const audio = shot.audio ? `Audio: ${sentence(shot.audio)} No subtitles.` : null;
-  return join([join(lines), join([sentence(`${shot.subject} ${shot.action}`), cam.text]), beats, audio], "\n\n");
+  return join([join([...lines, legend(shot)]), join([scene(shot), cam.text]), beats, audio], "\n\n");
 }
 
 function atMentions(spec: ModelSpec, shot: ShotDescription, used: UsedInput[], cam: ComposedCamera): string {
@@ -89,7 +94,7 @@ function atMentions(spec: ModelSpec, shot: ShotDescription, used: UsedInput[], c
   const audioRef = used.find((u) => u.input === "referenceAudios");
   const audio = shot.audio || audioRef ? join(["Audio:", shot.audio ? sentence(shot.audio) : null, audioRef?.address ? `Sync the motion to ${audioRef.address}.` : null]) : null;
   const beats = shot.beats?.length ? shot.beats.map((b) => `[${b.start}-${b.end}s] ${sentence(b.text)}`).join("\n") : null;
-  return join([cam.text, join(bind), sentence(`${shot.subject} ${shot.action}`), beats, audio], "\n\n");
+  return join([cam.text, join([...bind, legend(shot)]), scene(shot), beats, audio], "\n\n");
 }
 
 function plainWords(spec: ModelSpec, shot: ShotDescription, used: UsedInput[], cam: ComposedCamera): string {
@@ -98,10 +103,10 @@ function plainWords(spec: ModelSpec, shot: ShotDescription, used: UsedInput[], c
     .filter((u) => u.address && u.input !== "referenceAudios")
     .map((u) => (u === motion ? `${u.address} is the motion reference: follow its ${keepOf(u, shot)}.` : `${u.address} is ${ROLE[u.role].noun}; keep ${keepOf(u, shot)}.`));
   // With a motion reference the guide says to describe the subject, not the move.
-  const body = motion ? sentence(`${shot.subject}, moving as in ${motion.address}`) : sentence(`${shot.subject} ${shot.action}`);
+  const body = scene(shot, motion ? sentence(`${shot.subject}, moving as in ${motion.address}`) : undefined);
   const hasAudioRef = used.some((u) => u.input === "referenceAudios");
   const sound = shot.audio || hasAudioRef ? join(["Sound:", shot.audio ? sentence(shot.audio) : null, hasAudioRef ? "Follow the reference audio." : null]) : null;
-  return join([join(refs), join([body, cam.text]), sound], "\n\n");
+  return join([join([...refs, legend(shot)]), join([body, cam.text]), sound], "\n\n");
 }
 
 function paragraph(spec: ModelSpec, shot: ShotDescription, used: UsedInput[], cam: ComposedCamera): string {
@@ -111,7 +116,7 @@ function paragraph(spec: ModelSpec, shot: ShotDescription, used: UsedInput[], ca
       )
     : [];
   const audio = shot.audio ? `Audio: ${sentence(shot.audio)}` : null;
-  return join([...new Set(frames)], " ") + (frames.some(Boolean) ? " " : "") + join([sentence(`${shot.subject} ${shot.action}`), cam.text, audio]);
+  return join([...new Set(frames)], " ") + (frames.some(Boolean) ? " " : "") + join([scene(shot), legend(shot), cam.text, audio]);
 }
 
 export function writePrompt(spec: ModelSpec, shot: ShotDescription, used: UsedInput[], cam: ComposedCamera): string {

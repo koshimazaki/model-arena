@@ -272,6 +272,10 @@
               }
             }
           }
+        },
+        "shot": {
+          "$ref": "#/$defs/shot",
+          "description": "The shot description this lane's prompt was composed from (a lane made by the generate flow carries its own)."
         }
       }
     },
@@ -294,6 +298,16 @@
         "action": {
           "type": "string",
           "maxLength": 500
+        },
+        "environment": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Where it happens; written after the subject and action."
+        },
+        "legend": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "How to read a coloured guide, e.g. 'The orange figure is the character'."
         },
         "camera": {
           "enum": [

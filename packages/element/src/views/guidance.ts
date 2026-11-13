@@ -10,7 +10,7 @@ import type { Lane } from "../../../core/src/record.ts";
 import { el, mediaUrl } from "../captions.ts";
 import { inputsStrip, laneSpec, STEERING, steering } from "../steering.ts";
 import { progress, screen, transport } from "../transport.ts";
-import { costLine, type View, type ViewContext } from "./arena.ts";
+import { costLine, secondsLine, type View, type ViewContext } from "./arena.ts";
 
 const isGuideLane = (l: Lane) => l.model === "guide" || l.provider === "none";
 
@@ -35,7 +35,7 @@ export function guidanceView(ctx: ViewContext, initial?: string | null): View {
   const t = transport(ctx.clock, "Play both");
 
   const guideSrc = record.guide ? mediaUrl(record.guide.video.src, base) : null;
-  const left = screen(guideSrc, "Motion Studio guide", ctx.error);
+  const left = screen(guideSrc, "Guide", ctx.error);
   if (left.video) {
     left.video.addEventListener("loadedmetadata", () => ctx.clock().loaded());
     ctx.clock().add("guide-clip", left.video);
@@ -44,7 +44,7 @@ export function guidanceView(ctx: ViewContext, initial?: string | null): View {
     "figure",
     { class: "side" },
     left.node,
-    el("figcaption", {}, el("span", { class: "model" }, "Motion Studio guide"), el("span", { class: "id" }, record.guide?.title ?? "No guide clip in this record")),
+    el("figcaption", {}, el("span", { class: "model" }, "Guide"), el("span", { class: "id" }, record.guide ? (record.guide.title ?? "The clip every model was given") : "No guide clip in this record")),
   );
 
   const rightSlot = el("div", { class: "side-screen" });
@@ -103,7 +103,7 @@ export function guidanceView(ctx: ViewContext, initial?: string | null): View {
     const mode = steering(lane);
     const modeTitle = STEERING.find((m) => m.id === mode)!.title;
     rightName.textContent = name;
-    rightMeta.textContent = `Steered by: ${modeTitle} · ${costLine(lane)}`;
+    rightMeta.textContent = `Steered by: ${modeTitle} · ${costLine(lane)} · ${secondsLine(lane)}`;
     for (const [id, b] of buttons) b.setAttribute("aria-pressed", String(id === lane.id));
     for (const [id, li] of modeNodes) {
       li.classList.toggle("on", id === mode);

@@ -41,6 +41,8 @@ export function parseShot(v: unknown, path = "shot"): ShotDescription {
   if (!isObj(v)) throw new ShotError(path, "must be an object");
   text(v.subject, `${path}.subject`, 500);
   text(v.action, `${path}.action`, 500);
+  text(v.environment, `${path}.environment`, 500, true);
+  text(v.legend, `${path}.legend`, 300, true);
   text(v.focus, `${path}.focus`, 200, true);
   text(v.audio, `${path}.audio`, 500, true);
   if (!CAMERA_MOVES.includes(v.camera as CameraMove)) throw new ShotError(`${path}.camera`, `must be one of ${CAMERA_MOVES.join(", ")}`);
@@ -68,7 +70,7 @@ export function parseShot(v: unknown, path = "shot"): ShotDescription {
 /** One line for a caption: the intent in plain words. */
 export function shotSummary(s: ShotDescription): string {
   const refs = s.references.map((r) => `${r.role} ${r.kind}`).join(", ");
-  return `${s.subject} ${s.action}. Camera: ${s.camera}. ${s.duration} s${refs ? `. References: ${refs}` : ""}${s.audio ? `. Sound: ${s.audio}` : ""}.`;
+  return `${s.subject} ${s.action}${s.environment ? `, ${s.environment}` : ""}. Camera: ${s.camera}. ${s.duration} s${refs ? `. References: ${refs}` : ""}${s.audio ? `. Sound: ${s.audio}` : ""}.`;
 }
 
 /** The record marker for a lane whose prompt came from the composer. */

@@ -1,0 +1,20 @@
+/*
+ * A dark theme with a lime accent: the look the blog demo and specs page use.
+ * Load it beside the elements to replace the neutral defaults; any one token
+ * can be overridden the same way. Fonts are named, not loaded.
+ */
+model-arena, model-specs, arena-key, arena-generate, arena-gallery {
+  --ma-bg: #1a1a1a;
+  --ma-card: #1c1c1c;
+  --ma-fg: #f2f2f2;
+  --ma-muted: #d9d9d9;
+  --ma-line: #454545;
+  --ma-input: #2e2e2e;
+  --ma-chip: #292929;
+  --ma-accent: #afff9f;
+  --ma-accent-fg: #1c1c1c;
+  --ma-warn: #ffff7d;
+  --ma-ok: #afff9f;
+  --ma-font: "Figtree", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ma-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}

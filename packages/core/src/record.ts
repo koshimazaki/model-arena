@@ -95,6 +95,8 @@ export interface Lane {
   note?: string;
   /** Set when the prompt came from the composer: the record's `shot`, written for this model. */
   composed?: { model: string; notes?: string[]; dropped?: string[] };
+  /** The shot this lane's prompt was composed from, when the lane carries its own (the generate flow). */
+  shot?: ShotDescription;
 }
 
 export interface ArenaRecord {
@@ -227,7 +229,17 @@ function lane(v: unknown, path: string): Lane {
       list.forEach((n, i) => text(n, `${path}.composed.${k}[${i}]`, 1000));
     }
   }
+  if (v.shot !== undefined) shotAt(v.shot, `${path}.shot`);
   return v as unknown as Lane;
+}
+
+function shotAt(v: unknown, path: string) {
+  try {
+    parseShot(v, path);
+  } catch (e) {
+    if (e instanceof ShotError) throw new RecordError(e.path, e.message.slice(e.path.length + 2));
+    throw e;
+  }
 }
 
 /** Validates an untrusted record; throws `RecordError` naming the first bad field. */
@@ -238,14 +250,7 @@ export function parseRecord(v: unknown): ArenaRecord {
   if (typeof v.id !== "string" || !SLUG.test(v.id)) throw new RecordError("id", "must be a slug");
   text(v.title, "title", 200, 1);
   if (v.guide !== undefined) parseGuide(v.guide);
-  if (v.shot !== undefined) {
-    try {
-      parseShot(v.shot);
-    } catch (e) {
-      if (e instanceof ShotError) throw new RecordError(e.path, e.message.slice(e.path.length + 2));
-      throw e;
-    }
-  }
+  if (v.shot !== undefined) shotAt(v.shot, "shot");
   if (!Array.isArray(v.lanes) || v.lanes.length < 1 || v.lanes.length > 12)
     throw new RecordError("lanes", "must hold 1-12 lanes");
   const lanes = v.lanes.map((l, i) => lane(l, `lanes[${i}]`));

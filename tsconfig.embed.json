@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "rewriteRelativeImportExtensions": true,
+    "types": [],
+    "outDir": "dist/embed/types",
+    "rootDir": "."
+  },
+  "include": [],
+  "files": ["packages/element/src/embed.ts"]
+}

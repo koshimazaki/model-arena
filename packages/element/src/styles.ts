@@ -1,36 +1,16 @@
 /**
  * Shadow-DOM styles. Every colour, font and radius is a `--ma-*` custom
- * property on the element, so a host page overrides any of them from outside:
+ * property (packages/element/src/tokens.ts, neutral defaults), so a host page
+ * overrides any of them from outside:
  *   model-arena { --ma-accent: hotpink; }
- * The defaults are the Runware blog's dark tokens (read 10 Nov 2026), because
- * that blog is dark-only. theme="auto" follows prefers-color-scheme with a
- * light variant; theme="light" forces it. Fonts are named, not loaded: the
- * host page loads Figtree and JetBrains Mono, and system fonts stand in.
+ * The dark look the blog demo uses is a theme file, themes/dark-lime.css.
  */
+import { tokens } from "./tokens.ts";
 import { viewStyles } from "./styles-views.ts";
 
-const LIGHT = `
-  --ma-bg: #ffffff; --ma-card: #f6f6f6; --ma-fg: #161616; --ma-muted: #555555;
-  --ma-line: #d4d4d4; --ma-input: #ececec; --ma-chip: #e9e9e9;
-  --ma-accent: #2f7d1e; --ma-accent-fg: #ffffff; --ma-warn: #9a5800;`;
-
 export const styles = /* css */ `
+${tokens}
 :host {
-  --ma-bg: #1a1a1a;
-  --ma-card: #1c1c1c;
-  --ma-fg: #f2f2f2;
-  --ma-muted: #d9d9d9;
-  --ma-line: #454545;
-  --ma-input: #2e2e2e;
-  --ma-chip: #292929;
-  --ma-accent: #afff9f;
-  --ma-accent-fg: #1c1c1c;
-  --ma-warn: #ffff7d;
-  --ma-radius: 7px;
-  --ma-radius-lg: 12px;
-  --ma-gap: 8px;
-  --ma-font: "Figtree", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --ma-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   display: block;
   width: 100%;
   max-width: 100%;
@@ -42,8 +22,6 @@ export const styles = /* css */ `
   font: 400 14px/1.5 var(--ma-font);
   container-type: inline-size;
 }
-:host([theme="light"]) {${LIGHT} }
-@media (prefers-color-scheme: light) { :host([theme="auto"]) {${LIGHT} } }
 * { box-sizing: border-box; }
 .head {
   display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px 16px;

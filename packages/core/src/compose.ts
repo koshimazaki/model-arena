@@ -46,6 +46,13 @@ export interface ShotBeat {
 export interface ShotDescription {
   subject: string;
   action: string;
+  /** Where it happens, e.g. "a sunlit warehouse"; written after the subject and action. */
+  environment?: string;
+  /**
+   * How to read a coloured guide, e.g. "The orange figure is the character";
+   * written beside the reference that carries the guide.
+   */
+  legend?: string;
   camera: CameraMove;
   references: ShotReference[];
   /** What the sound should be, in words. */

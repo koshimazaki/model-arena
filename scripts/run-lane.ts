@@ -4,6 +4,7 @@
  *
  *   npm run lane -- --model kling-4 --prompt "..." --guide clip.mp4 --duration 5 --dry-run
  *   RUNWARE_API_KEY=... npm run lane -- ... --max-price 1.50
+ *   npm run lane -- --model kling-4 --bundle path/to/bundle --character sheet.png --dry-run
  *
  * --dry-run prints the exact task (and the uploads it needs) and sends nothing.
  * A real run refuses without --max-price, refuses when the schema-rate estimate
@@ -20,6 +21,7 @@ import type { ArenaRecord, FirstFrameVariant } from "../packages/core/src/record
 import { findModel, MODELS } from "../providers/runware-api/models.ts";
 import { runwareProvider } from "../providers/runware-api/index.ts";
 import { laneFromRun, type LanePlan, type LaneRequest } from "../providers/types.ts";
+import { buildBundleRequest } from "./lib/bundle-lane.ts";
 import { appendCost } from "./lib/costs.ts";
 import { elide, loadMedia } from "./lib/media.ts";
 import { composeFromFile, describeComposed, type ComposedLane } from "./lib/shot.ts";
@@ -29,6 +31,11 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const HELP = `Usage: npm run lane -- --model <key> --prompt <text> [inputs] [options]
 
 Models: ${MODELS.map((m) => `${m.key} (${m.air})`).join(", ")}
+
+Bundle:   --bundle <dir>  (a Motion Studio / Beat Path guide bundle: bundle.json, meta.json, beats.json,
+          the guide, frame 0, audio, recipe.json; the same planner as <arena-generate>. The shot is
+          recipe.json's "shot" or --shot <{subject, environment, action, legend}.json>; models
+          kling-4, seedance-2.5, h3, ltx-2.5; add --character for a character sheet)
 
 Inputs:   --guide <mp4|https>  --first-frame <png|jpg|https>  --audio <wav|mp3|m4a|https>
           --character <png|jpg|https>  (a still that replaces the guide's figure: a reference
@@ -68,6 +75,7 @@ export function parseCli(argv: string[]) {
       model: { type: "string" },
       prompt: { type: "string" },
       guide: { type: "string" },
+      bundle: { type: "string" },
       "first-frame": { type: "string" },
       "first-frame-variant": { type: "string" },
       character: { type: "string" },
@@ -188,10 +196,11 @@ export async function runLaneCli(argv: string[], deps: CliDeps = {}): Promise<vo
 
   const key = deps.key ?? (process.env.RUNWARE_API_KEY?.trim() || undefined);
   const provider = runwareProvider({ getKey: () => key });
-  let req: LaneRequest & { composed?: ComposedLane };
+  let req: LaneRequest & { composed?: ComposedLane; sources?: string[] };
   let plan: LanePlan;
   try {
-    req = await buildRequest(o);
+    if (o.bundle && !o.model) fail("--model is required.\n\n" + HELP);
+    req = o.bundle ? await buildBundleRequest({ ...o, bundle: o.bundle, model: o.model! }) : await buildRequest(o);
     plan = provider.plan(req);
   } catch (e) {
     fail(`Refused: ${(e as Error).message}`);
@@ -215,7 +224,7 @@ export async function runLaneCli(argv: string[], deps: CliDeps = {}): Promise<vo
   await mkdir(join(outDir, "inputs"), { recursive: true });
   for (const m of [req.guideVideo, req.firstFrame, req.character, req.audio])
     if (m && !m.ref.startsWith("https://")) {
-      const src = [o.guide, o["first-frame"], o.character, o.audio].find((p) => p && basename(p) === m.name);
+      const src = [o.guide, o["first-frame"], o.character, o.audio, ...(req.sources ?? [])].find((p) => p && basename(p) === m.name);
       if (src) await copyFile(src, join(outDir, "inputs", m.name));
       m.displaySrc = `inputs/${m.name}`;
     }
@@ -251,7 +260,10 @@ export async function runLaneCli(argv: string[], deps: CliDeps = {}): Promise<vo
   await writeFile(join(outDir, "output.mp4"), new Uint8Array(await res.arrayBuffer()));
 
   const lane = laneFromRun("lane-1", plan, req, result, "output.mp4");
-  if (req.composed && !o.prompt) lane.composed = req.composed.marker;
+  if (req.composed && !o.prompt) {
+    lane.composed = req.composed.marker;
+    if (o.bundle) lane.shot = req.composed.shot;
+  }
   const record: ArenaRecord = {
     schemaVersion: 1, id: `run-${taskUUID.slice(0, 8)}`, title: `${plan.modelName}: ${req.prompt.slice(0, 80)}`, createdAt: date, lanes: [lane],
     ...(req.composed ? { shot: req.composed.shot } : {}),

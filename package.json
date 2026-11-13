@@ -11,6 +11,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:embed": "vite build -c vite.embed.config.ts && tsc -p tsconfig.embed.json && node scripts/embed-types.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
@@ -18,6 +19,7 @@
     "demo:media": "sh scripts/prepare-demo-media.sh",
     "demo:placeholders": "sh scripts/make-placeholder-clips.sh",
     "demo:records": "tsx scripts/build-demo-records.ts",
+    "demo:embed": "sh scripts/make-embed-bundle.sh",
     "shot": "node scripts/shot.mjs",
     "smoke": "node scripts/smoke.mjs",
     "still": "tsx scripts/make-still.ts"
