@@ -39,9 +39,12 @@ describe("guide models and composed prompts", () => {
   it("offers Kling 4.0, Seedance 2.5, MiniMax H3, then LTX-2.5 marked audio + first frame only", () => {
     const m = guideModels();
     expect(m.map((x) => x.key)).toEqual(["kling-4", "seedance-2.5", "h3", "ltx-2.5"]);
-    expect(m[0]!.line).toContain("reference video (3-30 s, 700+ px a side, 24-60 fps)");
+    expect(m[0]!.line).toContain("reference video <<<video_1>>> (3-30 s, 700+ px a side, 24-60 fps)");
     expect(m[0]!.line).toContain("no audio input");
-    expect(m[1]!.line).toContain("the audio as reference audio");
+    expect(m[0]!.line).toContain("character sheet <<<image_1>>>, environment <<<image_2>>>");
+    expect(m[1]!.line).toContain("its audio as reference audio; up to 30 reference images");
+    expect(m[2]!.line).toContain("when clip and audio fit 15 s together");
+    expect(m[3]!.line).toContain("exactly one image");
     expect(m[3]!.use).toBe("audio-first-frame");
     expect(m[3]!.line).toMatch(/^Audio \+ first frame only: does not use the guide video/);
     for (const x of m) expect(x.guide.url).toMatch(/^https:\/\/runware\.ai\/docs\/models\//);
@@ -101,11 +104,82 @@ describe("guide models and composed prompts", () => {
   });
 });
 
+describe("character sheet and environment image, per model, with zero, one and two images", () => {
+  const img = async (name: string, w = 768, h = 1024) => {
+    const { loadImage } = await import("../providers/runware-api/guide-bundle.ts");
+    const { blobEntry } = await import("../providers/runware-api/generate.ts");
+    return loadImage(blobEntry(characterPng(w, h), name));
+  };
+  // From the schema fixtures, with a reference video present: Kling takes up to 10 frame
+  // plus reference images, Seedance 30 reference images, H3 9 (12 files in all).
+  const CASES = [
+    { model: "kling-4", tags: ["<<<image_1>>>", "<<<image_2>>>"] },
+    { model: "seedance-2.5", tags: ["@Image1", "@Image2"] },
+    { model: "h3", tags: ["Image 1", "Image 2"] },
+  ];
+  for (const c of CASES) {
+    it(`${c.model}: images go in as reference images, character first, addressed in its own syntax`, async () => {
+      const guide = await load();
+      const character = await img("character.png");
+      const environment = await img("environment.png", 1280, 720);
+      const zero = planGuideLane({ guide, model: c.model });
+      expect((zero.plan.task.inputs as Record<string, unknown>).referenceImages).toBeUndefined();
+      expect(zero.plan.task.positivePrompt).not.toContain(c.tags[0]);
+
+      const one = planGuideLane({ guide, model: c.model, environment });
+      expect((one.plan.task.inputs as Record<string, unknown[]>).referenceImages).toHaveLength(1);
+      expect(one.plan.inputsSent.filter((i) => i.role === "referenceImage").map((i) => i.label)).toEqual(["environment.png"]);
+      expect(one.plan.task.positivePrompt).toContain(`${c.tags[0]}`);
+      expect(one.plan.task.positivePrompt).toMatch(/setting/);
+
+      const two = planGuideLane({ guide, model: c.model, character, environment });
+      expect((two.plan.task.inputs as Record<string, unknown[]>).referenceImages).toHaveLength(2);
+      expect(two.plan.inputsSent.filter((i) => i.role === "referenceImage").map((i) => i.label)).toEqual(["character.png", "environment.png"]);
+      const p = String(two.plan.task.positivePrompt);
+      expect(p.indexOf(c.tags[0]!)).toBeLessThan(p.indexOf(c.tags[1]!));
+      expect(p).toMatch(new RegExp(`${c.tags[0]!.replace(/[<>@]/g, ".")}[^\\n]*character|character[^\\n]*${c.tags[0]!.replace(/[<>@]/g, ".")}`));
+      expect(p).toMatch(new RegExp(`${c.tags[1]!.replace(/[<>@]/g, ".")}[^\\n]*setting|setting[^\\n]*${c.tags[1]!.replace(/[<>@]/g, ".")}`));
+    });
+  }
+
+  it("kling-4 replaces the guide's figure and background by tag", async () => {
+    const guide = await load();
+    const p = String(planGuideLane({ guide, model: "kling-4", character: await img("c.png"), environment: await img("e.png") }).plan.task.positivePrompt);
+    expect(p).toContain("Replace the figure in the guide with the character in <<<image_1>>>");
+    expect(p).toContain("Replace the guide's background with the setting in <<<image_2>>>");
+  });
+
+  it("ltx-2.5 takes zero or one image (frame 0, the character or the environment) and refuses two", async () => {
+    const guide = await load();
+    const ref = (lp: ReturnType<typeof planGuideLane>) => lp.plan.inputsSent.find((i) => i.role === "referenceImage")?.label;
+    expect(ref(planGuideLane({ guide, model: "ltx-2.5" }))).toBe("frame0.png");
+    expect(ref(planGuideLane({ guide, model: "ltx-2.5", character: await img("c.png") }))).toBe("c.png");
+    const env = planGuideLane({ guide, model: "ltx-2.5", environment: await img("e.png") });
+    expect(ref(env)).toBe("e.png");
+    expect(env.plan.firstFrameVariant).toBe("B");
+    const [c, e] = [await img("c.png"), await img("e.png")];
+    expect(() => planGuideLane({ guide, model: "ltx-2.5", character: c, environment: e })).toThrow(/exactly one image.*not both/);
+  });
+
+  it("refuses an environment image the model cannot take at its size, naming the model", async () => {
+    const guide = await load();
+    expect(() => planGuideLane({ guide, model: "kling-4", environment: { ...(guide.firstFrame), name: "tiny.png", info: { width: 200, height: 120 } } })).toThrow(/Kling VIDEO 4\.0 needs reference images at least 300 px/);
+  });
+
+  it("generateFromGuide takes host-supplied references as Blobs or with a URL", async () => {
+    const { o, api } = opts({ model: "seedance-2.5", references: { character: characterPng(), environment: { blob: characterPng(1280, 720), src: "https://host.example/env.png", name: "env.png" } } });
+    const r = await generateFromGuide(o);
+    expect(api.tasks("mediaStorage")).toHaveLength(4);
+    expect(r.lane.inputsSent.filter((i) => i.role === "referenceImage").map((i) => i.src)).toEqual(["character-sheet.png", "https://host.example/env.png"]);
+    await expect(generateFromGuide({ ...o, references: { environment: new Blob(["x"], { type: "text/plain" }) } })).rejects.toMatchObject({ code: "refused" });
+  });
+});
+
 describe("generateFromGuide", () => {
   it("talks to api.runware.ai only and never leaks the key into logs or the record", async () => {
     const spies = (["log", "info", "warn", "error", "debug"] as const).map((k) => vi.spyOn(console, k));
     const progress: string[] = [];
-    const { o, api } = opts({ characterImage: characterPng(), onProgress: (p) => progress.push(p.stage) });
+    const { o, api } = opts({ references: { character: characterPng() }, onProgress: (p) => progress.push(p.stage) });
     const res = await generateFromGuide(o);
     expect(api.calls.length).toBeGreaterThan(2);
     for (const c of api.calls) expect(new URL(c.url).host).toBe("api.runware.ai");

@@ -5,37 +5,40 @@
  * Attributes: `subject`, `environment`, `action`, `legend` (the shot; the
  * bundle's recipe.json `shot` fills any left out), `prompt` (free text that
  * replaces the composed prompt), `model` (kling-4 default), `max-price` (USD,
- * default 2), `guide-src` (a bundle directory URL), `key-panel` (the id of an
+ * default 2), `guide-src` (a bundle directory URL), `preset` (a preset JSON
+ * URL: bundle, references, shot, model), `key-panel` (the id of an
  * <arena-key>; otherwise the first on the page, otherwise its own), `theme`.
- * Properties: `guide` (FileList, File[] or name → Blob), `fetch` and
+ * Properties: `guide` (FileList, File[] or name → Blob), `references`
+ * ({ character?, environment? } as Blobs), `preset` (an object), `fetch` and
  * `pollOptions` (a fake provider), `confirm` (replaces the inline cost check).
+ * Method: `loadPreset(preset, baseUrl?)`.
  * Events: `arena-generate-progress`, `arena-generate-result`,
  * `arena-generate-error`, `arena-gallery-add` (detail.record).
  */
 import type { ArenaRecord } from "../../../core/src/record.ts";
 import type { FetchLike } from "../../../../providers/runware-api/client.ts";
-import { blobEntry, entriesOf, generateFromGuide, GenerateError, type CostQuestion, type GenerateOptions } from "../../../../providers/runware-api/generate.ts";
-import { loadGuideBundle, loadImage, type GuideShot, type LoadedGuide } from "../../../../providers/runware-api/guide-bundle.ts";
-import { guideModels, planGuideLane } from "../../../../providers/runware-api/guide-plan.ts";
+import { entriesOf, generateFromGuide, GenerateError, reference, type CostQuestion, type GenerateOptions, type ReferenceInput } from "../../../../providers/runware-api/generate.ts";
+import { loadGuideBundle, type GuideShot, type LoadedGuide } from "../../../../providers/runware-api/guide-bundle.ts";
+import { planGuideLane } from "../../../../providers/runware-api/guide-plan.ts";
 import type { LaneMedia } from "../../../../providers/types.ts";
 import { el, usd } from "../captions.ts";
 import { defineKey, type ArenaKey } from "../key-panel.ts";
+import { buildForm, refSlot, SHOT_FIELDS, type Form, type RefRole, type RefSlot, type ShotField } from "./form.ts";
+import { fetchBundle, fetchReference, parsePreset, type GeneratePreset } from "./preset.ts";
 import { promptPreview } from "./prompt-preview.ts";
 import { resultView } from "./result-view.ts";
 import { generateStyles } from "./styles.ts";
 
-const SHOT_FIELDS = [
-  ["subject", "Subject", "Who or what moves"],
-  ["environment", "Environment", "Where it happens"],
-  ["action", "Action", "What it does along the path"],
-  ["legend", "Colour legend", "e.g. The orange figure is the character"],
-] as const;
-type ShotField = (typeof SHOT_FIELDS)[number][0];
-const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
 const here = () => (typeof location === "undefined" ? "http://localhost/" : location.href);
+type BundleFiles = Iterable<File> | ArrayLike<File> | Record<string, Blob>;
+interface HeldRef {
+  input: ReferenceInput;
+  media: LaneMedia;
+  url: string;
+}
 
 export class ArenaGenerate extends HTMLElement {
-  static observedAttributes = ["guide-src"];
+  static observedAttributes = ["guide-src", "preset"];
   /** A fake or wrapped fetch for the provider; the page's fetch otherwise. */
   fetch?: FetchLike;
   pollOptions?: GenerateOptions["poll"];
@@ -46,25 +49,12 @@ export class ArenaGenerate extends HTMLElement {
   private urls = new Map<string, string>();
   private base = here();
   private loaded?: LoadedGuide;
-  private character?: { media: LaneMedia; blob: Blob; url: string };
+  private refs: Partial<Record<RefRole, HeldRef>> = {};
+  private slots?: Record<RefRole, RefSlot>;
   private abort?: AbortController;
   private ownKey?: ArenaKey;
-  private ui?: {
-    model: () => string;
-    fields: Record<ShotField, HTMLInputElement>;
-    override: HTMLTextAreaElement;
-    maxPrice: HTMLInputElement;
-    guideInfo: HTMLElement;
-    charSlot: HTMLElement;
-    preview: HTMLElement;
-    estimate: HTMLElement;
-    run: HTMLButtonElement;
-    stop: HTMLButtonElement;
-    confirmSlot: HTMLElement;
-    status: HTMLElement;
-    error: HTMLElement;
-    result: HTMLElement;
-  };
+  private ui?: Form;
+  private pending?: Promise<void>;
 
   constructor() {
     super();
@@ -73,22 +63,89 @@ export class ArenaGenerate extends HTMLElement {
 
   connectedCallback() {
     if (!this.ui) this.build();
+    const preset = this.getAttribute("preset");
     const src = this.getAttribute("guide-src");
-    if (src && !this.loaded) void this.fetchGuide(src);
+    if (preset && !this.loaded) void this.fetchPreset(preset);
+    else if (src && !this.loaded) void this.loadFrom(src);
   }
 
-  attributeChangedCallback(_n: string, old: string | null, value: string | null) {
-    if (this.ui && value && value !== old) void this.fetchGuide(value);
+  attributeChangedCallback(name: string, old: string | null, value: string | null) {
+    if (!this.ui || !value || value === old) return;
+    if (name === "preset") void this.fetchPreset(value);
+    else void this.loadFrom(value);
   }
 
   /** A bundle: FileList, File[] or name → Blob. */
-  set guide(src: Iterable<File> | ArrayLike<File> | Record<string, Blob>) {
-    void this.setGuide(src, here());
+  set guide(src: BundleFiles) {
+    this.pending = this.setGuide(src, here());
   }
 
   /** The loaded guide, or undefined. */
   get guide(): LoadedGuide | undefined {
     return this.loaded;
+  }
+
+  /** Host-supplied reference images; a missing role is cleared. */
+  set references(r: { character?: ReferenceInput; environment?: ReferenceInput } | undefined) {
+    this.pending = Promise.all([this.setRef("character", r?.character), this.setRef("environment", r?.environment)]).then(() => undefined);
+  }
+
+  get references(): { character?: ReferenceInput; environment?: ReferenceInput } {
+    return { ...(this.refs.character ? { character: this.refs.character.input } : {}), ...(this.refs.environment ? { environment: this.refs.environment.input } : {}) };
+  }
+
+  set preset(p: GeneratePreset) {
+    this.pending = this.loadPreset(p);
+  }
+
+  /** Resolves once the last guide, references or preset handed in has loaded. */
+  whenReady(): Promise<void> {
+    return this.pending ?? Promise.resolve();
+  }
+
+  /** Loads a bundle, its references, shot and model; URLs resolve against `baseUrl`. */
+  async loadPreset(p: unknown, baseUrl = here()): Promise<void> {
+    if (!this.ui) this.build();
+    const ui = this.ui!;
+    try {
+      const preset = parsePreset(p);
+      const abs = (u: string) => new URL(u, baseUrl).href;
+      const { files, dir } = await fetchBundle(abs(preset.bundle));
+      await this.setGuide(files, dir, true);
+      for (const role of ["character", "environment"] as const) {
+        const u = preset.references?.[role];
+        await this.setRef(role, u ? await fetchReference(abs(u)) : undefined);
+      }
+      if (preset.shot) for (const [k] of SHOT_FIELDS) ui.fields[k].value = preset.shot[k] ?? "";
+      if (preset.model) ui.setModel(preset.model);
+      ui.override.value = preset.prompt ?? "";
+      ui.own.open = Boolean(ui.override.value);
+      this.refresh();
+    } catch (e) {
+      this.fail(`Could not load the preset: ${(e as Error).message}`);
+    }
+  }
+
+  private async fetchPreset(src: string) {
+    try {
+      const href = new URL(src, here()).href;
+      const res = await fetch(href);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      this.pending = this.loadPreset(await res.json(), href);
+      await this.pending;
+    } catch (e) {
+      this.fail(`Could not load the preset: ${(e as Error).message}`);
+    }
+  }
+
+  private async loadFrom(src: string) {
+    try {
+      const { files, dir } = await fetchBundle(new URL(src, here()).href);
+      this.pending = this.setGuide(files, dir, true);
+      await this.pending;
+    } catch (e) {
+      this.fail(`Could not load the guide bundle: ${(e as Error).message}`);
+    }
   }
 
   private keySource(): ArenaKey | undefined {
@@ -106,44 +163,20 @@ export class ArenaGenerate extends HTMLElement {
     return { subject: v("subject"), action: v("action"), ...(v("environment") ? { environment: v("environment") } : {}), ...(v("legend") ? { legend: v("legend") } : {}) };
   }
 
-  private async fetchGuide(src: string) {
-    try {
-      const dir = new URL(src.endsWith("/") ? src : `${src}/`, here()).href;
-      const get = async (name: string) => {
-        const res = await fetch(new URL(name, dir).href);
-        if (!res.ok) throw new Error(`${name}: HTTP ${res.status}`);
-        return res.blob();
-      };
-      const manifest = JSON.parse(await (await get("bundle.json")).text()) as Record<string, unknown>;
-      const names = ["video", "audio", "firstFrame", "beats", "recipe", "meta", "camera"].map((k) => manifest[k]).filter((n): n is string => typeof n === "string" && /^[A-Za-z0-9._-]{1,255}$/.test(n));
-      const files: Record<string, Blob> = { "bundle.json": new Blob([JSON.stringify(manifest)], { type: "application/json" }) };
-      for (const n of names) {
-        try {
-          files[n] = await get(n);
-        } catch (e) {
-          if (n !== manifest.recipe && n !== manifest.camera) throw e;
-        }
-      }
-      await this.setGuide(files, dir);
-    } catch (e) {
-      this.fail(`Could not load the guide bundle: ${(e as Error).message}`);
-    }
-  }
-
-  private async setGuide(src: Iterable<File> | ArrayLike<File> | Record<string, Blob>, base: string) {
+  private async setGuide(src: BundleFiles, base: string, published = false) {
     const ui = this.ui ?? (this.build(), this.ui!);
     try {
-      const entries = entriesOf(src);
       const map = new Map<string, Blob>();
       const list = Array.isArray(src) || (src as ArrayLike<File>).length !== undefined ? Array.from(src as ArrayLike<File>) : null;
       if (list) for (const f of list) map.set(f.name.split(/[\\/]/).pop()!, f);
       else for (const [k, b] of Object.entries(src as Record<string, Blob>)) map.set(k, b);
-      const loaded = await loadGuideBundle(entries);
-      for (const u of this.urls.values()) if (u.startsWith("blob:")) URL.revokeObjectURL(u);
+      // A bundle fetched from a URL is published: the record points at it, so the gallery can play it later.
+      const loaded = await loadGuideBundle(entriesOf(src), published ? { base } : {});
+      for (const [n, u] of this.urls) if (!Object.values(this.refs).some((r) => r?.media.displaySrc === n)) URL.revokeObjectURL(u);
       this.urls = new Map([...map].filter(([n]) => !n.endsWith(".json")).map(([n, b]) => [n, URL.createObjectURL(b)]));
+      for (const r of Object.values(this.refs)) if (r) this.urls.set(r.media.displaySrc ?? r.media.name, r.url);
       this.base = base;
       this.loaded = loaded;
-      // The recipe's shot fills every field the page left empty.
       for (const [k] of SHOT_FIELDS) {
         const val = loaded.shot?.[k];
         if (val && !ui.fields[k].value && !this.getAttribute(k)) ui.fields[k].value = val;
@@ -157,6 +190,30 @@ export class ArenaGenerate extends HTMLElement {
     }
   }
 
+  private async setRef(role: RefRole, input: ReferenceInput | undefined) {
+    if (!this.ui) this.build();
+    const slot = this.slots![role];
+    const old = this.refs[role];
+    if (old) URL.revokeObjectURL(old.url);
+    delete this.refs[role];
+    slot.shown.replaceChildren();
+    if (input) {
+      try {
+        const media = (await reference(input, role))!;
+        const blob = input instanceof Blob ? input : input.blob;
+        const url = URL.createObjectURL(blob);
+        this.refs[role] = { input, media, url };
+        this.urls.set(media.displaySrc ?? media.name, url);
+        const clear = el("button", { type: "button", "data-action": `clear-${role}` }, "Remove");
+        clear.addEventListener("click", () => void this.setRef(role, undefined).then(() => this.refresh()));
+        slot.shown.append(el("img", { src: url, alt: role === "character" ? "Character sheet" : "Environment" }), el("span", { class: "note" }, `${media.name}${media.info?.width ? ` · ${media.info.width}×${media.info.height}` : ""}`), clear);
+      } catch (e) {
+        this.fail((e as Error).message, "refused");
+      }
+    }
+    this.refresh();
+  }
+
   private fail(msg: string, code = "bad-bundle") {
     if (this.ui) this.ui.error.textContent = msg;
     this.dispatchEvent(new CustomEvent("arena-generate-error", { bubbles: true, composed: true, detail: { code, message: msg } }));
@@ -164,12 +221,17 @@ export class ArenaGenerate extends HTMLElement {
 
   private refresh() {
     const ui = this.ui!;
-    const facts = { seconds: this.loaded?.seconds ?? 5, hasAudio: this.loaded ? Boolean(this.loaded.audio) : true, hasCharacter: Boolean(this.character) };
+    const facts = {
+      seconds: this.loaded?.seconds ?? 5,
+      hasAudio: this.loaded ? Boolean(this.loaded.audio) : true,
+      hasCharacter: Boolean(this.refs.character),
+      hasEnvironment: Boolean(this.refs.environment),
+    };
     ui.preview.replaceChildren(promptPreview({ shot: this.shot(), override: ui.override.value, model: ui.model(), facts }));
     let text = "Load a guide bundle to see the estimate.";
     if (this.loaded) {
       try {
-        const lp = planGuideLane({ guide: this.loaded, model: ui.model(), shot: this.shot() ?? undefined, prompt: ui.override.value, character: this.character?.media });
+        const lp = planGuideLane({ guide: this.loaded, model: ui.model(), shot: this.shot() ?? undefined, prompt: ui.override.value, character: this.refs.character?.media, environment: this.refs.environment?.media });
         text = `Estimated ${usd(lp.plan.estimate.usd)} (${lp.plan.estimate.basis}). Sends: ${lp.plan.inputsSent.map((i) => `${i.role} ${i.label}`).join(", ")}.`;
       } catch (e) {
         text = (e as Error).message;
@@ -210,7 +272,7 @@ export class ArenaGenerate extends HTMLElement {
         model: ui.model(),
         shot: this.shot() ?? undefined,
         prompt: ui.override.value,
-        characterImage: this.character?.blob,
+        references: this.references,
         maxPrice: Number(ui.maxPrice.value),
         key: key.getKey,
         confirm: this.confirm ?? ((q) => this.askInline(q)),
@@ -224,7 +286,7 @@ export class ArenaGenerate extends HTMLElement {
       });
       ui.result.replaceChildren(
         resultView(r, this.urls, this.base, (record: ArenaRecord) =>
-          this.dispatchEvent(new CustomEvent("arena-gallery-add", { bubbles: true, composed: true, detail: { record } })),
+          this.dispatchEvent(new CustomEvent("arena-gallery-add", { bubbles: true, composed: true, detail: { record, base: this.base } })),
         ),
       );
       const { task: _task, ...detail } = r;
@@ -240,101 +302,23 @@ export class ArenaGenerate extends HTMLElement {
     }
   }
 
-  private async pickCharacter(file: File | undefined) {
-    const ui = this.ui!;
-    if (this.character) URL.revokeObjectURL(this.character.url);
-    this.character = undefined;
-    ui.charSlot.replaceChildren();
-    if (file) {
-      if (!IMAGE_TYPES.includes(file.type) || file.size > 30 * 1048576) this.fail("The character sheet must be a PNG, JPEG or WebP image up to 30 MB.", "refused");
-      else {
-        const media = await loadImage(blobEntry(file, file.name));
-        const url = URL.createObjectURL(file);
-        this.character = { media, blob: file, url };
-        const clear = el("button", { type: "button", "data-action": "clear-character" }, "Remove");
-        clear.addEventListener("click", () => void this.pickCharacter(undefined));
-        ui.charSlot.append(el("img", { src: url, alt: "Character sheet" }), el("span", { class: "note" }, `${file.name}${media.info?.width ? ` · ${media.info.width}×${media.info.height}` : ""}`), clear);
-      }
-    }
-    this.refresh();
-  }
-
   private build() {
-    const models = guideModels();
-    const initial = models.some((m) => m.key === this.getAttribute("model")) ? this.getAttribute("model")! : models[0]!.key;
-    const radios = models.map((m) => {
-      const r = el("input", { type: "radio", name: "model", value: m.key, "data-model": m.key });
-      r.checked = m.key === initial;
-      return { m, r };
-    });
-    const modelSet = el(
-      "fieldset",
-      {},
-      el("legend", {}, "Model"),
-      el("div", { class: "models" }, ...radios.map(({ m, r }) =>
-        el("label", { class: "model-opt" }, r, el("span", {}, m.name, m.use === "audio-first-frame" ? el("span", { class: "badge" }, "audio + first frame only") : null), el("span", { class: "line" }, m.line)),
-      )),
-    );
-    const fields = {} as Record<ShotField, HTMLInputElement>;
-    const shotSet = el("fieldset", {}, el("legend", {}, "Shot description"));
-    const grid = el("div", { class: "fields" });
-    for (const [k, label, hint] of SHOT_FIELDS) {
-      fields[k] = el("input", { type: "text", maxlength: k === "legend" ? "300" : "500", placeholder: hint, "data-field": k, value: this.getAttribute(k) ?? "" });
-      grid.append(el("label", { class: "f" }, label, fields[k]));
-    }
-    const override = el("textarea", { maxlength: "5000", "data-field": "prompt", placeholder: "Leave empty to use the composed prompt" });
-    override.value = this.getAttribute("prompt") ?? "";
-    const own = el("details", {}, el("summary", {}, "Write my own prompt instead"), override);
-    if (override.value) own.open = true;
-    shotSet.append(grid, own);
-
-    const charInput = el("input", { type: "file", accept: IMAGE_TYPES.join(","), "data-field": "character" });
-    const charSlot = el("span", { class: "row" });
-    const drop = el("div", { class: "drop", "data-drop": "character" }, el("span", { class: "note" }, "Character sheet (optional): drop an image or"), charInput, charSlot);
-    drop.addEventListener("dragover", (e) => (e.preventDefault(), drop.classList.add("over")));
-    drop.addEventListener("dragleave", () => drop.classList.remove("over"));
-    drop.addEventListener("drop", (e) => {
-      e.preventDefault();
-      drop.classList.remove("over");
-      void this.pickCharacter(e.dataTransfer?.files[0]);
-    });
-    charInput.addEventListener("change", () => void this.pickCharacter(charInput.files?.[0]));
-
-    const bundleInput = el("input", { type: "file", multiple: "", accept: ".json,.mp4,.wav,.mp3,.png,.jpg", "data-field": "bundle" });
-    bundleInput.addEventListener("change", () => bundleInput.files?.length && void this.setGuide(bundleInput.files, here()));
-    const guideInfo = el("p", { class: "note", "data-guide": "" }, "No guide yet: choose the bundle's files.");
-
-    const maxPrice = el("input", { type: "number", min: "0.1", max: "100", step: "0.1", value: this.getAttribute("max-price") ?? "2", "data-field": "max-price" });
-    const run = el("button", { type: "button", class: "primary", "data-action": "run" }, "Run");
-    const stop = el("button", { type: "button", "data-action": "stop" }, "Stop");
-    stop.hidden = true;
-    run.addEventListener("click", () => void this.run());
-    stop.addEventListener("click", () => this.abort?.abort());
-
-    const ui = {
-      model: () => radios.find(({ r }) => r.checked)?.m.key ?? initial,
-      fields,
-      override,
-      maxPrice,
-      guideInfo,
-      charSlot,
-      preview: el("div", { "data-preview": "" }),
-      estimate: el("p", { class: "note", "data-estimate": "" }),
-      run,
-      stop,
-      confirmSlot: el("div"),
-      status: el("p", { class: "status", role: "status" }),
-      error: el("p", { class: "err", role: "alert" }),
-      result: el("div", { "data-result": "" }),
-    };
+    const ui = buildForm((n) => this.getAttribute(n));
     this.ui = ui;
-    for (const input of [...Object.values(fields), override]) input.addEventListener("input", () => this.refresh());
-    for (const { r } of radios) r.addEventListener("change", () => this.refresh());
+    this.slots = {
+      character: refSlot("character", (f) => void this.setRef("character", f)),
+      environment: refSlot("environment", (f) => void this.setRef("environment", f)),
+    };
+    ui.bundleInput.addEventListener("change", () => ui.bundleInput.files?.length && void (this.pending = this.setGuide(ui.bundleInput.files, here())));
+    ui.run.addEventListener("click", () => void this.run());
+    ui.stop.addEventListener("click", () => this.abort?.abort());
+    for (const input of [...Object.values(ui.fields), ui.override]) input.addEventListener("input", () => this.refresh());
+    for (const { r } of ui.radios) r.addEventListener("change", () => this.refresh());
 
     const keySlot = el("div");
     if (!this.keySource()) {
       defineKey();
-      this.ownKey = el("arena-key" as "div") as unknown as ArenaKey;
+      this.ownKey = document.createElement("arena-key") as ArenaKey;
       keySlot.append(this.ownKey);
     }
     this.root.replaceChildren(
@@ -344,12 +328,12 @@ export class ArenaGenerate extends HTMLElement {
         { class: "wrap" },
         el("h3", {}, "Generate from this guide"),
         keySlot,
-        el("div", { class: "row" }, bundleInput, guideInfo),
-        modelSet,
-        shotSet,
-        drop,
+        el("div", { class: "row" }, ui.bundleInput, ui.guideInfo),
+        ui.modelSet,
+        ui.shotSet,
+        el("fieldset", {}, el("legend", {}, "Reference images"), this.slots.character.node, this.slots.environment.node),
         ui.preview,
-        el("div", { class: "row" }, el("label", { class: "f" }, "Price cap, USD", maxPrice), run, stop),
+        el("div", { class: "row" }, el("label", { class: "f" }, "Price cap, USD", ui.maxPrice), ui.run, ui.stop),
         ui.estimate,
         ui.confirmSlot,
         ui.status,

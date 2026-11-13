@@ -1,9 +1,12 @@
 /**
  * <arena-gallery src="runs.json">: published comparison records, playable
- * without a key. A switcher picks the record; a view toggle shows the guide
- * beside one output ("Guide beside output", the guidance layout) or every
- * output ("All outputs"). Under the player: the shot the lane's prompt came
- * from, so a reader sees this path, this prompt, this output.
+ * without a key. A switcher picks the record; a view toggle shows "Inputs and
+ * outputs" (the reference images as a strip, the guide and one to three
+ * outputs on one playhead with their prompts, the guide's audio once), "Guide
+ * beside output" (the guidance layout) or "All outputs". Under the player: the
+ * shot the lane's prompt came from: this path, this prompt, this output.
+ * "Run this yourself" opens the record in <arena-generate> (attribute
+ * `generate` names its id) and fires `arena-run-yourself` with the preset.
  *
  * `src` is a JSON array of records or of record URLs (relative to the list),
  * or `{ "records": [...] }`. Media paths resolve against each record's URL.
@@ -14,6 +17,7 @@
 import type { ShotDescription } from "../../core/src/compose.ts";
 import { parseRecord, type ArenaRecord } from "../../core/src/record.ts";
 import { el } from "./captions.ts";
+import { presetFromRecord } from "./generate/preset.ts";
 import { generateStyles } from "./generate/styles.ts";
 import { define as defineArena, type ModelArena } from "./model-arena.ts";
 
@@ -36,7 +40,7 @@ export class ArenaGallery extends HTMLElement {
   private root: ShadowRoot;
   private entries: Entry[] = [];
   private index = 0;
-  private view: "guidance" | "arena" = "guidance";
+  private view: "inputs" | "guidance" | "arena" = "inputs";
   private skipped: string[] = [];
   private load = 0;
 
@@ -147,9 +151,9 @@ export class ArenaGallery extends HTMLElement {
       pick.append(b);
     });
     const views = el("div", { class: "switch", role: "group", "aria-label": "View" });
-    for (const [id, label] of [["guidance", "Guide beside output"], ["arena", "All outputs"]] as const) {
+    for (const [id, label] of [["inputs", "Inputs and outputs"], ["guidance", "Guide beside output"], ["arena", "All outputs"]] as const) {
       const b = el("button", { type: "button", "aria-pressed": String(view === id), "data-view": id }, label);
-      b.disabled = id === "guidance" && !hasGuide;
+      b.disabled = id !== "arena" && !hasGuide;
       b.addEventListener("click", () => ((this.view = id), this.render()));
       views.append(b);
     }
@@ -158,6 +162,20 @@ export class ArenaGallery extends HTMLElement {
     arena.setRecord(entry.record, entry.base);
     const lane = entry.record.lanes.find((l) => l.shot) ?? entry.record.lanes[0];
     const shot = shotLine(lane?.shot ?? entry.record.shot);
+    const preset = presetFromRecord(entry.record, entry.base);
+    let rerun: HTMLButtonElement | null = null;
+    if (preset) {
+      rerun = el("button", { type: "button", "data-action": "run-yourself" }, "Run this yourself");
+      rerun.addEventListener("click", () => {
+        this.dispatchEvent(new CustomEvent("arena-run-yourself", { bubbles: true, composed: true, detail: { preset, record: entry.record } }));
+        const id = this.getAttribute("generate");
+        const target = id ? (document.getElementById(id) as (HTMLElement & { loadPreset?: (p: unknown) => Promise<void> }) | null) : null;
+        if (target?.loadPreset) {
+          void target.loadPreset(preset);
+          target.scrollIntoView?.({ behavior: "smooth", block: "start" });
+        }
+      });
+    }
     this.root.replaceChildren(
       style,
       el(
@@ -165,7 +183,7 @@ export class ArenaGallery extends HTMLElement {
         { class: "wrap" },
         el("div", { class: "row spread" }, pick, views),
         arena,
-        shot ? el("p", { class: "caption", "data-shot": "" }, el("strong", {}, "Shot: "), shot) : null,
+        el("div", { class: "row spread" }, shot ? el("p", { class: "caption", "data-shot": "" }, el("strong", {}, "Shot: "), shot) : el("span"), rerun),
         this.skipped.length ? el("p", { class: "note" }, `${this.skipped.length} record(s) skipped: ${this.skipped[0]}`) : null,
       ),
     );

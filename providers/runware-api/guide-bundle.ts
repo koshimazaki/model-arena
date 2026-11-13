@@ -102,7 +102,7 @@ export function imageSize(b: Uint8Array): { width: number; height: number } | un
   return undefined;
 }
 
-async function media(entry: BundleEntry, kind: "video" | "image" | "audio", info: LaneMedia["info"] = {}): Promise<LaneMedia> {
+async function media(entry: BundleEntry, kind: "video" | "image" | "audio", info: LaneMedia["info"] = {}, displaySrc = entry.name): Promise<LaneMedia> {
   const contentType = typeOf(entry.name);
   if (!contentType?.startsWith(kind)) throw new GuideError(`${entry.name}: expected a ${kind} file.`);
   if (entry.size > MEDIA_MAX) throw new GuideError(`${entry.name} is over 300 MB.`);
@@ -112,13 +112,16 @@ async function media(entry: BundleEntry, kind: "video" | "image" | "audio", info
     name: entry.name,
     contentType,
     ref: `data:${contentType};base64,${base64(bytes)}`,
-    displaySrc: entry.name,
+    displaySrc,
     info: { ...info, ...size, bytes: entry.size },
   };
 }
 
-/** A character sheet or still for the lane, with its size read from the header. */
-export const loadImage = (entry: BundleEntry) => media(entry, "image");
+/**
+ * A character sheet or environment still for the lane, its size read from the
+ * header. `src` is where a record reader can see it (a URL); the name otherwise.
+ */
+export const loadImage = (entry: BundleEntry, src?: string) => media(entry, "image", {}, src ?? entry.name);
 
 async function json(entry: BundleEntry | undefined, name: string): Promise<unknown> {
   if (!entry) throw new GuideError(`The bundle has no ${name}.`);
@@ -145,7 +148,14 @@ export function parseGuideShot(v: unknown): GuideShot | undefined {
 }
 
 /** Loads a bundle from its entries; refuses a bundle that does not match the schema. */
-export async function loadGuideBundle(entries: Iterable<BundleEntry>): Promise<LoadedGuide> {
+/**
+ * Loads a bundle from its entries; refuses a bundle that does not match the
+ * schema. `base` is where the bundle is published (a directory URL), so the
+ * record can point at it; without it media are named relative ("./guide.mp4").
+ */
+export async function loadGuideBundle(entries: Iterable<BundleEntry>, opts: { base?: string } = {}): Promise<LoadedGuide> {
+  const base = opts.base ? (opts.base.endsWith("/") ? opts.base : `${opts.base}/`) : "./";
+  const shown = (name: string) => (/^https?:\/\//.test(base) ? new URL(name, base).href : name);
   const byName = new Map<string, BundleEntry>();
   for (const e of entries) byName.set(e.name.split(/[\\/]/).pop()!, e);
   let manifest: BundleManifest, meta: BundleMeta, beats: BundleBeats;
@@ -165,10 +175,10 @@ export async function loadGuideBundle(entries: Iterable<BundleEntry>): Promise<L
   };
   const seconds = meta.durationSeconds;
   if (typeof seconds !== "number" || !(seconds > 0 && seconds <= 600)) throw new GuideError("meta.json: durationSeconds must be 0-600 seconds.");
-  const video = await media(need(manifest.video), "video", { width: meta.width, height: meta.height, seconds, fps: meta.fps });
-  const firstFrame = await media(need(manifest.firstFrame), "image");
-  const audio = manifest.audio ? await media(need(manifest.audio), "audio", { seconds }) : undefined;
-  const guide = guideFromBundle({ manifest, beats, meta, ...(recipe ? { recipe } : {}) }, "./", undefined);
+  const video = await media(need(manifest.video), "video", { width: meta.width, height: meta.height, seconds, fps: meta.fps }, shown(manifest.video));
+  const firstFrame = await media(need(manifest.firstFrame), "image", {}, shown(manifest.firstFrame));
+  const audio = manifest.audio ? await media(need(manifest.audio), "audio", { seconds }, shown(manifest.audio)) : undefined;
+  const guide = guideFromBundle({ manifest, beats, meta, ...(recipe ? { recipe } : {}) }, base, undefined);
   const shot = parseGuideShot(recipe?.shot);
   return { manifest, meta, beats, ...(recipe ? { recipe } : {}), ...(shot ? { shot } : {}), video, audio, firstFrame, seconds, guide };
 }

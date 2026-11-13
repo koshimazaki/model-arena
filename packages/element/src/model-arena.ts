@@ -9,6 +9,8 @@
  * - layout="guidance": the Motion Studio guide beside one model's output,
  *   a model switcher, how that model is steered, what it received and its
  *   composed prompt. `model` picks the first lane shown.
+ * - layout="inputs": reference images as a strip, the guide and one to three
+ *   outputs on one playhead with their prompts; the guide's audio plays once.
  * - layout="three-up" (default): every lane with its full caption.
  *
  * The element fills its container's width and works down to 360 px. No
@@ -22,6 +24,7 @@ import { el } from "./captions.ts";
 import { styles } from "./styles.ts";
 import { arenaView, fitState, type ArenaState, type View } from "./views/arena.ts";
 import { guidanceView } from "./views/guidance.ts";
+import { inputsView } from "./views/inputs.ts";
 import { lanesView } from "./views/lanes.ts";
 
 const here = () => (typeof location === "undefined" ? "http://localhost/" : location.href);
@@ -187,7 +190,8 @@ export class ModelArena extends HTMLElement {
         this.arenaState = next;
         this.render(record);
       });
-    } else view = layout === "guidance" ? guidanceView(ctx, this.getAttribute("model")) : lanesView(ctx, layout);
+    } else if (layout === "inputs") view = inputsView(ctx);
+    else view = layout === "guidance" ? guidanceView(ctx, this.getAttribute("model")) : lanesView(ctx, layout);
 
     const tabs = this.tabs();
     const controls = [...(tabs ? [tabs] : []), ...(view.controls ?? [])];

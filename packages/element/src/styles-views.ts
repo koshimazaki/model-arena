@@ -75,4 +75,14 @@ dd { margin: 0; overflow-wrap: anywhere; }
 .input img, .input video { width: 96px; height: 54px; object-fit: cover; border-radius: 4px; background: #000; display: block; }
 .input .ph { width: 96px; height: 54px; border-radius: 4px; border: 1px dashed var(--ma-line); display: grid; place-items: center; }
 .input span { overflow-wrap: anywhere; }
+/* layout="inputs": reference strip, then guide + outputs on one row. */
+.ref-strip { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.ref-strip li { display: grid; gap: 2px; width: 84px; font-size: 11px; color: var(--ma-muted); }
+.ref-strip img, .ref-strip .ph { width: 84px; height: 56px; object-fit: cover; border-radius: 4px; border: 1px solid var(--ma-line); background: var(--ma-chip); }
+.inputs-row { display: grid; grid-template-columns: repeat(var(--ma-columns, 2), minmax(0, 1fr)); gap: var(--ma-gap); min-width: 0; }
+@container (max-width: 640px) { .inputs-row { grid-template-columns: 1fr; } }
+.inputs-row .side { margin: 0; display: grid; gap: 6px; min-width: 0; align-content: start; }
+.inputs-row figcaption { display: grid; gap: 2px; }
+.lane-prompt summary { cursor: pointer; font-size: 12px; color: var(--ma-muted); }
+.lane-prompt pre { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; font: 11px/1.5 var(--ma-mono); background: var(--ma-input); border-radius: 6px; padding: 6px; max-height: 200px; overflow: auto; }
 `;

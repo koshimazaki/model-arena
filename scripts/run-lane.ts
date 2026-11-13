@@ -35,11 +35,12 @@ Models: ${MODELS.map((m) => `${m.key} (${m.air})`).join(", ")}
 Bundle:   --bundle <dir>  (a Motion Studio / Beat Path guide bundle: bundle.json, meta.json, beats.json,
           the guide, frame 0, audio, recipe.json; the same planner as <arena-generate>. The shot is
           recipe.json's "shot" or --shot <{subject, environment, action, legend}.json>; models
-          kling-4, seedance-2.5, h3, ltx-2.5; add --character for a character sheet)
+          kling-4, seedance-2.5, h3, ltx-2.5; add --character and --environment for reference images)
 
 Inputs:   --guide <mp4|https>  --first-frame <png|jpg|https>  --audio <wav|mp3|m4a|https>
           --character <png|jpg|https>  (a still that replaces the guide's figure: a reference
           image beside the guide on Kling, Seedance, H3 and the router; never a frame image)
+          --environment <png|jpg|https>  (an environment still: the next reference image)
 Options:  --duration <s|auto>  --resolution <preset>  --camera <movement, LTX only>
           --shot <shot.json>  (a neutral shot description: the composer writes the prompt,
           camera parameter and duration for this model; --prompt etc. override it)
@@ -79,6 +80,7 @@ export function parseCli(argv: string[]) {
       "first-frame": { type: "string" },
       "first-frame-variant": { type: "string" },
       character: { type: "string" },
+      environment: { type: "string" },
       shot: { type: "string" },
       audio: { type: "string" },
       duration: { type: "string" },
@@ -142,6 +144,7 @@ export async function buildRequest(o: Cli): Promise<LaneRequest & { composed?: C
     ...(o["first-frame"] ? { firstFrame: await loadMedia(o["first-frame"], "image") } : {}),
     ...(variant ? { firstFrameVariant: variant as FirstFrameVariant } : {}),
     ...(o.character ? { character: await loadMedia(o.character, "image") } : {}),
+    ...(o.environment ? { environment: await loadMedia(o.environment, "image") } : {}),
     ...(o.audio ? { audio: await loadMedia(o.audio, "audio") } : {}),
     ...(o.duration !== undefined ? { duration: parseDuration(o.duration) } : cDuration !== undefined ? { duration: cDuration } : {}),
     ...(o.resolution ? { resolution: o.resolution } : {}),
@@ -222,9 +225,9 @@ export async function runLaneCli(argv: string[], deps: CliDeps = {}): Promise<vo
   const taskUUID = o.resume ?? String(plan.task.taskUUID);
   const outDir = resolve(o.out ?? join(ROOT, "runs"), `${date.slice(0, 10)}-${findModel(req.model).key}-${taskUUID.slice(0, 8)}`);
   await mkdir(join(outDir, "inputs"), { recursive: true });
-  for (const m of [req.guideVideo, req.firstFrame, req.character, req.audio])
+  for (const m of [req.guideVideo, req.firstFrame, req.character, req.environment, req.audio])
     if (m && !m.ref.startsWith("https://")) {
-      const src = [o.guide, o["first-frame"], o.character, o.audio, ...(req.sources ?? [])].find((p) => p && basename(p) === m.name);
+      const src = [o.guide, o["first-frame"], o.character, o.environment, o.audio, ...(req.sources ?? [])].find((p) => p && basename(p) === m.name);
       if (src) await copyFile(src, join(outDir, "inputs", m.name));
       m.displaySrc = `inputs/${m.name}`;
     }

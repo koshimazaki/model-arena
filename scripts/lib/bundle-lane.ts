@@ -24,6 +24,7 @@ export interface BundleFlags {
   shot?: string;
   prompt?: string;
   character?: string;
+  environment?: string;
   resolution?: string;
   guide?: string;
   audio?: string;
@@ -54,10 +55,11 @@ export async function buildBundleRequest(o: BundleFlags): Promise<BundleRequest>
     if (!shot) throw new Error(`--shot ${o.shot}: with --bundle, give { "subject", "action", "environment"?, "legend"? }.`);
   }
   const character = o.character ? await loadImage(await fileEntry(o.character)) : undefined;
-  const lp = planGuideLane({ guide, model: o.model, shot, prompt: o.prompt, character, resolution: o.resolution });
+  const environment = o.environment ? await loadImage(await fileEntry(o.environment)) : undefined;
+  const lp = planGuideLane({ guide, model: o.model, shot, prompt: o.prompt, character, environment, resolution: o.resolution });
   return {
     ...lp.request,
     composed: { shot: lp.shot, composed: lp.composed, marker: lp.marker ?? { model: lp.composed.model } },
-    sources: [...names.map((n) => join(dir, n)), ...(o.character ? [o.character] : [])],
+    sources: [...names.map((n) => join(dir, n)), ...[o.character, o.environment].filter((p): p is string => Boolean(p))],
   };
 }

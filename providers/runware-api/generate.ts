@@ -38,6 +38,9 @@ export class GenerateError extends Error {
 /** A bundle as a FileList or File[] (a folder pick or a drop), name → Blob, or one already loaded. */
 export type GuideSource = Iterable<Blob & { name?: string }> | ArrayLike<File> | Record<string, Blob> | LoadedGuide;
 
+/** A reference image as a Blob, or with the URL a record reader can see it at. */
+export type ReferenceInput = Blob | { blob: Blob; src?: string; name?: string };
+
 export interface CostQuestion {
   model: string;
   modelName: string;
@@ -62,10 +65,15 @@ export interface GenerateOptions {
   shot?: GuideShot;
   /** Free text that replaces the composed prompt. */
   prompt?: string;
-  characterImage?: Blob;
+  /** Optional reference images: a character sheet and an environment still. */
+  references?: { character?: ReferenceInput; environment?: ReferenceInput };
   /** USD; a plan estimated above it is refused before anything is sent. */
   maxPrice: number;
-  key: string | (() => string | undefined);
+  /**
+   * The key by reference: the key panel itself (anything with getKey()), a
+   * getter, or a string. Read only when a request is sent.
+   */
+  key: string | (() => string | undefined) | { getKey(): string | undefined };
   /** Shown the estimate; nothing is uploaded or submitted unless it resolves true. */
   confirm: (q: CostQuestion) => boolean | Promise<boolean>;
   signal?: AbortSignal;
@@ -104,6 +112,22 @@ const EXT: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "
 
 const isLoaded = (g: GuideSource): g is LoadedGuide => typeof g === "object" && g !== null && "manifest" in g && "video" in g;
 
+const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
+const IMAGE_MAX = 30 * 1048576;
+
+/** A reference image checked for type and size, then loaded for upload. */
+export async function reference(r: ReferenceInput | undefined, role: "character" | "environment") {
+  if (!r) return undefined;
+  const blob = r instanceof Blob ? r : r.blob;
+  if (!(blob instanceof Blob)) throw new GenerateError("refused", `The ${role} reference must be an image Blob.`);
+  if (!IMAGE_TYPES.includes(blob.type)) throw new GenerateError("refused", `The ${role} image must be PNG, JPEG or WebP; got ${blob.type || "an unknown type"}.`);
+  if (blob.size > IMAGE_MAX) throw new GenerateError("refused", `The ${role} image is over 30 MB.`);
+  const given = r instanceof Blob ? (r as File).name : (r.name ?? (r.blob as File).name);
+  const name = (given || `${role}.${EXT[blob.type] ?? "png"}`).split(/[\\/]/).pop()!;
+  const src = r instanceof Blob ? undefined : r.src;
+  return loadImage(blobEntry(blob, name), src && /^https?:\/\//.test(src) ? src : undefined);
+}
+
 export function blobEntry(blob: Blob, name: string): BundleEntry {
   return { name, size: blob.size, bytes: async () => new Uint8Array(await blob.arrayBuffer()) };
 }
@@ -133,7 +157,8 @@ function classify(e: unknown, signal: AbortSignal | undefined, submitted: string
 }
 
 export async function generateFromGuide(o: GenerateOptions): Promise<GenerateResult> {
-  const getKey = typeof o.key === "function" ? o.key : () => o.key as string;
+  const k = o.key;
+  const getKey = typeof k === "function" ? k : typeof k === "string" ? () => k : () => k.getKey();
   const provider = runwareProvider({
     getKey,
     fetch: o.fetch,
@@ -149,10 +174,9 @@ export async function generateFromGuide(o: GenerateOptions): Promise<GenerateRes
     if (!key || !KEY_SHAPE.test(key)) throw new GenerateError("invalid-key", "Connect a Runware API key first (16-512 characters, no spaces).");
     progress({ stage: "plan", message: "reading the guide" });
     const guide = isLoaded(o.guide) ? o.guide : await loadGuideBundle(entriesOf(o.guide));
-    const character = o.characterImage
-      ? await loadImage(blobEntry(o.characterImage, (o.characterImage as File).name || `character.${EXT[o.characterImage.type] ?? "png"}`))
-      : undefined;
-    const lane: GuideLanePlan = planGuideLane({ guide, model: o.model, shot: o.shot, prompt: o.prompt, character, resolution: o.resolution }, o.taskUUID);
+    const character = await reference(o.references?.character, "character");
+    const environment = await reference(o.references?.environment, "environment");
+    const lane: GuideLanePlan = planGuideLane({ guide, model: o.model, shot: o.shot, prompt: o.prompt, character, environment, resolution: o.resolution }, o.taskUUID);
     const { plan } = lane;
     if (plan.estimate.usd === null) throw new GenerateError("no-estimate", `No price estimate for ${plan.modelName}; it cannot be checked against maxPrice.`);
     if (plan.estimate.usd > o.maxPrice)

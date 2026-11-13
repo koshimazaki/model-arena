@@ -2,7 +2,7 @@
  * The design tokens every element reads: colours, radii, gap and fonts, as
  * `--ma-*` custom properties with neutral defaults (greys, no brand colour).
  * A host maps its own tokens from outside, which wins over `:host`:
- *   model-arena, arena-generate, arena-key, arena-gallery { --ma-accent: var(--brand); }
+ *   model-arena, arena-generate, arena-key, arena-player, arena-gallery { --ma-accent: var(--brand); }
  * theme="light" forces the light set; theme="auto" follows prefers-color-scheme.
  * The table is in docs/embed.md.
  */

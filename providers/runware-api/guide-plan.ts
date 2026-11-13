@@ -42,17 +42,28 @@ const SHARED_SECONDS: Record<string, number> = { h3: 15 };
 const span = (r: { min: number | null; max: number | null } | null | undefined, unit: string) =>
   r && (r.min !== null || r.max !== null) ? `${r.min ?? 0}-${r.max ?? "any"} ${unit}` : null;
 
+const token = (spec: ModelSpec, kind: "image" | "video", n: number) => {
+  const t = spec.prompting.addressing.tokens.find((x) => x.input === kind);
+  return t ? ` ${t.pattern.replace("{n}", String(n))}` : "";
+};
+
 /** What the model takes from the guide, in one line, from its spec. */
 export function guideLine(spec: ModelSpec, use: GuideUse): string {
   if (use === "audio-first-frame") {
     const audio = span(spec.inputs.audioToVideo.limits?.secondsEach, "s");
-    return `Audio + first frame only: does not use the guide video. Takes the guide's audio${audio ? ` (${audio})` : ""} and one image, frame 0 or your character sheet; the clip runs as long as the audio.`;
+    return `Audio + first frame only: does not use the guide video. Takes the guide's audio${audio ? ` (${audio})` : ""} and exactly one image: frame 0, your character sheet or your environment image, not both. The clip runs as long as the audio.`;
   }
   const v = spec.inputs.referenceVideos.limits;
   const facts = [span(v?.secondsEach, "s"), v?.sidePx?.min ? `${v.sidePx.min}+ px a side` : null, span(v?.fps, "fps")].filter(Boolean).join(", ");
-  const audio = spec.inputs.referenceAudios.supported ? "the audio as reference audio" : "no audio input";
-  const image = spec.inputs.referenceImages.supported ? "; a character sheet as a reference image" : "";
-  return `The whole guide clip as a reference video (${facts}); ${audio}${image}.`;
+  const shared = SHARED_SECONDS[spec.id];
+  const audio = spec.inputs.referenceAudios.supported
+    ? `its audio as reference audio${shared ? ` when clip and audio fit ${shared} s together` : ""}`
+    : "no audio input";
+  const ri = spec.inputs.referenceImages;
+  const image = ri.supported
+    ? `; up to ${ri.maxCount ?? "several"} reference images beside it: character sheet${token(spec, "image", 1)}, environment${token(spec, "image", 2)}`
+    : "; no reference images";
+  return `The whole guide clip as a reference video${token(spec, "video", 1)} (${facts}); ${audio}${image}.`;
 }
 
 function promptingGuide(spec: ModelSpec) {
@@ -75,6 +86,7 @@ export interface GuideFacts {
   seconds: number;
   hasAudio: boolean;
   hasCharacter: boolean;
+  hasEnvironment?: boolean;
 }
 
 /** The composer's shot for one model: the guide's references, placed for how that model uses the guide. */
@@ -84,13 +96,17 @@ export function shotFor(g: GuideShot, model: string, facts: GuideFacts): { shot:
   const refs: ShotReference[] = [];
   if (m.use === "guide-video") {
     refs.push({ id: "guide", kind: "video", role: "motion" });
+    // Order sets the numbering: the character is image 1, the environment image 2.
     if (facts.hasCharacter) refs.push({ id: "character", kind: "image", role: "character", replaces: "the figure in the guide" });
+    if (facts.hasEnvironment) refs.push({ id: "environment", kind: "image", role: "setting", replaces: "the guide's background" });
     const shared = SHARED_SECONDS[m.key];
     if (facts.hasAudio && shared !== undefined && facts.seconds * 2 > shared)
       notes.push(`${m.name}: reference video and audio share ${shared} s; the ${facts.seconds} s guide leaves no room for its audio, so the audio is not sent.`);
     else if (facts.hasAudio) refs.push({ id: "audio", kind: "audio", role: "soundtrack" });
   } else {
-    refs.push({ id: facts.hasCharacter ? "character" : "frame0", kind: "image", role: "first-frame" });
+    if (facts.hasCharacter && facts.hasEnvironment)
+      throw new PlanError(`${m.name} takes exactly one image beside the audio: send the character sheet or the environment image, not both.`);
+    refs.push({ id: facts.hasCharacter ? "character" : facts.hasEnvironment ? "environment" : "frame0", kind: "image", role: "first-frame" });
     if (facts.hasAudio) refs.push({ id: "audio", kind: "audio", role: "soundtrack" });
   }
   const shot: ShotDescription = {
@@ -118,6 +134,52 @@ export function previewPrompt(g: GuideShot, model: string, facts: GuideFacts): {
 export const comparePrompts = (g: GuideShot, facts: GuideFacts, models: readonly string[] = COMPARE_MODEL_KEYS) =>
   models.map((k) => previewPrompt(g, k, facts));
 
+/** What a host shows before Run: the prompt, the tags it uses and why anything was left out. */
+export interface ComposedForHost {
+  model: GuideModel;
+  prompt: string;
+  /** Each addressed input, e.g. { tag: "<<<image_1>>>", input: "character" }. */
+  tags: { tag: string; input: string }[];
+  /** Inputs the model will not get, with the reason. */
+  dropped: string[];
+  notes: string[];
+  /** The composer's shot, as stored in the lane. */
+  shot: ShotDescription;
+}
+
+/**
+ * The composed prompt for a host that draws its own controls. `references`
+ * says which images will be sent (any truthy value counts); `guide` gives the
+ * clip length and whether it has audio (a loaded bundle, or the two facts;
+ * defaults 5 s with audio). Throws PlanError for a combination the model refuses.
+ */
+export function composePrompt(
+  shot: GuideShot,
+  model: string,
+  references: { character?: unknown; environment?: unknown } = {},
+  guide: LoadedGuide | { seconds?: number; hasAudio?: boolean } = {},
+): ComposedForHost {
+  const loaded = "manifest" in guide ? guide : undefined;
+  const facts: GuideFacts = {
+    seconds: loaded ? loaded.seconds : ((guide as { seconds?: number }).seconds ?? 5),
+    hasAudio: loaded ? Boolean(loaded.audio) : ((guide as { hasAudio?: boolean }).hasAudio ?? true),
+    hasCharacter: Boolean(references.character),
+    hasEnvironment: Boolean(references.environment),
+  };
+  const p = previewPrompt(shot, model, facts);
+  return {
+    model: p.model,
+    prompt: p.composed.prompt,
+    tags: p.composed.used.filter((u) => u.address).map((u) => ({ tag: u.address!, input: u.ref })),
+    dropped: p.composed.dropped.map((d) => `${d.ref}: ${d.reason}`),
+    notes: [...p.notes, ...p.composed.notes],
+    shot: p.shot,
+  };
+}
+
+/** The offered models with their one-line notes and prompting-guide links. */
+export const offeredModels = () => guideModels();
+
 export interface GuideLaneInput {
   guide: LoadedGuide;
   model: string;
@@ -126,6 +188,7 @@ export interface GuideLaneInput {
   /** Free text that replaces the composed prompt. */
   prompt?: string;
   character?: LaneMedia;
+  environment?: LaneMedia;
   resolution?: string;
 }
 
@@ -141,16 +204,16 @@ export interface GuideLanePlan {
 }
 
 export function planGuideLane(input: GuideLaneInput, taskUUID?: string): GuideLanePlan {
-  const { guide, character } = input;
+  const { guide, character, environment } = input;
   const override = input.prompt?.trim() || undefined;
   const g = input.shot ?? guide.shot ?? (override ? { subject: override, action: "" } : undefined);
   if (!g || !g.subject.trim()) throw new PlanError("Describe the shot (subject and action), or write a prompt.");
-  const facts: GuideFacts = { seconds: guide.seconds, hasAudio: Boolean(guide.audio), hasCharacter: Boolean(character) };
+  const facts: GuideFacts = { seconds: guide.seconds, hasAudio: Boolean(guide.audio), hasCharacter: Boolean(character), hasEnvironment: Boolean(environment) };
   const { model, composed, shot, notes } = previewPrompt(g, input.model, facts);
   if (model.use === "audio-first-frame" && !guide.audio)
     throw new PlanError(`${model.name} is driven by the guide's audio, and this bundle has no audio file.`);
 
-  const mediaFor: Record<string, LaneMedia | undefined> = { guide: guide.video, audio: guide.audio, character, frame0: guide.firstFrame };
+  const mediaFor: Record<string, LaneMedia | undefined> = { guide: guide.video, audio: guide.audio, character, environment, frame0: guide.firstFrame };
   const req: LaneRequest = { model: model.key, prompt: override ?? composed.prompt };
   for (const u of composed.used) {
     const m = mediaFor[u.ref];
@@ -158,9 +221,10 @@ export function planGuideLane(input: GuideLaneInput, taskUUID?: string): GuideLa
     if (u.role === "motion") req.guideVideo = m;
     else if (u.role === "soundtrack") req.audio = m;
     else if (u.role === "character") req.character = m;
+    else if (u.role === "setting") req.environment = m;
     else if (u.role === "first-frame") {
       req.firstFrame = m;
-      req.firstFrameVariant = u.ref === "character" ? "B" : "A";
+      req.firstFrameVariant = u.ref === "frame0" ? "A" : "B";
     }
   }
   if (typeof composed.params.duration === "number") req.duration = composed.params.duration;

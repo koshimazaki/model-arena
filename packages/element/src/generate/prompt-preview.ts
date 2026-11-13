@@ -9,8 +9,16 @@ import type { GuideShot } from "../../../../providers/runware-api/guide-bundle.t
 import { comparePrompts, previewPrompt, type GuideFacts } from "../../../../providers/runware-api/guide-plan.ts";
 import { el } from "../captions.ts";
 
+const REF_NAME: Record<string, string> = {
+  guide: "the guide clip",
+  audio: "the guide's audio",
+  character: "your character sheet",
+  environment: "your environment image",
+  frame0: "the guide's frame 0",
+};
+
 function tags(p: ReturnType<typeof previewPrompt>): string {
-  const used = p.composed.used.filter((u) => u.address).map((u) => `${u.address} = ${u.ref === "guide" ? "the guide clip" : u.ref === "audio" ? "the guide's audio" : "your character sheet"}`);
+  const used = p.composed.used.filter((u) => u.address).map((u) => `${u.address} = ${REF_NAME[u.ref] ?? u.ref}`);
   return used.length ? `Reference tags: ${used.join(", ")}` : "Reference tags: none; this model is not addressed by tags.";
 }
 

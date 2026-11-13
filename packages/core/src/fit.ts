@@ -43,6 +43,8 @@ export interface FitInput<M extends FitMedia> {
   firstFrame?: M;
   /** A character or product still that replaces the guide's placeholder figure. */
   character?: M;
+  /** An environment or setting still, a reference image after the character. */
+  environment?: M;
   audio?: M;
   keyframes?: { media: M; frame: number | "first" | "last" }[];
 }
@@ -93,7 +95,7 @@ export function fitLane<M extends FitMedia>(caps: ModelCaps, input: FitInput<M>)
   const model = input.modelName;
   const out: FitResult<M> = { referenceVideos: [], referenceAudios: [], referenceImages: [], frameImages: [], notes: [] };
   const problems: string[] = [];
-  const { guideVideo, firstFrame, character, audio, keyframes = [] } = input;
+  const { guideVideo, firstFrame, character, environment, audio, keyframes = [] } = input;
 
   const refuse = (msg: string) => problems.push(msg);
 
@@ -115,6 +117,13 @@ export function fitLane<M extends FitMedia>(caps: ModelCaps, input: FitInput<M>)
         out.referenceImages.push(character);
       }
     }
+    if (environment) {
+      if (!caps.referenceImages) refuse(`${model} takes no reference image for the environment.`);
+      else {
+        problems.push(...checkMedia(model, "reference images", environment, caps.referenceImages));
+        out.referenceImages.push(environment);
+      }
+    }
     if (firstFrame) {
       if (caps.startFrameWithReferences && caps.frameImages) out.frameImages.push({ media: firstFrame, frame: "first" });
       else if (caps.referenceImages) {
@@ -134,6 +143,7 @@ export function fitLane<M extends FitMedia>(caps: ModelCaps, input: FitInput<M>)
     if (keyframes.length) refuse(`${model} is fed the whole clip; keyframes belong to the FLUX 3 Video lane.`);
   } else if (caps.approach === "audio-first-frame") {
     if (character) refuse(`${model} takes no character reference beside a guide; pass the still as --first-frame instead.`);
+    if (environment) refuse(`${model} takes one image only; pass the environment still as --first-frame instead.`);
     if (guideVideo) refuse(`${model} takes no reference video. Pass --audio and --first-frame instead of --guide.`);
     if (keyframes.length) refuse(`${model} takes a first frame (and optionally a last), not keyframes.`);
     if (audio) {
@@ -155,7 +165,7 @@ export function fitLane<M extends FitMedia>(caps: ModelCaps, input: FitInput<M>)
     // keyframes (FLUX 3 Video)
     if (guideVideo) refuse(`${model} uses its video input only to extend a clip; send keyframes or a first frame instead.`);
     if (audio) refuse(`${model} takes no audio input.`);
-    if (character) refuse(`${model} takes no reference images; pass the still as --first-frame instead.`);
+    if (character || environment) refuse(`${model} takes no reference images; pass the still as --first-frame instead.`);
     if (firstFrame) out.frameImages.push({ media: firstFrame, frame: "first" });
     for (const k of keyframes) {
       if (typeof k.frame === "number" && !caps.frameImages?.indexPositions)

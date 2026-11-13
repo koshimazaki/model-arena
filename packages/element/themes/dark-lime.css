@@ -3,7 +3,7 @@
  * Load it beside the elements to replace the neutral defaults; any one token
  * can be overridden the same way. Fonts are named, not loaded.
  */
-model-arena, model-specs, arena-key, arena-generate, arena-gallery {
+model-arena, model-specs, arena-key, arena-player, arena-generate, arena-gallery {
   --ma-bg: #1a1a1a;
   --ma-card: #1c1c1c;
   --ma-fg: #f2f2f2;
