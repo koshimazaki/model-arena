@@ -80,11 +80,20 @@ The browser key panel (MA-4b) uses `KeyStore`: memory by default, `sessionStorag
 
 ## Character stills (image inference)
 
-`npm run still` (`scripts/make-still.ts`, `providers/runware-api/image.ts`) runs `imageInference`, read from each schema on 10 Nov 2026:
+`npm run still` (`scripts/make-still.ts`; table in `providers/runware-api/image-models.ts`, planner in `image.ts`) runs `imageInference`. Each row is read from the model's `schema.json` (fixtures in `tests/fixtures/runware-schemas/`); klein 9B and Kling IMAGE 3.0 on 10 Nov 2026, the rest on 13 Nov 2026. Every model takes text to image. Families are for a two-step picker.
 
-| Key | AIR | Text to image | Reference | Size | Price |
-| --- | --- | --- | --- | --- | --- |
-| `klein-9b` | `runware:400@2` (FLUX.2 [klein] 9B) | yes | `referenceImages` up to 4, aspect 1:8 to 8:1 | width and height required, 128-2048 px in multiples of 16; defaults to the reference's size, snapped | No published rate: billed by compute time. Published examples $0.00078-$0.00338; the estimate uses the highest |
-| `kling-image-3` | `klingai:kling-image@3` (Kling IMAGE 3.0) | yes | `referenceImages`, exactly one | without a reference, one of 16 fixed pairs (default 1360×768); with one, `resolution` 1K or 2K and the reference's aspect | $0.028 per image |
+| Family | Key | AIR | References | Size | Transparent | Price (`x-pricing`) |
+| --- | --- | --- | --- | --- | --- | --- |
+| FLUX | `klein-9b` | `runware:400@2` | up to 4, aspect 1:8 to 8:1 | 128-2048 px, multiples of 16; defaults to the reference's size, snapped | no | compute time; estimate bounded by the highest published example, $0.00338 |
+| FLUX | `flux-3-image` | `bfl:flux@3-image` | up to 10, each at least 128 px a side | 60 fixed pairs in 0.75K/1K/2K/4K tiers (default 1360×768); with a reference, `resolution` 0.75K-4K (default 1K) or a listed pair | no | per image: 0.75K $0.041, 1K $0.048, 2K $0.10, 4K $0.607 |
+| FLUX | `flux-3-image-klein` | `bfl:flux@3-image-klein` | up to 4, each at least 16 px | 128-4096 px, multiples of 16 | no | compute time; bounded by the measured run at or above the area (16 steps: 1024² $0.006 ... 4096² $0.1013); with references, by the highest reference example ($0.0149) up to 1.57 MP and no estimate above |
+| OpenAI GPT Image | `gpt-image-2.6-flare`, `gpt-image-2.6-sunburst` | `openai:gpt-image@2.6-flare`, `@2.6-sunburst` | up to 16, each up to 50 MB | 16-3840 px, multiples of 16, 0.66-8.29 MP, aspect 1:3 to 3:1 | yes (PNG or WEBP) | per token: $5 text in, $8 image in, $30 image out per 1M: **no estimate** |
+| MiniMax H3 | `h3-image`, `h3-image-highspeed` | `minimax:h3@image`, `minimax:h3@image-highspeed` | up to 16, 128-8192 px, aspect 1:4 to 4:1, up to 64 MB | 468-7745 px, 0.66-20 MP, aspect 1:3 to 3:1, or `resolution` 1K/2K/4K | no | per token (image out $3.80 / $7.60 per 1M): **no estimate** |
+| ByteDance Seedream | `seedream-5.5` | `bytedance:seedream@5.5` | up to 10, at least 15 px, aspect 1:16 to 16:1, up to 30 MB and 36 MP | 256-16383 px, 0.92-4.62 MP, aspect 1:16 to 16:1, or `resolution` 1K/1.5K/2K | yes (PNG or WEBP) | per image: up to 2.61 MP $0.02, above $0.035; + $0.008 per input image |
+| Kling IMAGE | `kling-image-3` | `klingai:kling-image@3` | exactly one | without a reference, one of 16 fixed pairs (default 1360×768); with one, `resolution` 1K or 2K and the reference's aspect | no | $0.028 per image |
 
-Pose-matching: pass the guide's first frame as `--reference` and say in the prompt that the figure keeps its pose and framing. The output is fetched from `imageURL` and saved as `runs/<date>-still-<model>-<id>/still.png`, with a row in `docs/costs.md`.
+- **Token-priced models** (GPT-Image-2.6, H3 Image) plan and dry-run, but their estimate is `usd: null` with the rates in its basis: the output token count is not known before a run, so a price cap cannot be checked, and `make-still` and `generateImage` refuse a real run (`no-estimate`). Published example prices are in the basis for reading, never used as a bound.
+- **Not sent** although the schema has them: GPT's `maskImage` and `markupImage` edits, SVG and GIF output, `quality` and `thinkingLevel`; FLUX 3 bounding boxes; Seedream layer decomposition. Each model lists these in `notOffered`.
+- **Sizing from a reference:** with no size given, grid models take the first reference's size, scaled into the area range and snapped; if that cannot fit (an extreme aspect), the default 1280×720 is used and a note says so. References themselves are never resized.
+
+Options: `--reference` (repeat for several), `--width`/`--height` or `--resolution`, `--transparent`, `--format PNG|JPG|WEBP`. Pose-matching: pass the guide's first frame as `--reference` and say in the prompt that the figure keeps its pose and framing. The output is fetched from `imageURL` and saved as `runs/<date>-still-<model>-<id>/still.<format>`, with a row in `docs/costs.md`.

@@ -150,7 +150,7 @@ export function entriesOf(src: Exclude<GuideSource, LoadedGuide>): BundleEntry[]
   return Object.entries(src as Record<string, Blob>).map(([name, b]) => blobEntry(b, name));
 }
 
-function classify(e: unknown, signal: AbortSignal | undefined, submitted: string | undefined, redact: (s: string) => string): GenerateError {
+export function classify(e: unknown, signal: AbortSignal | undefined, submitted: string | undefined, redact: (s: string) => string): GenerateError {
   if (e instanceof GenerateError) return e;
   const msg = redact((e as Error)?.message ?? String(e));
   const after = submitted ? ` The task was already submitted and may still finish and be billed (taskUUID ${submitted}); do not resubmit.` : " Nothing was submitted.";

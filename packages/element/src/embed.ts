@@ -2,7 +2,8 @@
  * The drop-in bundle for a host app (`npm run build:embed` → dist/embed/):
  * registers <arena-key>, <arena-player>, <arena-generate>, <arena-gallery>
  * and <model-arena>, and exports the parts for hosts that draw their own UI:
- * generateFromGuide, offeredModels, composePrompt.
+ * generateFromGuide, offeredModels, composePrompt, and for stills imageModels,
+ * imageFamilies and generateImage (planImage and runImage underneath).
  * Docs: docs/embed.md.
  */
 import { defineGenerate } from "./generate/arena-generate.ts";
@@ -18,6 +19,13 @@ export type { GuideShot, LoadedGuide, BundleEntry } from "../../../providers/run
 export { composePrompt, offeredModels, guideModels, previewPrompt, comparePrompts, planGuideLane, GUIDE_MODEL_KEYS, COMPARE_MODEL_KEYS } from "../../../providers/runware-api/guide-plan.ts";
 export type { GuideModel, GuideFacts, ComposedForHost } from "../../../providers/runware-api/guide-plan.ts";
 export type { ReferenceInput } from "../../../providers/runware-api/generate.ts";
+export { generateImage } from "../../../providers/runware-api/generate-image.ts";
+export type { GenerateImageOptions, GenerateImageResult, ImageReference } from "../../../providers/runware-api/generate-image.ts";
+export { imageModels, imageFamilies } from "../../../providers/runware-api/image-catalogue.ts";
+export type { ImageModelInfo, ImageFamilyInfo } from "../../../providers/runware-api/image-catalogue.ts";
+export { planImage, runImage, describeSize, STILL_FORMATS } from "../../../providers/runware-api/image.ts";
+export type { ImageRequest, ImagePlan, StillFormat, ImageFamily, SizeRule, ReferenceRule, ImagePricing } from "../../../providers/runware-api/image.ts";
+export { RunwareClient } from "../../../providers/runware-api/client.ts";
 export { presetFromRecord, parsePreset } from "./generate/preset.ts";
 export type { GeneratePreset } from "./generate/preset.ts";
 export { ArenaPlayer, needsSeek } from "./player.ts";

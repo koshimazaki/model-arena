@@ -5,7 +5,7 @@ summary: How a host app vendors the embed bundle — the key panel, the generate
 
 # Embedding Model Arena in another app
 
-Written 13 November 2026. `npm run build:embed` writes one ES module, `dist/embed/model-arena-embed.js` (about 195 kB, 54 kB gzipped), and its types (`dist/embed/model-arena-embed.d.ts` plus `dist/embed/types/`). Styles live in each element's shadow root, so there is no CSS file. Vendor the folder, load the file by a **relative** URL, and it works from any sub-path of a static host: no server, no absolute paths, no framework.
+Written 13 November 2026. `npm run build:embed` writes one ES module, `dist/embed/model-arena-embed.js` (about 223 kB, 63 kB gzipped), and its types (`dist/embed/model-arena-embed.d.ts` plus `dist/embed/types/`). Styles live in each element's shadow root, so there is no CSS file. Vendor the folder, load the file by a **relative** URL, and it works from any sub-path of a static host: no server, no absolute paths, no framework.
 
 **Live path unverified.** Every check here runs against a fake provider (`npm test`, `npm run smoke`). No paid call has been made through the browser flow, and no real key has been used.
 
@@ -16,6 +16,7 @@ Written 13 November 2026. `npm run build:embed` writes one ES module, `dist/embe
 | `<arena-key>` | The reader's own Runware key: a password field, memory by default, `sessionStorage` only behind "Remember for this tab". Mount it anywhere, such as a header |
 | `generateFromGuide()` | The main entry: a guide bundle through one model, with progress events. Hosts draw their own controls around it |
 | `offeredModels()`, `composePrompt()` | The models offered (Kling 4.0, Seedance 2.5, MiniMax H3, then LTX-2.5 marked "audio + first frame only") with each one's one-line note and prompting-guide link; the composed prompt for a shot, model and references |
+| `imageModels()`, `imageFamilies()`, `generateImage()` | The image models for stills (character sheets, environment images) as data for a picker, flat or by family, and one call that makes an image with the reader's key. `planImage`, `runImage` and `RunwareClient` are exported for hosts that want the steps |
 | `<arena-player>` | One output clip that follows the host's clock within a frame; muted by default; no controls with `controls="none"` |
 | `<arena-gallery>` | Published records, playable without a key: reference images as a strip, the guide and one to three outputs on one playhead with their prompts, the guide's audio once |
 | `<arena-generate>` | The all-in-one, built from the parts above, for hosts that want the whole flow |
@@ -89,6 +90,30 @@ Written 13 November 2026. `npm run build:embed` writes one ES module, `dist/embe
 ```
 
 `runs/index.json` is an array of records or of record URLs (relative to the list), or `{ "records": [...] }`. Media in a record resolve against the record's URL. With no records it shows "No published runs yet". "Run this yourself" turns the record back into a preset and loads it into the element named by `generate`.
+
+## Image models and `generateImage`
+
+`imageFamilies()` returns the families in a fixed order, each with its models: FLUX (FLUX.2 [klein] 9B, FLUX 3 Image, FLUX 3 Image Klein), OpenAI GPT Image (GPT-Image-2.6 Flare, Sunburst), MiniMax H3 (H3 Image, H3 Image Highspeed), ByteDance Seedream (5.5), Kling IMAGE (3.0). `imageModels()` is the same list, flat. Each entry is plain data: `key`, `name`, `air`, `family`, `provider`, `maker`, `accepts` (`text`, `referenceImages` with `max` and the per-image limits, `transparent`, `outputFormats`, `notOffered`), `prompt` limits, `size` (`rule`, a one-line `summary`, `default`), `estimate` for a text-to-image still at the default size, and `pricing` (`kind`, `summary`, `source`, `read`). Facts and prices per model: [providers/runware-api.md](providers/runware-api.md#character-stills-image-inference).
+
+`generateImage()` mirrors `generateFromGuide()`: the key by reference (a string, a getter or the `<arena-key>` panel), a refusal over `maxPrice`, `confirm` with the same cost question before anything is uploaded, and the same `GenerateError` codes. `references` are Blobs (PNG, JPEG or WebP; a File keeps its name), https URLs, or `{ blob, src, name }`, checked against the model's count and size limits before any upload. A reference is never resized or dropped: one the model cannot take is refused (`refused`, naming the limit and how to fix the image). The result notes say so plainly, and also say when the output size was fitted from a reference and when a URL's size could not be checked here. Token-priced models (GPT-Image-2.6, H3 Image) have no estimate, so a run on them is refused with `no-estimate`.
+
+```js
+import { imageFamilies, generateImage } from "./vendor/model-arena/model-arena-embed.js";
+
+const families = imageFamilies();          // [{ family: "FLUX", models: [{ key, name, accepts, size, estimate, ... }] }, ...]
+const r = await generateImage({
+  model: "seedream-5.5",
+  prompt: "A character sheet of a courier in a yellow raincoat: front, side and back, plain grey background.",
+  references: [sketchFile],                // Blobs or https URLs; optional
+  size: { resolution: "2K" },              // or { width, height }; omit for the default or the reference's size
+  maxPrice: 0.1,
+  key: document.getElementById("key"),
+  confirm: (q) => window.confirm(`Spend up to $${q.usd.toFixed(3)} on ${q.modelName}?`),
+});
+// r.imageURL (Runware keeps it about 7 days), r.costUsd, r.taskUUID, r.modelRan, r.estimate, r.inputsSent, r.notes, r.costRowText
+// Feed it back as a reference: pass r.imageURL to generateImage, or fetch it into a Blob for
+// generateFromGuide({ references: { character } }); whether the image host allows a browser fetch is not checked yet.
+```
 
 ## The guide bundle and the shot
 

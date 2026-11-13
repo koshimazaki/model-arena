@@ -84,7 +84,7 @@ export interface FakeRunware {
  * Answers mediaStorage with a UUID, videoInference with an ack, and getResponse
  * with "processing" `processing` times and then success.
  */
-export function fakeRunware(o: { processing?: number; status?: number; cost?: number; videoURL?: string; errorCode?: string } = {}): FakeRunware {
+export function fakeRunware(o: { processing?: number; status?: number; cost?: number; videoURL?: string; errorCode?: string; imageURL?: string } = {}): FakeRunware {
   const calls: FakeRunware["calls"] = [];
   let polls = 0;
   let uploads = 0;
@@ -100,6 +100,7 @@ export function fakeRunware(o: { processing?: number; status?: number; cost?: nu
       if (t.taskType === "getResponse") {
         polls++;
         if (o.processing === -1 || polls <= (o.processing ?? 1)) return { taskUUID: t.taskUUID, status: "processing", progress: 50 };
+        if (o.imageURL) return { taskType: "imageInference", taskUUID: t.taskUUID, status: "success", imageURL: o.imageURL, cost: o.cost ?? 0.03 };
         return { taskType: "videoInference", taskUUID: t.taskUUID, status: "success", videoURL: o.videoURL ?? "https://vm.runware.ai/video/out.mp4", cost: o.cost ?? 0.94 };
       }
       return { taskUUID: t.taskUUID };
