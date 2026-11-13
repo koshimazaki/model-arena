@@ -5,7 +5,7 @@ summary: How a host app vendors the embed bundle — the key panel, the generate
 
 # Embedding Model Arena in another app
 
-Written 13 November 2026. `npm run build:embed` writes one ES module, `dist/embed/model-arena-embed.js` (about 175 kB, 48 kB gzipped), and its types (`dist/embed/model-arena-embed.d.ts` plus `dist/embed/types/`). Styles live in each element's shadow root, so there is no CSS file. Vendor the folder, load the file by a **relative** URL, and it works from any sub-path of a static host: no server, no absolute paths, no framework.
+Written 13 November 2026. `npm run build:embed` writes one ES module, `dist/embed/model-arena-embed.js` (about 190 kB, 52 kB gzipped), and its types (`dist/embed/model-arena-embed.d.ts` plus `dist/embed/types/`). Styles live in each element's shadow root, so there is no CSS file. Vendor the folder, load the file by a **relative** URL, and it works from any sub-path of a static host: no server, no absolute paths, no framework.
 
 **Live path unverified.** Every check here runs against a fake provider (`npm test`, `npm run smoke`). No paid call has been made through the browser flow, and no real key has been used.
 
