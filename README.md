@@ -1,74 +1,32 @@
 # Model Arena
 
-A drop-in web component that plays video-model outputs side by side on one clock, runs them with your own key, and shows exactly what each model was given and what it cost.
-
-**Live:** [Three briefs, four video models](https://runware-arena.pages.dev/). Seedance 2.5, Kling VIDEO 4.0, MiniMax H3 and FLUX 3 Video on the same briefs, with the prompt each model was sent, the measured cost and time, and a read of what each one did well and where it fell short.
+**One brief, several video models, side by side on one clock.**
 
 [![Three models playing the same brief on one clock](docs/img/post-player.jpg)](https://runware-arena.pages.dev/)
 
-Status (16 November 2026): the post is live as a draft. The element plays records; `<model-specs>` shows what each video model takes, how you prompt it and how you move its camera; a Node CLI runs one lane, or makes a character still, through the Runware API. The post's clips were generated in Genobi Studio through Runware; the cost log for this repo's own CLI ([docs/costs.md](docs/costs.md)) has no paid run yet.
+Model Arena is a drop-in web component that plays video-model outputs side by side on one clock, runs them with your own key, and shows exactly what each model was given and what it cost. See it in use in the post [Three briefs, four video models](https://runware-arena.pages.dev/): Seedance 2.5, Kling VIDEO 4.0, MiniMax H3 and FLUX 3 Video on the same briefs, with each prompt, the measured cost and time, and what each model did well and where it fell short.
 
-## What is here
+**Runs on [Runware](https://runware.ai).** Lanes go through the Runware API with your own key: Kling VIDEO 4.0, Seedance 2.5, MiniMax H3, LTX-2.5 and FLUX 3 Video for video, and nine image models for character stills. A dry run prints exactly what would be sent. A paid run needs a price cap and a typed yes, and logs what it cost. The key goes only to `api.runware.ai` and is never logged or written to a record.
 
-| Folder | What it holds |
-| --- | --- |
-| `blog/` | the published post: a static page, its player (`scenes.js`) and its posters. Clips load from R2 |
-| `packages/element/` | `<model-arena>` and `<model-specs>`, the embeddable elements, and their themes |
-| `packages/core/` | the record and guide-bundle schemas, the model specs and the prompt composer |
-| `providers/` | provider adapters behind one interface. Runware is the first |
-| `scripts/` | the CLIs (`run-lane`, `make-still`), the builds and the smoke tests |
-| `site/` | the element-driven version of the post and its build |
-| `docs/` | the PRD and plan, model specs, the Runware provider notes, costs, friction and deploy notes |
+## What it does
 
-The post plays its clips with `blog/scenes.js` (three clips on one clock, Full view, prompts with changes marked). Folding that player into `<model-arena>` is the next step. [docs/deploy.md](docs/deploy.md) covers publishing the post and adding a clip.
+- **One clock.** `<model-arena>` plays every model's clip in step, in four layouts, with the prompt and inputs each model received under its tile.
+- **What each model takes.** `<model-specs>` is a spec matrix read from Runware's schemas: inputs, limits, prices, how you prompt each model and how you move its camera.
+- **One brief, a prompt per model.** The composer turns one neutral shot description into each model's own prompt and request parameters.
+- **Embeds anywhere.** One ES module for a page, and an embed bundle with a key panel, the generate flow and a gallery for another app.
 
-- [Product requirements](docs/PRD.md) · [Implementation plan](docs/plan.md)
-- [Model specs: the format and how to add a model](docs/model-specs.md)
-- [Runware provider: inputs, prices, camera parameters, character stills](docs/providers/runware-api.md)
-- [Costs of every paid run](docs/costs.md) · [Platform friction log](docs/friction.md)
+## Quick start
 
-Companion repo: **motion-studio**, which makes guide clips. Model Arena reads its guide bundles (`packages/core/schema/guide-bundle.schema.json`); the two share files, not code.
-
-## Five minutes, no key
-
-You need Node 24 (`nvm use 24`) and ffmpeg (for the placeholder clips). Nothing here sends a request or needs a key.
+Node 24 and ffmpeg (for the placeholder clips). Nothing here sends a request or needs a key.
 
 ```sh
-npm install
-npm run demo:placeholders   # labelled placeholder clips and stills in examples/media/placeholder/ (gitignored)
+git clone https://github.com/koshimazaki/model-arena && cd model-arena
+nvm use 24 && npm install
+npm run demo:placeholders   # labelled placeholder clips and stills (gitignored)
 npm run dev                 # Vite on http://localhost:5173
 ```
 
-Then open:
-
-- **http://localhost:5173/specs.html**: the spec matrix, a card per model with links to its Runware API page and guides, and the composer. Type one shot description, pick a camera move, and read each model's prompt and request params side by side.
-- **http://localhost:5173/blog-demo.html**: the `arena` and `guidance` layouts playing placeholder clips on one clock.
-
-A dry run prints exactly what a paid run would send, and sends nothing:
-
-```sh
-# One lane: the composer writes Seedance's prompt from a neutral shot (guide video plus a character still).
-npm run lane -- --model seedance-2.5 --shot examples/shots/motion-swap.json \
-  --guide examples/media/placeholder/guide.mp4 --character examples/media/placeholder/inputs/character.png --dry-run
-
-# A character still with FLUX.2 [klein] 9B, pose-matched to the guide's first frame.
-npm run still -- --model klein-9b --reference examples/media/placeholder/inputs/first-frame.png \
-  --prompt "A figure in a plain grey jumpsuit, in exactly the pose and framing of the reference image." --dry-run
-```
-
-Checks:
-
-```sh
-npm test            # vitest: schemas, specs against Runware's schemas, composer, provider, CLIs, elements
-npm run typecheck
-npm run lint
-npm run smoke       # headless Google Chrome: every clip loads, Play all keeps one clock, the composer renders
-npm run build       # dist/model-arena.js (both elements, one ES module) and dist/model-specs.json
-```
-
-`npm run smoke` expects Google Chrome at its macOS path; set `CHROME_PATH` elsewhere.
-
-The real mannequin guide is not committed. If you have it, `npm run demo:media [dir]` copies it from `~/Downloads` (or `dir`) and, with ffmpeg, makes a 1280×720 copy (Kling 4.0 refuses reference videos under 700 px), a 1280×720 first frame and a WAV of its audio; `index.html` plays it.
+Open **http://localhost:5173/specs.html** for the spec matrix and the composer, and **http://localhost:5173/blog-demo.html** for the layouts playing placeholder clips on one clock.
 
 ## Embed
 
@@ -78,49 +36,24 @@ The real mannequin guide is not committed. If you have it, `npm run demo:media [
 <model-specs models="kling-4,seedance-2.5,h3,ltx-2.5,flux-3-video"></model-specs>
 ```
 
-`<model-specs>` takes `models` (spec ids, default all seven) and `view` (`matrix`, `cards` or `composer` to show one part only). A record may carry `shot`, the one neutral description its lanes' prompts were composed from; captions then show the intent behind every per-model prompt.
+`npm run build` writes the elements as one file, `dist/model-arena.js`.
 
-Media paths in a record resolve against the record's URL; a record set's tab paths resolve against the set's URL. `npm run build` writes the element as one file, `dist/model-arena.js`.
+## Docs
 
-Layouts:
+| | |
+| --- | --- |
+| [The elements](docs/elements.md) | attributes, the four layouts, media paths and theming |
+| [Embedding in another app](docs/embed.md) | the key panel, the generate flow, the player and the gallery |
+| [The command line](docs/cli.md) | dry runs, paid lanes and character stills, the price cap, your key |
+| [Model specs](docs/model-specs.md) | the spec format and how to add a model |
+| [Runware provider](docs/providers/runware-api.md) | inputs, prices, camera parameters, character stills |
+| [The published post](docs/deploy.md) | how the post reaches Cloudflare Pages and R2, and how to add a clip |
+| [Developing](docs/developing.md) | a map of the repo, the checks, demo media and records |
+| [Costs](docs/costs.md) · [Friction log](docs/friction.md) | every paid run, and what got in the way on the platform |
+| [Product requirements](docs/PRD.md) · [Plan](docs/plan.md) | what it is for and how it was built |
 
-- `arena`: the same shot from several models. The reader picks 2-5 models and a layout, swaps any tile's model from its menu, and plays all or one alone. `src` may be a record set, shown as test tabs.
-- `inputs`: the reference images as a strip, the guide and one to three outputs on one playhead with their prompts, the guide's audio once.
-- `guidance`: the Motion Studio guide beside one model's output on one clock, how that model is steered (camera parameter, guide video or prompt words), what it received and its composed prompt. `model="<lane id>"` picks the first lane shown.
-- `three-up` (default): every lane with its full caption.
+Companion repo: [Draw Control](https://github.com/koshimazaki/draw-control) makes the guide clips. Model Arena reads its guide bundles; the two share files, not code.
 
-The element fills its container's width and collapses to one column below 640 px. Colours, fonts and radii are `--ma-*` custom properties with neutral defaults (the dark lime look is `packages/element/themes/dark-lime.css`); `theme="auto"` follows the reader's light or dark setting.
+## Licence
 
-## Embed in another app
-
-`npm run build:embed` writes one file, `dist/embed/model-arena-embed.js`: a key panel, the generate flow as a function and as an element, a player that follows a host clock, and a gallery. See [docs/embed.md](docs/embed.md); `examples/embed.html` shows all of it against a fake provider (`npm run demo:embed` first).
-
-## Blog demo records
-
-The records in `examples/records/blog/` come from `npm run demo:records`, which runs neutral shot descriptions through the prompt composer: the prompts, inputs and camera parameters are real; the clips are placeholders and no cost is claimed.
-
-## Run one lane (paid)
-
-```sh
-# 1. Look at exactly what would be sent. Sends nothing, needs no key.
-npm run lane -- --model kling-4 --duration 5 \
-  --prompt "The mannequin from <<<video_1>>> performs the same motion beside two fruits on a wooden table, soft studio light, locked-off camera." \
-  --guide examples/media/mannequin-two-fruits-guide-1280x720-24fps.mp4 --dry-run
-
-# 2. Run it. Refuses without --max-price, or when the estimate is over it; asks you to type yes.
-RUNWARE_API_KEY=... npm run lane -- <same flags, without --dry-run> --max-price 1.50
-```
-
-A run writes `runs/<date>-<model>-<uuid>/` (gitignored) with the plan, the task as sent, the inputs, `output.mp4` and a one-lane `record.json`, and appends a row to `docs/costs.md`. Open it in the demo with `?record=/runs/<folder>/record.json`. If polling stops, resume with `--resume <taskUUID>` and the same flags; never resubmit, because that bills a second generation.
-
-Models: `kling-4`, `kling-4-flash`, `seedance-2.5`, `h3`, `ltx-2.5`, `ltx-2.5-fast`, `flux-3-video`, and `auto` (the router, with `--requirements`). `npm run lane -- --help` lists every flag.
-
-- `--shot shot.json` lets the composer write the prompt, camera parameter and duration for that model; the run's record keeps the shot.
-- `--character still.png` sends a still that replaces the guide's figure: a reference image beside the guide on Kling, Seedance, H3 and the router, never a frame image. LTX and FLUX 3 Video refuse it.
-- `npm run still -- --model <key> --prompt ... [--reference frame0.png] --max-price 0.05` makes that still with any of nine image models (FLUX.2 [klein] 9B, FLUX 3 Image and Image Klein, GPT-Image-2.6 Flare and Sunburst, MiniMax H3 Image and Highspeed, Seedream 5.5, Kling IMAGE 3.0; `--help` lists them); same refusals, confirmation and cost row as a lane. GPT-Image-2.6 has no published bound and runs with `--allow-unpriced`, capped against the highest published example (`--quality low` for drafts); MiniMax H3 Image runs on an estimate from its approximate token counts.
-
-## Your key
-
-The key is read from `RUNWARE_API_KEY` by the CLI, and held in memory (or `sessionStorage` if asked) in the browser. It is sent only to `api.runware.ai` and is never logged or written to a record.
-
-Licence: MIT.
+MIT ([LICENSE](LICENSE)).
