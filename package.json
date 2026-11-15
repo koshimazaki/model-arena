@@ -22,7 +22,12 @@
     "demo:embed": "sh scripts/make-embed-bundle.sh",
     "shot": "node scripts/shot.mjs",
     "smoke": "node scripts/smoke.mjs",
-    "still": "tsx scripts/make-still.ts"
+    "still": "tsx scripts/make-still.ts",
+    "site:media": "tsx scripts/site-media.ts",
+    "build:site": "vite build && tsx scripts/build-site.ts",
+    "site:preview": "node scripts/site-preview.mjs",
+    "site:smoke": "node scripts/site-smoke.mjs",
+    "site": "npm run site:media && npm run build:site"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -1,0 +1,211 @@
+{
+  "generatedAt": "2026-11-15T20:57:07.295Z",
+  "takes": [
+    {
+      "scene": "motocross",
+      "model": "seedance",
+      "jobId": "813f9416-9046-449c-b42c-7d29b76d2939",
+      "prompt": "motocross riding, with camera on drivers head looking at the steering bar with interface, dynmic jumps with time warp and slow down half way through the trick, sports channel like camera with rain and mud splashing. We have sports comentator giving live comments on the tricks. Saying \"oh noo\" once the here does full backflip and lands full of dirt continueing the ride. Sunset on on the sky with full rainy wether. camera grain fast pase clip.",
+      "requested": {
+        "duration": 10,
+        "resolution": "hd",
+        "aspectRatio": "16:9",
+        "references": 0
+      },
+      "measured": {
+        "width": 1280,
+        "height": 720,
+        "fps": 24,
+        "fpsText": "24/1",
+        "frames": 241,
+        "seconds": 10.08,
+        "hasAudio": true,
+        "videoCodec": "h264",
+        "originalBytes": 19452200,
+        "webBytes": 2081086,
+        "posterAt": 0.5
+      },
+      "costActualUsd": 2.3208,
+      "costEstimateUsd": 2.304,
+      "wallClockSeconds": 173.4,
+      "files": {
+        "web": "motocross-seedance-813f9416.mp4",
+        "poster": "motocross-seedance-813f9416.jpg",
+        "original": "motocross-seedance-813f9416-original.mp4"
+      }
+    },
+    {
+      "scene": "motocross",
+      "model": "kling",
+      "jobId": "26875b74-cda9-4b57-8b86-d5295b8104c0",
+      "prompt": "motocross riding, with camera on drivers head looking at the steering bar with interface, dynmic jumps with time warp and slow down half way through the trick, sports channel like camera with rain and mud splashing. We have sports comentator giving live comments on the tricks. Saying \"oh noo\" once the here does full backflip and lands full of dirt continueing the ride. Sunset on on the sky with full rainy wether. camera grain fast pase clip.",
+      "requested": {
+        "duration": 10,
+        "resolution": "hd",
+        "aspectRatio": "16:9",
+        "references": 0
+      },
+      "measured": {
+        "width": 1280,
+        "height": 720,
+        "fps": 24,
+        "fpsText": "24/1",
+        "frames": 241,
+        "seconds": 10.042,
+        "hasAudio": true,
+        "videoCodec": "h264",
+        "originalBytes": 12418520,
+        "webBytes": 2266880,
+        "posterAt": 0.5
+      },
+      "costActualUsd": 1.57,
+      "costEstimateUsd": 1.57,
+      "wallClockSeconds": 276.7,
+      "files": {
+        "web": "motocross-kling-26875b74.mp4",
+        "poster": "motocross-kling-26875b74.jpg",
+        "original": "motocross-kling-26875b74-original.mp4"
+      }
+    },
+    {
+      "scene": "motocross",
+      "model": "h3",
+      "jobId": "8de579ee-c671-42b7-b381-33f056121165",
+      "prompt": "motocross riding, with camera on drivers head looking at the steering bar with interface, dynmic jumps with time warp and slow down half way through the trick, sports channel like camera with rain and mud splashing. We have sports comentator giving live comments on the tricks. Saying \"oh noo\" once the here does full backflip and lands full of dirt continueing the ride. Sunset on on the sky with full rainy wether. camera grain fast pase clip.",
+      "requested": {
+        "duration": 10,
+        "resolution": "hd",
+        "aspectRatio": "16:9",
+        "references": 0
+      },
+      "measured": {
+        "width": 1344,
+        "height": 768,
+        "fps": 24,
+        "fpsText": "24/1",
+        "frames": 243,
+        "seconds": 10.125,
+        "hasAudio": true,
+        "videoCodec": "h264",
+        "originalBytes": 5349822,
+        "webBytes": 3122719,
+        "posterAt": 0.5
+      },
+      "costActualUsd": 0.8,
+      "costEstimateUsd": 0.8,
+      "wallClockSeconds": 202.5,
+      "files": {
+        "web": "motocross-h3-8de579ee.mp4",
+        "poster": "motocross-h3-8de579ee.jpg",
+        "original": "motocross-h3-8de579ee-original.mp4"
+      }
+    },
+    {
+      "scene": "character-sheet",
+      "model": "seedance",
+      "jobId": "7915cbce-a6e4-41d7-9766-d866da0d8607",
+      "prompt": "animate this character sheet treating it as storyboard, follow closely the aesthetic and style with smooth camera move from each angle with zooms on\ndetails and body parts in 3D realistic view, device setting up moving and assembling with parts, no hard cuts Every camera transition is motivated by adding parts and assembling unit, reflective gear surface, usability electrical shockwave or foreground occlusion. Camera movement feels like an elegant\nhigh-end product film combined with kinetic action: smooth acceleration, controlled energy bursts, precise spatial continuity. No voice and commentary or logos or text.",
+      "requested": {
+        "duration": 10,
+        "resolution": "hd",
+        "aspectRatio": "16:9",
+        "references": 1
+      },
+      "measured": {
+        "width": 1280,
+        "height": 720,
+        "fps": 24,
+        "fpsText": "24/1",
+        "frames": 241,
+        "seconds": 10.08,
+        "hasAudio": true,
+        "videoCodec": "h264",
+        "originalBytes": 13193918,
+        "webBytes": 2010650,
+        "posterAt": 0.5
+      },
+      "costActualUsd": 2.3208,
+      "costEstimateUsd": 2.304,
+      "wallClockSeconds": 170.3,
+      "files": {
+        "web": "character-sheet-seedance-7915cbce.mp4",
+        "poster": "character-sheet-seedance-7915cbce.jpg",
+        "original": "character-sheet-seedance-7915cbce-original.mp4"
+      }
+    },
+    {
+      "scene": "character-sheet",
+      "model": "kling",
+      "jobId": "e3e001b6-7c10-4a78-aebd-cdbbbfa9279f",
+      "prompt": "animate this character sheet treating it as storyboard, follow closely the aesthetic and style with smooth camera move from each angle with zooms on\ndetails and body parts in 3D realistic view, device setting up moving and assembling with parts, no hard cuts Every camera transition is motivated by adding parts and assembling unit, reflective gear surface, usability electrical shockwave or foreground occlusion. Camera movement feels like an elegant\nhigh-end product film combined with kinetic action: smooth acceleration, controlled energy bursts, precise spatial continuity. No voice and commentary or logos or text.",
+      "requested": {
+        "duration": 10,
+        "resolution": "hd",
+        "aspectRatio": "16:9",
+        "references": 1
+      },
+      "measured": {
+        "width": 1280,
+        "height": 720,
+        "fps": 24,
+        "fpsText": "24/1",
+        "frames": 241,
+        "seconds": 10.042,
+        "hasAudio": true,
+        "videoCodec": "h264",
+        "originalBytes": 13275012,
+        "webBytes": 2719857,
+        "posterAt": 0.5
+      },
+      "costActualUsd": 1.57,
+      "costEstimateUsd": 1.57,
+      "wallClockSeconds": 140.9,
+      "files": {
+        "web": "character-sheet-kling-e3e001b6.mp4",
+        "poster": "character-sheet-kling-e3e001b6.jpg",
+        "original": "character-sheet-kling-e3e001b6-original.mp4"
+      }
+    },
+    {
+      "scene": "character-sheet",
+      "model": "h3",
+      "jobId": "cab7d0d8-3042-4343-9252-9231395ac5ae",
+      "prompt": "animate this character sheet treating it as storyboard, follow closely the aesthetic and style with smooth camera move from each angle with zooms on\ndetails and body parts in 3D realistic view, device setting up moving and assembling with parts, no hard cuts Every camera transition is motivated by adding parts and assembling unit, reflective gear surface, usability electrical shockwave or foreground occlusion. Camera movement feels like an elegant\nhigh-end product film combined with kinetic action: smooth acceleration, controlled energy bursts, precise spatial continuity. No voice and commentary or logos or text.",
+      "requested": {
+        "duration": 10,
+        "resolution": "hd",
+        "aspectRatio": "16:9",
+        "references": 1
+      },
+      "measured": {
+        "width": 1344,
+        "height": 768,
+        "fps": 24,
+        "fpsText": "24/1",
+        "frames": 243,
+        "seconds": 10.125,
+        "hasAudio": true,
+        "videoCodec": "h264",
+        "originalBytes": 5268216,
+        "webBytes": 2849609,
+        "posterAt": 0.5
+      },
+      "costActualUsd": 0.8,
+      "costEstimateUsd": 0.8,
+      "wallClockSeconds": 207.6,
+      "files": {
+        "web": "character-sheet-h3-cab7d0d8.mp4",
+        "poster": "character-sheet-h3-cab7d0d8.jpg",
+        "original": "character-sheet-h3-cab7d0d8-original.mp4"
+      }
+    }
+  ],
+  "references": {
+    "character-sheet": {
+      "web": "character-sheet-reference.jpg",
+      "original": "character-sheet-reference-original.png",
+      "width": 2656,
+      "height": 1488
+    }
+  }
+}
