@@ -2,7 +2,25 @@
 
 A drop-in web component that plays video-model outputs side by side on one clock, runs them with your own key, and shows exactly what each model was given and what it cost.
 
-Status: first milestone in progress (10 November 2026). The element plays records; `<model-specs>` shows what each video model takes, how you prompt it and how you move its camera; a Node CLI runs one lane, or makes a character still, through the Runware API. No paid run has been made yet.
+**Live:** [Three briefs, four video models](https://runware-arena.pages.dev/). Seedance 2.5, Kling VIDEO 4.0, MiniMax H3 and FLUX 3 Video on the same briefs, with the prompt each model was sent, the measured cost and time, and a read of what each one did well and where it fell short.
+
+[![Three models playing the same brief on one clock](docs/img/post-player.jpg)](https://runware-arena.pages.dev/)
+
+Status (16 November 2026): the post is live as a draft. The element plays records; `<model-specs>` shows what each video model takes, how you prompt it and how you move its camera; a Node CLI runs one lane, or makes a character still, through the Runware API. The post's clips were generated in Genobi Studio through Runware; the cost log for this repo's own CLI ([docs/costs.md](docs/costs.md)) has no paid run yet.
+
+## What is here
+
+| Folder | What it holds |
+| --- | --- |
+| `blog/` | the published post: a static page, its player (`scenes.js`) and its posters. Clips load from R2 |
+| `packages/element/` | `<model-arena>` and `<model-specs>`, the embeddable elements, and their themes |
+| `packages/core/` | the record and guide-bundle schemas, the model specs and the prompt composer |
+| `providers/` | provider adapters behind one interface. Runware is the first |
+| `scripts/` | the CLIs (`run-lane`, `make-still`), the builds and the smoke tests |
+| `site/` | the element-driven version of the post and its build |
+| `docs/` | the PRD and plan, model specs, the Runware provider notes, costs, friction and deploy notes |
+
+The post plays its clips with `blog/scenes.js` (three clips on one clock, Full view, prompts with changes marked). Folding that player into `<model-arena>` is the next step. [docs/deploy.md](docs/deploy.md) covers publishing the post and adding a clip.
 
 - [Product requirements](docs/PRD.md) · [Implementation plan](docs/plan.md)
 - [Model specs: the format and how to add a model](docs/model-specs.md)
@@ -76,10 +94,6 @@ The element fills its container's width and collapses to one column below 640 px
 ## Embed in another app
 
 `npm run build:embed` writes one file, `dist/embed/model-arena-embed.js`: a key panel, the generate flow as a function and as an element, a player that follows a host clock, and a gallery. See [docs/embed.md](docs/embed.md); `examples/embed.html` shows all of it against a fake provider (`npm run demo:embed` first).
-
-## The published post
-
-`blog/` holds the post that is live at https://runware-arena.pages.dev/: three briefs on four video models, each clip the best of a few generations, with the prompts and measured cost and time. It is a static folder on Cloudflare Pages; its clips load from R2. [docs/deploy.md](docs/deploy.md) covers publishing and adding a clip.
 
 ## Blog demo records
 
