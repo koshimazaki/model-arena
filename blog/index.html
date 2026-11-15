@@ -207,7 +207,6 @@
     <li><a href="#runner">Brief 3: a runner in New York, with FLUX 3</a></li>
     <li><a href="#verdict">Which model for which job</a></li>
     <li><a href="#next">What comes next</a></li>
-    <li><a href="#run">Run it yourself</a></li>
   </ol>
 </nav>
 
@@ -362,39 +361,9 @@
 <div class="draft">Camera moves through the same guide. The guide already carries motion and beat. The next step puts the camera in it too: a camera path animated in Motion Studio, so the move is set once and every model that takes a guide video follows it. For LTX, the same path maps to <code>settings.cameraMovement</code>.</div>
 <div class="draft">Where this comes from. One paragraph and two or three stills. Earlier audio-reactive work: the towers piece and the June flowers piece made in Genobi, and the camera-director workflows.</div>
 
-<h2 id="run">Run it yourself</h2>
-<div class="draft">The one task the Arena sends for Kling 4.0. Field names match Runware's Kling 4.0 schema (read 10 Nov); the prompt pattern is from Runware's own reference-videos guide.</div>
-<pre><code>// One Kling VIDEO 4.0 task on Runware (fields checked against schema.json, 10 Nov)
-const res = await fetch("https://api.runware.ai/v1", {
-  method: "POST",
-  headers: { "Content-Type": "application/json",
-             Authorization: `Bearer ${RUNWARE_API_KEY}` },
-  body: JSON.stringify([{
-    taskType: "videoInference",
-    taskUUID: crypto.randomUUID(),
-    model: "klingai:kling-video@4.0",
-    positivePrompt: "Reference only the camera path and pacing of &lt;&lt;&lt;video_1&gt;&gt;&gt;. "
-      + "Replace the mannequin with the character in &lt;&lt;&lt;image_1&gt;&gt;&gt;. …",
-    inputs: {
-      referenceVideos: ["https://…/guide.mp4"],   // the Motion Studio guide
-      referenceImages: ["https://…/character.png"] // the Klein still
-    },
-    duration: 5,
-    includeCost: true,
-    deliveryMethod: "async"
-  }])
-});</code></pre>
-<div class="draft">Links: Motion Studio and model-arena repos (open source), the record files. One line at the foot: the player in this post is the open-source <code>&lt;model-arena&gt;</code> element; bring your own key.</div>
-
 <div class="author"><span class="avatar" aria-hidden="true"></span>
   <div><small>Written by</small><b>Radek Rudnicki</b><small class="role">Creative technologist</small></div></div>
 </main>
-
-<section class="cta col">
-  <h3 style="margin-top:0">Send one brief to three models.</h3>
-  <p>Run the comparison in the Arena with your Runware key.</p>
-  <a class="btn" href="#run">Open the Arena</a>
-</section>
 
 <section class="col" style="padding-bottom:48px">
   <h3>Keep reading</h3>
