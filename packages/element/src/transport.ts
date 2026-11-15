@@ -35,17 +35,21 @@ export function transport(clock: () => SharedClock, label = "Play all"): Transpo
   };
 }
 
-/** A muted, inline video in a 16:9 screen with a playhead bar; null src shows a badge instead. */
+/**
+ * A muted, inline video in a 16:9 screen with a playhead bar; null src shows a badge instead.
+ * Only metadata loads up front (the clock needs the length); `poster` shows until playback.
+ */
 export function screen(
   src: string | null,
   label: string,
   onError: (msg: string) => void,
   badge?: string,
+  poster?: string | null,
 ): { node: HTMLElement; video?: HTMLVideoElement; bar: HTMLElement } {
   const node = el("div", { class: "screen" });
   let video: HTMLVideoElement | undefined;
   if (src) {
-    video = el("video", { src, muted: "", playsinline: "", preload: "auto", "aria-label": label });
+    video = el("video", { src, muted: "", playsinline: "", preload: "metadata", "aria-label": label, ...(poster ? { poster } : {}) });
     video.muted = true;
     video.addEventListener("error", () => onError(`${label}: the clip did not load.`));
     node.append(video);

@@ -75,6 +75,18 @@ export function fitState(record: ArenaRecord, prev?: Partial<ArenaState>): Arena
   return { count, layout, picks };
 }
 
+/** Under a tile: the lane's note (such as its measured facts) and a link to the untouched original. */
+function tileFoot(lane: Lane, base: string): HTMLElement | null {
+  const original = lane.output?.original ? mediaUrl(lane.output.original, base) : null;
+  if (!lane.note && !original) return null;
+  return el(
+    "figcaption",
+    { class: "tile-foot" },
+    lane.note ? el("span", {}, lane.note) : null,
+    original ? el("a", { href: original, target: "_blank", rel: "noopener" }, "Full resolution") : null,
+  );
+}
+
 function seg(label: string, items: [string, string][], current: string, onPick: (v: string) => void): HTMLElement {
   const g = el("div", { class: "seg", role: "group", "aria-label": label });
   for (const [value, text] of items) {
@@ -107,7 +119,8 @@ export function arenaView(ctx: ViewContext, state: ArenaState, onState: (s: Aren
     const tileId = `tile-${i}`;
     const name = lane.label ?? lane.modelName ?? lane.model;
     const src = lane.output ? mediaUrl(lane.output.src, base) : null;
-    const s = screen(src, name, ctx.error, lane.status === "placeholder" ? "Placeholder" : undefined);
+    const poster = lane.output?.poster ? mediaUrl(lane.output.poster, base) : null;
+    const s = screen(src, name, ctx.error, lane.status === "placeholder" ? "Placeholder" : undefined, poster);
     if (s.video) {
       s.video.addEventListener("loadedmetadata", () => ctx.clock().loaded());
       ctx.clock().add(tileId, s.video);
@@ -131,8 +144,8 @@ export function arenaView(ctx: ViewContext, state: ArenaState, onState: (s: Aren
       el(
         "figure",
         { class: `tile${record.preferredLane === lane.id ? " preferred" : ""}`, "data-lane": lane.id },
-        s.node,
-        el("figcaption", { class: "overlay" }, menu, solo, meta),
+        el("div", { class: "tile-media" }, s.node, el("div", { class: "overlay" }, menu, solo, meta)),
+        tileFoot(lane, base),
       ),
     );
   });

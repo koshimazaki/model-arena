@@ -2,8 +2,11 @@
 export const viewStyles = /* css */ `
 /* layout="arena": tiles keep 16:9 from the row height; hero tiles stretch. */
 .stage { display: grid; gap: var(--ma-gap); min-width: 0; }
-.tile { position: relative; margin: 0; min-width: 0; border-radius: var(--ma-radius); }
+.tile { position: relative; margin: 0; min-width: 0; border-radius: var(--ma-radius); display: flex; flex-direction: column; gap: 6px; }
+.tile-media { position: relative; aspect-ratio: 16 / 9; min-width: 0; }
 .tile .screen { height: 100%; }
+.tile-foot { display: flex; flex-wrap: wrap; gap: 2px 10px; font: 12px/1.5 var(--ma-mono); color: var(--ma-muted); }
+.tile-foot a { color: var(--ma-fg); }
 .tile.preferred .screen { box-shadow: 0 0 0 1px var(--ma-accent); }
 .overlay { position: absolute; inset: 0; pointer-events: none; }
 .overlay > * { pointer-events: auto; position: absolute; }
@@ -25,12 +28,12 @@ export const viewStyles = /* css */ `
 .stage[data-layout="5-3-2"] .tile:nth-child(n+4) { grid-column: span 3; }
 .stage[data-layout="5-hero"] { grid-template-columns: 2fr 1fr 1fr; }
 .stage[data-layout="5-hero"] .tile:first-child { grid-row: span 2; }
-.stage .tile { aspect-ratio: 16 / 9; }
-.stage[data-layout="3-hero"] .tile:first-child, .stage[data-layout="5-hero"] .tile:first-child { aspect-ratio: auto; }
+.stage[data-layout="3-hero"] .tile:first-child .tile-media, .stage[data-layout="5-hero"] .tile:first-child .tile-media { flex: 1; aspect-ratio: auto; }
 .stage[data-layout="4-row"] .overlay .solo { display: none; }
 @container (max-width: 640px) {
   .stage[data-layout] { grid-template-columns: minmax(0, 1fr); }
-  .stage[data-layout] .tile { grid-column: auto; grid-row: auto; aspect-ratio: 16 / 9; }
+  .stage[data-layout] .tile { grid-column: auto; grid-row: auto; }
+  .stage[data-layout] .tile .tile-media { flex: none; aspect-ratio: 16 / 9; }
   .stage[data-layout="4-row"] .overlay .solo { display: inline-block; }
 }
 

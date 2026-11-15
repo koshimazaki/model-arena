@@ -68,7 +68,8 @@ export function inputsView(ctx: ViewContext): View {
 
   const outVideos: HTMLVideoElement[] = [];
   for (const lane of outputs) {
-    const s = screen(mediaUrl(lane.output!.src, base), lane.label ?? lane.modelName ?? lane.model, ctx.error, lane.status === "placeholder" ? "Placeholder clip" : undefined);
+    const poster = lane.output!.poster ? mediaUrl(lane.output!.poster, base) : null;
+    const s = screen(mediaUrl(lane.output!.src, base), lane.label ?? lane.modelName ?? lane.model, ctx.error, lane.status === "placeholder" ? "Placeholder clip" : undefined, poster);
     if (s.video) {
       s.video.addEventListener("loadedmetadata", () => clock.loaded());
       clock.add(lane.id, s.video);

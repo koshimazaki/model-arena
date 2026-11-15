@@ -83,7 +83,8 @@ export interface Lane {
   prompt: string;
   inputsSent: InputSent[];
   firstFrameVariant: FirstFrameVariant;
-  output: { src: string; contentType?: string; remoteUrl?: string } | null;
+  /** `poster`: a still shown before the clip loads; `original`: the untouched file, linked as "Full resolution". Both resolve like `src`. */
+  output: { src: string; contentType?: string; remoteUrl?: string; poster?: string; original?: string } | null;
   costUsd: number | null;
   /** Wall-clock seconds from submission to result. */
   generationSeconds: number | null;
@@ -215,6 +216,8 @@ function lane(v: unknown, path: string): Lane {
   if (v.output !== null) {
     if (!isObj(v.output)) throw new RecordError(`${path}.output`, "must be an object or null");
     text(v.output.src, `${path}.output.src`, 2048, 1);
+    optText(v.output.poster, `${path}.output.poster`, 2048);
+    optText(v.output.original, `${path}.output.original`, 2048);
   }
   numOrNull(v.costUsd, `${path}.costUsd`);
   numOrNull(v.generationSeconds, `${path}.generationSeconds`);

@@ -125,6 +125,28 @@ describe('layout="arena"', () => {
     expect([...node.shadowRoot!.querySelectorAll("figure.tile")].map((f) => f.getAttribute("data-lane"))).toEqual(["kling-4", "flux-3-video", "h3"]);
   });
 
+  it("loads metadata only, shows a poster, and puts the note and a Full resolution link under the tile", () => {
+    const measured = lane("seedance-2-5", "bytedance:seedance@2.5", {
+      output: { src: "s.mp4", poster: "s.jpg", original: "s-original.mp4" },
+      note: "1280×720 · 24 fps · 10.0 s",
+      status: "ready",
+    });
+    const root = mount("arena", { ...record, lanes: [measured, h3] }).shadowRoot!;
+    const video = root.querySelector('figure.tile[data-lane="seedance-2-5"] video')!;
+    expect(video.getAttribute("preload")).toBe("metadata");
+    expect(video.getAttribute("poster")).toBe(`${BASE}s.jpg`);
+    const foot = root.querySelector('figure.tile[data-lane="seedance-2-5"] .tile-foot')!;
+    expect(foot.textContent).toContain("1280×720 · 24 fps · 10.0 s");
+    expect(foot.querySelector("a")!.getAttribute("href")).toBe(`${BASE}s-original.mp4`);
+    expect(root.querySelector('figure.tile[data-lane="h3"] .tile-foot')).toBeNull();
+  });
+
+  it("refuses a poster that is not text", () => {
+    const bad = { ...record, lanes: [lane("x", "m", { output: { src: "x.mp4", poster: 3 as unknown as string } })] };
+    const root = mount("arena", bad).shadowRoot!;
+    expect(root.textContent).toMatch(/output\.poster/);
+  });
+
   it("fitState keeps picks that exist and clamps the count to the lanes", () => {
     const two = { ...record, lanes: [kling, ltx] };
     expect(fitState(two, { count: 5, layout: "5-hero", picks: ["ltx-2-5"] })).toEqual({ count: 2, layout: "2-side", picks: ["ltx-2-5", "kling-4"] });

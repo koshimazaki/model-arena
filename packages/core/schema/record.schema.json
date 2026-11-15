@@ -181,6 +181,18 @@
                 "remoteUrl": {
                   "type": "string",
                   "maxLength": 2048
+                },
+                "poster": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2048,
+                  "description": "A still shown before the clip loads; resolves like src."
+                },
+                "original": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2048,
+                  "description": "The untouched output file, linked as Full resolution; resolves like src."
                 }
               }
             }
