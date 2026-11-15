@@ -77,6 +77,10 @@ The element fills its container's width and collapses to one column below 640 px
 
 `npm run build:embed` writes one file, `dist/embed/model-arena-embed.js`: a key panel, the generate flow as a function and as an element, a player that follows a host clock, and a gallery. See [docs/embed.md](docs/embed.md); `examples/embed.html` shows all of it against a fake provider (`npm run demo:embed` first).
 
+## The published post
+
+`blog/` holds the post that is live at https://runware-arena.pages.dev/: three briefs on four video models, each clip the best of a few generations, with the prompts and measured cost and time. It is a static folder on Cloudflare Pages; its clips load from R2. [docs/deploy.md](docs/deploy.md) covers publishing and adding a clip.
+
 ## Blog demo records
 
 The records in `examples/records/blog/` come from `npm run demo:records`, which runs neutral shot descriptions through the prompt composer: the prompts, inputs and camera parameters are real; the clips are placeholders and no cost is claimed.

@@ -1,9 +1,37 @@
 ---
 tags: [deploy, site, cloudflare, model-arena]
-summary: How the blog site is built for Cloudflare Pages, how its clips reach R2, how to set the media base and how to swap a take.
+summary: How the published post (blog/) reaches Cloudflare Pages and R2, and how the element-driven site (site/) is built, with its media base and take swaps.
 ---
 
-# Deploying the blog site
+# Deploying the published post (`blog/`)
+
+`blog/` is the post that is live: three briefs, four video models, with its own player (`scenes.js`: three clips on one clock, Full view, prompts with changes marked). It is a plain static folder with no build step.
+
+| File | What it is |
+| --- | --- |
+| `blog/index.html` | the post; `<meta name="media-base">` names where the clips load from |
+| `blog/scenes.js` | the clip list (`CLIPS`) and the player |
+| `blog/media/*.jpg` | posters, the two reference stills and the author picture (committed) |
+| `blog/_headers` | Cloudflare Pages headers; `X-Robots-Tag: noindex` while the post is a draft |
+| `scripts/blog-encode.sh` | makes a clip's web copy and poster from a studio run and prints its `CLIPS` line |
+
+Clips never go into git or Pages. They live in the R2 bucket `runware-arena`: the web copy at `<id>.mp4`, the original as generated at `full/<id>.mp4`.
+
+```sh
+# a new or swapped clip: encode, add its CLIPS line to blog/scenes.js, upload both files
+GENOBI_LOCAL=<studio .local folder> scripts/blog-encode.sh <job id>[@poster-seconds]
+CLOUDFLARE_ACCOUNT_ID=<id> npx wrangler r2 object put runware-arena/<id>.mp4 --file blog/media/<id>.mp4 \
+  --content-type video/mp4 --cache-control "public, max-age=31536000, immutable" --remote
+CLOUDFLARE_ACCOUNT_ID=<id> npx wrangler r2 object put runware-arena/full/<id>.mp4 --file <studio .local>/media/<job id>.mp4 \
+  --content-type video/mp4 --cache-control "public, max-age=31536000, immutable" --remote
+
+# publish the page
+CLOUDFLARE_ACCOUNT_ID=<id> npx wrangler pages deploy blog --project-name runware-arena --branch main
+```
+
+A folder of clips goes up in one run with `SITE_MEDIA_DIR=<folder> sh scripts/site-upload-r2.sh runware-arena [prefix]`. To preview with local clips, remove the `media-base` meta tag and put the web copies in `blog/media/` and the originals in `blog/media/full/` (both gitignored).
+
+# The element-driven site (`site/`)
 
 The site is one static folder, `site-dist/`: the blog post at `/` (three models, two scenes, played by `<model-arena>`), the spec matrix at `/arena/specs.html`, the element (`model-arena.js`), two scene records and a `_headers` file. It needs no key and no server. Clips never go into it; they live on R2.
 
