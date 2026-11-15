@@ -1,0 +1,269 @@
+/**
+ * Record schema, version 1. The JSON Schemas in `../schema/` are the published
+ * contract; these types mirror them, and `parseRecord` is the dependency-free
+ * runtime check the element runs before it renders anything it fetched.
+ */
+
+import type { ShotDescription } from "./compose.ts";
+import { parseShot, ShotError } from "./shot.ts";
+
+export const SCHEMA_VERSION = 1 as const;
+
+export interface MediaRef {
+  src: string;
+  contentType?: string;
+  width?: number;
+  height?: number;
+  fps?: number;
+  seconds?: number;
+  bytes?: number;
+  label?: string;
+}
+
+/** One onset or peak: seconds from the clip's frame 0, strength 0-1. */
+export interface Onset {
+  seconds: number;
+  strength: number;
+}
+
+export interface GuideBundle {
+  schemaVersion: 1;
+  id?: string;
+  title?: string;
+  video: MediaRef;
+  audio?: MediaRef;
+  firstFrame?: MediaRef;
+  firstFrameStyled?: MediaRef;
+  passes?: Record<string, MediaRef>;
+  keyframes?: { time: number; src: string }[];
+  beats?: number[];
+  /** Drum-band onsets from a Motion Studio 0.3.0 beats.json: low = kick, mid = snare, high = hat. */
+  onsets?: { low: Onset[]; mid: Onset[]; high: Onset[] };
+  /** Amplitude peaks from a Motion Studio 0.3.0 beats.json. */
+  peaks?: Onset[];
+  /** The camera track (a Motion Studio camera.json, 0.2.0). */
+  camera?: MediaRef;
+  recipe?: Record<string, unknown>;
+  meta?: {
+    author?: string;
+    createdAt?: string;
+    licences?: { asset: string; licence: string; source?: string; attribution?: string }[];
+    [key: string]: unknown;
+  };
+}
+
+export type InputRole =
+  | "referenceVideo"
+  | "referenceImage"
+  | "referenceAudio"
+  | "frameImage"
+  | "audio"
+  | "video";
+
+export interface InputSent {
+  role: InputRole;
+  /** Where the reader can see the input: a local path, a URL, or a media UUID. */
+  src: string;
+  frame?: string | number;
+  label?: string;
+}
+
+/** A raw frame 0 of the guide, B a restyled still, C no first frame. */
+export type FirstFrameVariant = "A" | "B" | "C";
+
+export interface Lane {
+  id: string;
+  label?: string;
+  provider: string;
+  /** The model asked for: an AIR id, or `auto` for the router. */
+  model: string;
+  modelName?: string;
+  /** The model that actually ran; null when the provider did not say. */
+  modelRan: string | null;
+  prompt: string;
+  inputsSent: InputSent[];
+  firstFrameVariant: FirstFrameVariant;
+  /** `poster`: a still shown before the clip loads; `original`: the untouched file, linked as "Full resolution". Both resolve like `src`. */
+  output: { src: string; contentType?: string; remoteUrl?: string; poster?: string; original?: string } | null;
+  costUsd: number | null;
+  /** Wall-clock seconds from submission to result. */
+  generationSeconds: number | null;
+  durationSeconds?: number | "auto";
+  taskUUID?: string;
+  routing?: { maxPrice?: number; requirements?: string };
+  settings?: Record<string, unknown>;
+  status?: "ready" | "pending" | "error" | "placeholder";
+  note?: string;
+  /** Set when the prompt came from the composer: the record's `shot`, written for this model. */
+  composed?: { model: string; notes?: string[]; dropped?: string[] };
+  /** The shot this lane's prompt was composed from, when the lane carries its own (the generate flow). */
+  shot?: ShotDescription;
+}
+
+export interface ArenaRecord {
+  schemaVersion: 1;
+  id: string;
+  title: string;
+  createdAt?: string;
+  guide?: GuideBundle;
+  lanes: Lane[];
+  observations?: string[];
+  preferredLane?: string;
+  /** The one neutral shot description behind every composed lane prompt (optional, still version 1). */
+  shot?: ShotDescription;
+}
+
+const SLUG = /^[a-z0-9][a-z0-9-]{0,63}$/;
+const ROLES: readonly InputRole[] = [
+  "referenceVideo",
+  "referenceImage",
+  "referenceAudio",
+  "frameImage",
+  "audio",
+  "video",
+];
+// Control characters are refused before any text reaches the page.
+// eslint-disable-next-line no-control-regex
+const CONTROL = /[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/;
+
+export class RecordError extends Error {
+  constructor(public path: string, message: string) {
+    super(`${path}: ${message}`);
+    this.name = "RecordError";
+  }
+}
+
+const isObj = (v: unknown): v is Record<string, unknown> =>
+  typeof v === "object" && v !== null && !Array.isArray(v);
+
+function text(v: unknown, path: string, max: number, min = 0): string {
+  if (typeof v !== "string") throw new RecordError(path, "must be a string");
+  if (v.length < min || v.length > max)
+    throw new RecordError(path, `must be ${min}-${max} characters`);
+  if (CONTROL.test(v)) throw new RecordError(path, "must be plain text");
+  return v;
+}
+
+function optText(v: unknown, path: string, max: number) {
+  if (v !== undefined) text(v, path, max);
+}
+
+function numOrNull(v: unknown, path: string) {
+  if (v === null) return;
+  if (typeof v !== "number" || !Number.isFinite(v) || v < 0)
+    throw new RecordError(path, "must be a non-negative number or null");
+}
+
+function media(v: unknown, path: string) {
+  if (!isObj(v)) throw new RecordError(path, "must be an object");
+  text(v.src, `${path}.src`, 2048, 1);
+  for (const k of ["width", "height", "fps", "seconds", "bytes"] as const)
+    if (v[k] !== undefined && (typeof v[k] !== "number" || !((v[k] as number) >= 0)))
+      throw new RecordError(`${path}.${k}`, "must be a non-negative number");
+}
+
+export function parseGuide(v: unknown, path = "guide"): GuideBundle {
+  if (!isObj(v)) throw new RecordError(path, "must be an object");
+  if (v.schemaVersion !== 1) throw new RecordError(`${path}.schemaVersion`, "must be 1");
+  media(v.video, `${path}.video`);
+  for (const k of ["audio", "firstFrame", "firstFrameStyled", "camera"] as const)
+    if (v[k] !== undefined) media(v[k], `${path}.${k}`);
+  if (v.beats !== undefined) {
+    if (!Array.isArray(v.beats) || v.beats.some((b) => typeof b !== "number" || b < 0))
+      throw new RecordError(`${path}.beats`, "must be non-negative seconds");
+  }
+  if (v.onsets !== undefined) onsetBands(v.onsets, `${path}.onsets`);
+  if (v.peaks !== undefined) onsetList(v.peaks, `${path}.peaks`);
+  return v as unknown as GuideBundle;
+}
+
+/** Checks a list of `{ seconds, strength }`; shared with the bundle reader. */
+export function onsetList(v: unknown, path: string): Onset[] {
+  if (!Array.isArray(v) || v.length > 20000) throw new RecordError(path, "must be an array");
+  v.forEach((o, i) => {
+    if (!isObj(o) || typeof o.seconds !== "number" || !(o.seconds >= 0))
+      throw new RecordError(`${path}[${i}].seconds`, "must be non-negative seconds");
+    if (typeof o.strength !== "number" || !(o.strength >= 0 && o.strength <= 1))
+      throw new RecordError(`${path}[${i}].strength`, "must be 0-1");
+  });
+  return v as Onset[];
+}
+
+/** Checks `{ low, mid, high }` onset lists. */
+export function onsetBands(v: unknown, path: string): GuideBundle["onsets"] {
+  if (!isObj(v)) throw new RecordError(path, "must be an object");
+  for (const k of ["low", "mid", "high"] as const) onsetList(v[k], `${path}.${k}`);
+  return v as GuideBundle["onsets"];
+}
+
+function lane(v: unknown, path: string): Lane {
+  if (!isObj(v)) throw new RecordError(path, "must be an object");
+  if (typeof v.id !== "string" || !SLUG.test(v.id)) throw new RecordError(`${path}.id`, "must be a slug");
+  optText(v.label, `${path}.label`, 120);
+  text(v.provider, `${path}.provider`, 40, 1);
+  text(v.model, `${path}.model`, 120, 1);
+  if (v.modelRan !== null) text(v.modelRan, `${path}.modelRan`, 120, 1);
+  text(v.prompt, `${path}.prompt`, 50000);
+  if (!Array.isArray(v.inputsSent)) throw new RecordError(`${path}.inputsSent`, "must be an array");
+  v.inputsSent.forEach((input, i) => {
+    const p = `${path}.inputsSent[${i}]`;
+    if (!isObj(input) || !ROLES.includes(input.role as InputRole))
+      throw new RecordError(p, `role must be one of ${ROLES.join(", ")}`);
+    text(input.src, `${p}.src`, 2048, 1);
+  });
+  if (!["A", "B", "C"].includes(v.firstFrameVariant as string))
+    throw new RecordError(`${path}.firstFrameVariant`, "must be A, B or C");
+  if (v.output !== null) {
+    if (!isObj(v.output)) throw new RecordError(`${path}.output`, "must be an object or null");
+    text(v.output.src, `${path}.output.src`, 2048, 1);
+    optText(v.output.poster, `${path}.output.poster`, 2048);
+    optText(v.output.original, `${path}.output.original`, 2048);
+  }
+  numOrNull(v.costUsd, `${path}.costUsd`);
+  numOrNull(v.generationSeconds, `${path}.generationSeconds`);
+  optText(v.note, `${path}.note`, 2000);
+  if (v.composed !== undefined) {
+    if (!isObj(v.composed)) throw new RecordError(`${path}.composed`, "must be an object");
+    text(v.composed.model, `${path}.composed.model`, 120, 1);
+    for (const k of ["notes", "dropped"] as const) {
+      const list = v.composed[k];
+      if (list === undefined) continue;
+      if (!Array.isArray(list) || list.length > 40) throw new RecordError(`${path}.composed.${k}`, "must be an array");
+      list.forEach((n, i) => text(n, `${path}.composed.${k}[${i}]`, 1000));
+    }
+  }
+  if (v.shot !== undefined) shotAt(v.shot, `${path}.shot`);
+  return v as unknown as Lane;
+}
+
+function shotAt(v: unknown, path: string) {
+  try {
+    parseShot(v, path);
+  } catch (e) {
+    if (e instanceof ShotError) throw new RecordError(e.path, e.message.slice(e.path.length + 2));
+    throw e;
+  }
+}
+
+/** Validates an untrusted record; throws `RecordError` naming the first bad field. */
+export function parseRecord(v: unknown): ArenaRecord {
+  if (!isObj(v)) throw new RecordError("record", "must be an object");
+  if (v.schemaVersion !== SCHEMA_VERSION)
+    throw new RecordError("schemaVersion", `must be ${SCHEMA_VERSION}`);
+  if (typeof v.id !== "string" || !SLUG.test(v.id)) throw new RecordError("id", "must be a slug");
+  text(v.title, "title", 200, 1);
+  if (v.guide !== undefined) parseGuide(v.guide);
+  if (v.shot !== undefined) shotAt(v.shot, "shot");
+  if (!Array.isArray(v.lanes) || v.lanes.length < 1 || v.lanes.length > 12)
+    throw new RecordError("lanes", "must hold 1-12 lanes");
+  const lanes = v.lanes.map((l, i) => lane(l, `lanes[${i}]`));
+  const ids = new Set(lanes.map((l) => l.id));
+  if (ids.size !== lanes.length) throw new RecordError("lanes", "lane ids must be distinct");
+  if (v.preferredLane !== undefined && !ids.has(v.preferredLane as string))
+    throw new RecordError("preferredLane", "must name a lane in this record");
+  if (v.observations !== undefined) {
+    if (!Array.isArray(v.observations)) throw new RecordError("observations", "must be an array");
+    v.observations.forEach((o, i) => text(o, `observations[${i}]`, 2000));
+  }
+  return v as unknown as ArenaRecord;
+}

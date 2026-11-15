@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "0.3.0",
+  "video": "guide.mp4",
+  "firstFrame": "frame0.png",
+  "beats": "beats.json",
+  "recipe": "recipe.json",
+  "meta": "meta.json",
+  "audio": "audio.wav",
+  "camera": "camera.json"
+}

@@ -1,0 +1,258 @@
+{
+  "schemaVersion": 1,
+  "id": "blog-camera",
+  "title": "Camera: one move, six models",
+  "createdAt": "2026-11-10T15:00:00Z",
+  "guide": {
+    "schemaVersion": 1,
+    "id": "mannequin-beat-guide",
+    "title": "Beat-synced mannequin, Motion Studio",
+    "video": {
+      "src": "../../media/placeholder/guide.mp4",
+      "contentType": "video/mp4",
+      "width": 640,
+      "height": 360,
+      "fps": 24,
+      "seconds": 8
+    },
+    "audio": {
+      "src": "../../media/placeholder/inputs/beat.wav",
+      "contentType": "audio/wav",
+      "seconds": 8
+    },
+    "firstFrame": {
+      "src": "../../media/placeholder/inputs/first-frame.png",
+      "contentType": "image/png",
+      "width": 640,
+      "height": 360
+    },
+    "beats": [
+      0,
+      2,
+      4,
+      6,
+      8
+    ]
+  },
+  "lanes": [
+    {
+      "id": "kling-4",
+      "label": "Kling VIDEO 4.0",
+      "provider": "runware-api",
+      "model": "klingai:kling-video@4.0",
+      "modelName": "Kling VIDEO 4.0",
+      "modelRan": null,
+      "prompt": "<<<image_1>>> defines the product; keep shape, materials and colours.\n\nA matte white ceramic speaker on a concrete plinth in a dim studio stands still while a soft key light sweeps across it. Slow push-in at eye level, ending on a close-up of the speaker.\n\nAudio: A low room tone and a soft mechanical hum. No subtitles.",
+      "inputsSent": [
+        {
+          "role": "referenceImage",
+          "src": "../../media/placeholder/inputs/product.png",
+          "label": "product (<<<image_1>>>)"
+        }
+      ],
+      "firstFrameVariant": "C",
+      "output": {
+        "src": "../../media/placeholder/camera-kling-4.mp4",
+        "contentType": "video/mp4"
+      },
+      "costUsd": null,
+      "generationSeconds": null,
+      "durationSeconds": 8,
+      "settings": {
+        "taskType": "videoInference",
+        "model": "klingai:kling-video@4.0",
+        "duration": 8
+      },
+      "status": "placeholder",
+      "composed": {
+        "model": "kling-4"
+      },
+      "note": "Placeholder clip; nothing has run."
+    },
+    {
+      "id": "seedance-2-5",
+      "label": "Seedance 2.5",
+      "provider": "runware-api",
+      "model": "bytedance:seedance@2.5",
+      "modelName": "Seedance 2.5",
+      "modelRan": null,
+      "prompt": "Slow dolly-in towards the subject.\n\n@Image1 is the product; keep shape, materials and colours.\n\nA matte white ceramic speaker on a concrete plinth in a dim studio stands still while a soft key light sweeps across it.\n\nAudio: A low room tone and a soft mechanical hum.",
+      "inputsSent": [
+        {
+          "role": "referenceImage",
+          "src": "../../media/placeholder/inputs/product.png",
+          "label": "product (@Image1)"
+        }
+      ],
+      "firstFrameVariant": "C",
+      "output": {
+        "src": "../../media/placeholder/camera-seedance-2.5.mp4",
+        "contentType": "video/mp4"
+      },
+      "costUsd": null,
+      "generationSeconds": null,
+      "durationSeconds": 8,
+      "settings": {
+        "taskType": "videoInference",
+        "model": "bytedance:seedance@2.5",
+        "duration": 8
+      },
+      "status": "placeholder",
+      "composed": {
+        "model": "seedance-2.5"
+      },
+      "note": "Placeholder clip; nothing has run."
+    },
+    {
+      "id": "h3",
+      "label": "MiniMax H3",
+      "provider": "runware-api",
+      "model": "minimax:h3@0",
+      "modelName": "MiniMax H3",
+      "modelRan": null,
+      "prompt": "Image 1 is the product; keep shape, materials and colours.\n\nA matte white ceramic speaker on a concrete plinth in a dim studio stands still while a soft key light sweeps across it. Slow cinematic push-in on the subject.\n\nSound: A low room tone and a soft mechanical hum.",
+      "inputsSent": [
+        {
+          "role": "referenceImage",
+          "src": "../../media/placeholder/inputs/product.png",
+          "label": "product (Image 1)"
+        }
+      ],
+      "firstFrameVariant": "C",
+      "output": {
+        "src": "../../media/placeholder/camera-h3.mp4",
+        "contentType": "video/mp4"
+      },
+      "costUsd": null,
+      "generationSeconds": null,
+      "durationSeconds": 8,
+      "settings": {
+        "taskType": "videoInference",
+        "model": "minimax:h3@0",
+        "duration": 8
+      },
+      "status": "placeholder",
+      "composed": {
+        "model": "h3"
+      },
+      "note": "Placeholder clip; nothing has run."
+    },
+    {
+      "id": "ltx-2-5",
+      "label": "LTX-2.5 Pro",
+      "provider": "runware-api",
+      "model": "lightricks:ltx@2.5-pro",
+      "modelName": "LTX-2.5 Pro",
+      "modelRan": null,
+      "prompt": "A matte white ceramic speaker on a concrete plinth in a dim studio stands still while a soft key light sweeps across it. Audio: A low room tone and a soft mechanical hum.",
+      "inputsSent": [],
+      "firstFrameVariant": "C",
+      "output": {
+        "src": "../../media/placeholder/camera-ltx-2.5.mp4",
+        "contentType": "video/mp4"
+      },
+      "costUsd": null,
+      "generationSeconds": null,
+      "durationSeconds": 8,
+      "settings": {
+        "taskType": "videoInference",
+        "model": "lightricks:ltx@2.5-pro",
+        "duration": 8,
+        "settings": {
+          "cameraMovement": "dolly_in"
+        }
+      },
+      "status": "placeholder",
+      "composed": {
+        "model": "ltx-2.5",
+        "dropped": [
+          "product: A reference image is accepted only beside audio."
+        ]
+      },
+      "note": "Placeholder clip; nothing has run. Not sent: product (A reference image is accepted only beside audio.)"
+    },
+    {
+      "id": "flux-3-video",
+      "label": "FLUX 3 Video",
+      "provider": "runware-api",
+      "model": "bfl:flux@3-video",
+      "modelName": "FLUX 3 Video",
+      "modelRan": null,
+      "prompt": "A matte white ceramic speaker on a concrete plinth in a dim studio stands still while a soft key light sweeps across it. The camera pushes slowly forward from wide to close. Audio: A low room tone and a soft mechanical hum.",
+      "inputsSent": [],
+      "firstFrameVariant": "C",
+      "output": {
+        "src": "../../media/placeholder/camera-flux-3-video.mp4",
+        "contentType": "video/mp4"
+      },
+      "costUsd": null,
+      "generationSeconds": null,
+      "durationSeconds": 8,
+      "settings": {
+        "taskType": "videoInference",
+        "model": "bfl:flux@3-video",
+        "duration": 8
+      },
+      "status": "placeholder",
+      "composed": {
+        "model": "flux-3-video",
+        "dropped": [
+          "product: FLUX 3 Video takes no reference images."
+        ]
+      },
+      "note": "Placeholder clip; nothing has run. Not sent: product (FLUX 3 Video takes no reference images.)"
+    },
+    {
+      "id": "kling-4-flash",
+      "label": "Kling VIDEO 4.0 Flash",
+      "provider": "runware-api",
+      "model": "klingai:kling-video@4.0-flash",
+      "modelName": "Kling VIDEO 4.0 Flash",
+      "modelRan": null,
+      "prompt": "<<<image_1>>> defines the product; keep shape, materials and colours.\n\nA matte white ceramic speaker on a concrete plinth in a dim studio stands still while a soft key light sweeps across it. Slow push-in at eye level, ending on a close-up of the speaker.\n\nAudio: A low room tone and a soft mechanical hum. No subtitles.",
+      "inputsSent": [
+        {
+          "role": "referenceImage",
+          "src": "../../media/placeholder/inputs/product.png",
+          "label": "product (<<<image_1>>>)"
+        }
+      ],
+      "firstFrameVariant": "C",
+      "output": {
+        "src": "../../media/placeholder/camera-kling-4-flash.mp4",
+        "contentType": "video/mp4"
+      },
+      "costUsd": null,
+      "generationSeconds": null,
+      "durationSeconds": 8,
+      "settings": {
+        "taskType": "videoInference",
+        "model": "klingai:kling-video@4.0-flash",
+        "duration": 8
+      },
+      "status": "placeholder",
+      "composed": {
+        "model": "kling-4-flash"
+      },
+      "note": "Placeholder clip; nothing has run."
+    }
+  ],
+  "observations": [
+    "Placeholder clips: no model has run. Prompts, inputs and camera parameters are the composer's real output."
+  ],
+  "shot": {
+    "subject": "A matte white ceramic speaker on a concrete plinth in a dim studio",
+    "action": "stands still while a soft key light sweeps across it",
+    "focus": "the speaker",
+    "camera": "push-in",
+    "duration": 8,
+    "references": [
+      {
+        "id": "product",
+        "kind": "image",
+        "role": "product"
+      }
+    ],
+    "audio": "a low room tone and a soft mechanical hum"
+  }
+}

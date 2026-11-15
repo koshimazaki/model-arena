@@ -1,0 +1,47 @@
+{
+  "name": "model-arena",
+  "version": "0.0.1",
+  "private": true,
+  "description": "A drop-in web component that plays video-model outputs side by side on one clock.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:embed": "vite build -c vite.embed.config.ts && tsc -p tsconfig.embed.json && node scripts/embed-types.mjs",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "lane": "tsx scripts/run-lane.ts",
+    "demo:media": "sh scripts/prepare-demo-media.sh",
+    "demo:placeholders": "sh scripts/make-placeholder-clips.sh",
+    "demo:records": "tsx scripts/build-demo-records.ts",
+    "demo:embed": "sh scripts/make-embed-bundle.sh",
+    "shot": "node scripts/shot.mjs",
+    "smoke": "node scripts/smoke.mjs",
+    "still": "tsx scripts/make-still.ts",
+    "site:media": "tsx scripts/site-media.ts",
+    "build:site": "vite build && tsx scripts/build-site.ts",
+    "site:preview": "node scripts/site-preview.mjs",
+    "site:smoke": "node scripts/site-smoke.mjs",
+    "site": "npm run site:media && npm run build:site"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.19.2",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "eslint": "^10.14.0",
+    "globals": "^17.14.0",
+    "happy-dom": "^20.14.6",
+    "puppeteer-core": "^25.16.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.72.2",
+    "vite": "^7.3.8",
+    "vitest": "^3.2.7"
+  }
+}

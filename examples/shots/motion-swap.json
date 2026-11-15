@@ -1,0 +1,11 @@
+{
+  "subject": "A figure in a plain grey jumpsuit",
+  "action": "performs the guide's motion beside two fruits on a wooden table",
+  "focus": "the figure",
+  "camera": "push-in",
+  "duration": 5,
+  "references": [
+    { "id": "guide", "kind": "video", "role": "motion" },
+    { "id": "character", "kind": "image", "role": "character", "replaces": "the mannequin" }
+  ]
+}

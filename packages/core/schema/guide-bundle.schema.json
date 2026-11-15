@@ -1,0 +1,339 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:model-arena:guide-bundle:1",
+  "title": "Model Arena guide bundle",
+  "description": "The guide a comparison starts from: a clip, its audio, its first frame (raw and restyled), beats, the recipe that made it and the licences of its assets. Two forms: the inline guide a record embeds (schemaVersion 1) and the Motion Studio bundle manifest (schemaVersion 0.x.y, synced at 0.4.0: optional camera track from 0.2.0; optional onsets and peaks in beats.json and the stick and blob characters from 0.3.0; the full camera mode list from 0.4.0). motion-studio keeps a pinned copy of the manifest form and its $defs.",
+  "oneOf": [{ "$ref": "#/$defs/inline" }, { "$ref": "#/$defs/manifest" }],
+  "$defs": {
+    "inline": {
+      "description": "Form 1, schemaVersion 1: the guide written inline, as a record embeds it. Media are objects with a src.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "video"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "id": { "$ref": "#/$defs/slug" },
+        "title": { "type": "string", "maxLength": 200 },
+        "video": { "$ref": "#/$defs/media" },
+        "audio": { "$ref": "#/$defs/media" },
+        "firstFrame": { "$ref": "#/$defs/media" },
+        "firstFrameStyled": { "$ref": "#/$defs/media" },
+        "passes": {
+          "description": "Extra renders of the same motion, such as depth or canny, keyed by name.",
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/slug" },
+          "additionalProperties": { "$ref": "#/$defs/media" }
+        },
+        "keyframes": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["time", "src"],
+            "properties": {
+              "time": { "type": "number", "minimum": 0 },
+              "src": { "type": "string", "minLength": 1, "maxLength": 2048 }
+            }
+          }
+        },
+        "beats": {
+          "description": "Beat positions in seconds from the start of the clip.",
+          "type": "array",
+          "maxItems": 512,
+          "items": { "type": "number", "minimum": 0 }
+        },
+        "recipe": {
+          "description": "How the guide was made: tool, version and settings. Free-form so motion-studio can grow it.",
+          "type": "object"
+        },
+        "meta": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "author": { "type": "string", "maxLength": 200 },
+            "createdAt": { "type": "string", "format": "date-time" },
+            "licences": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["asset", "licence"],
+                "properties": {
+                  "asset": { "type": "string", "maxLength": 200 },
+                  "licence": { "type": "string", "maxLength": 200 },
+                  "source": { "type": "string", "maxLength": 2048 },
+                  "attribution": { "type": "string", "maxLength": 1000 }
+                }
+              }
+            }
+          }
+        },
+        "onsets": {
+          "description": "Optional: drum-band onsets carried over from a Motion Studio beats.json (0.3.0).",
+          "$ref": "#/$defs/beats/properties/onsets"
+        },
+        "peaks": {
+          "description": "Optional: amplitude peaks carried over from a Motion Studio beats.json (0.3.0).",
+          "$ref": "#/$defs/onsetList"
+        },
+        "camera": {
+          "description": "Optional: the camera track (a camera.json, see $defs/camera) carried over from a Motion Studio bundle (0.2.0).",
+          "$ref": "#/$defs/media"
+        }
+      }
+    },
+    "manifest": {
+      "description": "Form 2, schemaVersion \"x.y.z\": a Motion Studio bundle.json manifest naming each file in the bundle directory. Synced with motion-studio 0.4.0; beats.json, meta.json and camera.json validate against $defs/beats, $defs/meta and $defs/camera.",
+      "type": "object",
+      "required": ["schemaVersion", "video", "firstFrame", "beats", "recipe", "meta"],
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "video": {
+          "type": "string",
+          "pattern": "\\.mp4$",
+          "description": "H.264 MP4, 24 fps, frame count 8k+1"
+        },
+        "audio": { "type": "string", "description": "The track, trimmed to the clip" },
+        "firstFrame": { "type": "string", "pattern": "\\.png$" },
+        "firstFrameStyled": { "type": "string" },
+        "beats": { "type": "string", "pattern": "\\.json$" },
+        "recipe": { "type": "string", "pattern": "\\.json$" },
+        "meta": { "type": "string", "pattern": "\\.json$" },
+        "camera": {
+          "type": "string",
+          "pattern": "\\.json$",
+          "description": "Optional (0.2.0): per-frame camera track of the audio-reactive rig"
+        }
+      }
+    },
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,63}$" },
+    "media": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["src"],
+      "properties": {
+        "src": { "type": "string", "minLength": 1, "maxLength": 2048 },
+        "contentType": { "type": "string", "maxLength": 100 },
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "fps": { "type": "number", "exclusiveMinimum": 0 },
+        "seconds": { "type": "number", "minimum": 0 },
+        "bytes": { "type": "integer", "minimum": 0 },
+        "label": { "type": "string", "maxLength": 200 }
+      }
+    },
+    "beats": {
+      "type": "object",
+      "required": ["bpm", "offsetSeconds", "beatsPerBar", "source", "beats", "downbeats"],
+      "additionalProperties": false,
+      "properties": {
+        "bpm": { "type": "number", "minimum": 40, "maximum": 240 },
+        "offsetSeconds": { "type": "number", "minimum": 0 },
+        "beatsPerBar": { "type": "integer", "minimum": 1 },
+        "source": { "enum": ["manual", "analysis"] },
+        "beats": { "type": "array", "items": { "type": "number", "minimum": 0 } },
+        "downbeats": { "type": "array", "items": { "type": "number", "minimum": 0 } },
+        "onsets": {
+          "type": "object",
+          "description": "Optional (0.3.0): onsets per drum band; low = kick (30-150 Hz), mid = snare (1.5-6 kHz), high = hat (above 6 kHz)",
+          "required": ["low", "mid", "high"],
+          "additionalProperties": false,
+          "properties": {
+            "low": { "$ref": "#/$defs/onsetList" },
+            "mid": { "$ref": "#/$defs/onsetList" },
+            "high": { "$ref": "#/$defs/onsetList" }
+          }
+        },
+        "peaks": { "$ref": "#/$defs/onsetList", "description": "Optional (0.3.0): overall amplitude peaks" }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "width",
+        "height",
+        "fps",
+        "frames",
+        "durationSeconds",
+        "view",
+        "character",
+        "generator",
+        "audioInVideo",
+        "assets"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": { "type": "string" },
+        "width": { "type": "integer", "minimum": 16 },
+        "height": { "type": "integer", "minimum": 16 },
+        "fps": { "const": 24 },
+        "frames": { "type": "integer", "minimum": 1, "description": "8k+1", "multipleOf": 1 },
+        "durationSeconds": { "type": "number", "minimum": 0 },
+        "view": { "type": "string" },
+        "character": {
+          "type": "object",
+          "required": ["kind", "name"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "enum": ["mannequin", "block", "stick", "blob", "glider", "file", "rigged"] },
+            "name": { "type": "string" }
+          }
+        },
+        "generator": {
+          "type": "object",
+          "required": ["name", "version", "motion"],
+          "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string" },
+            "version": { "type": "string" },
+            "motion": { "type": "string" }
+          }
+        },
+        "audioInVideo": { "type": "boolean" },
+        "assets": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["role", "name", "licence"],
+            "additionalProperties": false,
+            "properties": {
+              "role": {
+                "enum": ["video", "audio", "firstFrame", "character", "motion", "recipe", "beats", "camera"]
+              },
+              "name": { "type": "string" },
+              "licence": { "type": "string", "minLength": 1 },
+              "file": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "camera": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "fps",
+        "frames",
+        "startFrame",
+        "aspect",
+        "fovAxis",
+        "units",
+        "axes",
+        "intensity",
+        "modes",
+        "accents",
+        "track",
+        "ltx"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": { "type": "string" },
+        "fps": { "const": 24 },
+        "frames": { "type": "integer", "minimum": 1 },
+        "startFrame": { "type": "integer", "minimum": 0 },
+        "aspect": { "type": "number", "exclusiveMinimum": 0 },
+        "fovAxis": { "const": "vertical" },
+        "units": { "const": "metres" },
+        "axes": { "type": "string" },
+        "intensity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "modes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["fromBeat", "toBeat", "modes"],
+            "additionalProperties": false,
+            "properties": {
+              "fromBeat": { "type": "number" },
+              "toBeat": { "type": "number" },
+              "modes": {
+                "type": "array",
+                "items": {
+                  "enum": ["static", "orbit", "pushIn", "pullOut", "rise", "lead", "chase", "side", "threeQuarter", "top", "fixed", "path", "truck"]
+                }
+              }
+            }
+          }
+        },
+        "accents": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["seconds", "downbeat"],
+            "additionalProperties": false,
+            "properties": { "seconds": { "type": "number", "minimum": 0 }, "downbeat": { "type": "boolean" } }
+          }
+        },
+        "track": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["frame", "position", "target", "fov", "energy"],
+            "additionalProperties": false,
+            "properties": {
+              "frame": { "type": "integer", "minimum": 0 },
+              "position": { "type": "array", "items": { "type": "number" }, "minItems": 3, "maxItems": 3 },
+              "target": { "type": "array", "items": { "type": "number" }, "minItems": 3, "maxItems": 3 },
+              "fov": { "type": "number", "exclusiveMinimum": 0, "maximum": 180 },
+              "energy": { "type": "number", "minimum": 0, "maximum": 1 }
+            }
+          }
+        },
+        "ltx": {
+          "type": "object",
+          "required": ["settings", "approximate", "scores", "note"],
+          "additionalProperties": false,
+          "properties": {
+            "settings": {
+              "type": "object",
+              "required": ["cameraMovement"],
+              "additionalProperties": false,
+              "properties": {
+                "cameraMovement": {
+                  "enum": [
+                    "dolly_in",
+                    "dolly_out",
+                    "dolly_left",
+                    "dolly_right",
+                    "jib_up",
+                    "jib_down",
+                    "static",
+                    "focus_shift"
+                  ]
+                }
+              }
+            },
+            "approximate": { "const": true },
+            "scores": {
+              "type": "object",
+              "required": ["dolly", "lateral", "jib"],
+              "additionalProperties": false,
+              "properties": {
+                "dolly": { "type": "number" },
+                "lateral": { "type": "number" },
+                "jib": { "type": "number" }
+              }
+            },
+            "note": { "type": "string" }
+          }
+        }
+      }
+    },
+    "onsetList": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["seconds", "strength"],
+        "additionalProperties": false,
+        "properties": {
+          "seconds": { "type": "number", "minimum": 0 },
+          "strength": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    }
+  }
+}

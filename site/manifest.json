@@ -1,0 +1,30 @@
+{
+  "mediaBase": "media/",
+  "models": {
+    "seedance": { "name": "Seedance 2.5", "air": "bytedance:seedance@2.5", "spec": "seedance-2.5", "studioModel": "runware-seedance-2-5" },
+    "kling": { "name": "Kling VIDEO 4.0", "air": "klingai:kling-video@4.0", "spec": "kling-4", "studioModel": "runware-kling-4" },
+    "h3": { "name": "MiniMax H3", "air": "minimax:h3@0", "spec": "h3", "studioModel": "runware-h3" }
+  },
+  "scenes": [
+    {
+      "id": "motocross",
+      "title": "Motocross POV, text to video",
+      "reference": null,
+      "takes": {
+        "seedance": { "id": "813f9416", "why": "The only Seedance take on the shared prompt; opens on the helmet view, then a clean trackside backflip and landing.", "alternates": [] },
+        "kling": { "id": "26875b74", "why": "Holds the handlebar POV before and after the flip, wet track and sunset as asked.", "alternates": ["6d41891b"] },
+        "h3": { "id": "8de579ee", "why": "POV in, rain visible through the flip, back to the same bike and rider on landing.", "alternates": ["46e4fd0d"] }
+      }
+    },
+    {
+      "id": "character-sheet",
+      "title": "Character sheet to animation, one reference image",
+      "reference": "media/329983f2-9f0f-41a4-a266-781082c57248.image",
+      "takes": {
+        "seedance": { "id": "7915cbce", "why": "One continuous move from parts to the finished unit, no hard cuts, matches the sheet.", "alternates": ["102cf52f"] },
+        "kling": { "id": "e3e001b6", "why": "Opens on parts assembling and ends on the full unit; one shockwave flash as the prompt asks.", "alternates": ["42f34474"] },
+        "h3": { "id": "cab7d0d8", "why": "Exploded parts fly together into the vehicle, the clearest read of assembling.", "alternates": ["a6453c97"] }
+      }
+    }
+  ]
+}

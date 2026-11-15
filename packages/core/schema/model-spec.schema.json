@@ -1,0 +1,281 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://model-arena.dev/schema/model-spec.schema.json",
+  "title": "Model Arena model spec",
+  "description": "One video model: what it takes, how it is prompted, how its camera moves and what it costs. Every fact carries a source URL. See docs/model-specs.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "lab", "air", "slug", "verifiedOn", "sources", "inputs", "combinations", "output", "prompting", "camera", "pricing", "notes"],
+  "$defs": {
+    "url": { "type": "string", "pattern": "^https://runware\\.ai/docs/[a-z0-9./_-]+$" },
+    "range": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["min", "max"],
+      "properties": { "min": { "type": ["number", "null"], "minimum": 0 }, "max": { "type": ["number", "null"], "minimum": 0 } }
+    },
+    "inputKind": {
+      "enum": ["firstFrame", "lastFrame", "keyframes", "referenceImages", "referenceVideos", "referenceAudios", "sourceVideo", "audioToVideo", "elements"]
+    },
+    "move": { "enum": ["static", "push-in", "pull-out", "track-left", "track-right", "crane-up", "crane-down", "orbit", "handheld", "rack-focus"] },
+    "limits": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["secondsEach", "secondsTotalMax", "sidePx", "maxAreaPx", "fps", "maxBytesEach", "aspect"],
+      "properties": {
+        "secondsEach": { "oneOf": [{ "$ref": "#/$defs/range" }, { "type": "null" }] },
+        "secondsTotalMax": { "type": ["number", "null"] },
+        "sidePx": { "oneOf": [{ "$ref": "#/$defs/range" }, { "type": "null" }] },
+        "maxAreaPx": { "type": ["integer", "null"] },
+        "fps": { "oneOf": [{ "$ref": "#/$defs/range" }, { "type": "null" }] },
+        "maxBytesEach": { "type": ["integer", "null"] },
+        "aspect": { "oneOf": [{ "$ref": "#/$defs/range" }, { "type": "null" }] }
+      }
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["supported", "field", "maxCount", "limits", "source"],
+      "properties": {
+        "supported": { "type": "boolean" },
+        "field": { "type": ["string", "null"], "pattern": "^inputs\\.[A-Za-z]+$" },
+        "maxCount": { "type": ["integer", "null"], "minimum": 1 },
+        "limits": { "$ref": "#/$defs/limits" },
+        "source": { "$ref": "#/$defs/url" },
+        "note": { "type": "string" }
+      },
+      "if": { "properties": { "supported": { "const": false } } },
+      "then": { "properties": { "field": { "type": "null" }, "maxCount": { "type": "null" } } },
+      "else": { "properties": { "field": { "type": "string" } } }
+    },
+    "term": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["term", "source"],
+      "properties": {
+        "term": { "type": "string", "minLength": 1 },
+        "source": { "$ref": "#/$defs/url" },
+        "move": { "$ref": "#/$defs/move" },
+        "phrase": { "type": "string", "minLength": 1 }
+      },
+      "dependentRequired": { "move": ["phrase"] }
+    }
+  },
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9.-]+$" },
+    "name": { "type": "string", "minLength": 1 },
+    "lab": { "type": "string", "minLength": 1 },
+    "air": { "type": "string", "pattern": "^[a-z0-9]+:[a-z0-9.@-]+$" },
+    "slug": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "verifiedOn": { "type": "string", "format": "date" },
+    "sources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model", "schema", "guides"],
+      "properties": {
+        "model": { "$ref": "#/$defs/url" },
+        "schema": { "$ref": "#/$defs/url" },
+        "guides": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["title", "url"],
+            "properties": { "title": { "type": "string" }, "url": { "$ref": "#/$defs/url" } }
+          }
+        }
+      }
+    },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["firstFrame", "lastFrame", "keyframes", "referenceImages", "referenceVideos", "referenceAudios", "sourceVideo", "audioToVideo", "elements"],
+      "patternProperties": { "^.*$": { "$ref": "#/$defs/input" } }
+    },
+    "combinations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "text", "when", "source"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+          "text": { "type": "string", "minLength": 1 },
+          "when": { "type": "array", "items": { "$ref": "#/$defs/inputKind" } },
+          "forbidsInputs": { "type": "array", "items": { "$ref": "#/$defs/inputKind" } },
+          "forbidsParams": { "type": "array", "items": { "type": "string" } },
+          "requiresOneOf": { "type": "array", "items": { "$ref": "#/$defs/inputKind" } },
+          "requiresExactly": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["input", "count"],
+            "properties": { "input": { "$ref": "#/$defs/inputKind" }, "count": { "type": "integer", "minimum": 1 } }
+          },
+          "sharedMax": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["inputs", "max"],
+            "properties": { "inputs": { "type": "array", "items": { "$ref": "#/$defs/inputKind" } }, "max": { "type": "integer", "minimum": 1 } }
+          },
+          "source": { "$ref": "#/$defs/url" }
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["durations", "defaultDuration", "resolutionField", "resolutions", "sizes", "fps", "frameCountRule", "audio", "source"],
+      "properties": {
+        "durations": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind", "min", "max", "auto"],
+              "properties": { "kind": { "const": "range" }, "min": { "type": "integer" }, "max": { "type": "integer" }, "auto": { "type": "boolean" } }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind", "values", "auto"],
+              "properties": { "kind": { "const": "list" }, "values": { "type": "array", "items": { "type": "integer" }, "minItems": 1 }, "auto": { "type": "boolean" } }
+            }
+          ]
+        },
+        "defaultDuration": { "oneOf": [{ "type": "integer" }, { "const": "auto" }, { "type": "null" }] },
+        "resolutionField": { "enum": ["resolution", "width-height", "both"] },
+        "resolutions": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "sizes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["label", "width", "height"],
+            "properties": { "label": { "type": "string" }, "width": { "type": "integer" }, "height": { "type": "integer" } }
+          }
+        },
+        "fps": { "type": ["array", "null"], "items": { "type": "number" } },
+        "frameCountRule": { "type": ["string", "null"] },
+        "audio": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["generates", "toggle"],
+          "properties": { "generates": { "type": ["boolean", "null"] }, "toggle": { "type": ["string", "null"] } }
+        },
+        "source": { "$ref": "#/$defs/url" }
+      }
+    },
+    "prompting": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minChars", "maxChars", "addressing", "rules", "seed", "negativePrompt"],
+      "properties": {
+        "minChars": { "type": ["integer", "null"] },
+        "maxChars": { "type": ["integer", "null"] },
+        "addressing": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["style", "tokens", "numbering", "source"],
+          "properties": {
+            "style": { "enum": ["tags", "at-mentions", "plain-words", "none"] },
+            "tokens": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["input", "pattern"],
+                "properties": { "input": { "enum": ["image", "video", "audio", "element"] }, "pattern": { "type": "string", "pattern": "\\{n\\}" } }
+              }
+            },
+            "numbering": { "type": "string", "minLength": 1 },
+            "source": { "$ref": "#/$defs/url" }
+          }
+        },
+        "rules": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 5,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["text", "source"],
+            "properties": { "text": { "type": "string", "minLength": 1, "maxLength": 160 }, "source": { "$ref": "#/$defs/url" } }
+          }
+        },
+        "seed": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["supported", "max", "source"],
+          "properties": { "supported": { "type": "boolean" }, "max": { "type": ["number", "null"] }, "source": { "$ref": "#/$defs/url" } }
+        },
+        "negativePrompt": { "type": "boolean" }
+      }
+    },
+    "camera": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "field", "values", "forbiddenWith", "vocabulary", "source"],
+          "properties": {
+            "kind": { "const": "parameter" },
+            "field": { "type": "string" },
+            "values": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["value", "meaning"],
+                "properties": { "value": { "type": "string" }, "meaning": { "type": "string" }, "move": { "$ref": "#/$defs/move" } }
+              }
+            },
+            "forbiddenWith": { "type": "array", "items": { "$ref": "#/$defs/inputKind" } },
+            "vocabulary": { "type": "array", "items": { "$ref": "#/$defs/term" } },
+            "source": { "$ref": "#/$defs/url" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "vocabulary"],
+          "properties": { "kind": { "const": "prompt-only" }, "vocabulary": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/term" } } }
+        }
+      ]
+    },
+    "pricing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rates", "surcharges", "source"],
+      "properties": {
+        "rates": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["usdPerSecond", "tier", "mode", "label"],
+            "properties": {
+              "usdPerSecond": { "type": "number", "exclusiveMinimum": 0 },
+              "tier": { "type": "string" },
+              "mode": { "enum": ["any", "no-video-input", "video-input", "draft", "draft-video-input"] },
+              "label": { "type": "string" }
+            }
+          }
+        },
+        "surcharges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["label", "usd", "per"],
+            "properties": { "label": { "type": "string" }, "usd": { "type": "number" }, "per": { "enum": ["input-video-second", "image-beyond-five"] } }
+          }
+        },
+        "source": { "$ref": "#/$defs/url" },
+        "note": { "type": "string" }
+      }
+    },
+    "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+  }
+}

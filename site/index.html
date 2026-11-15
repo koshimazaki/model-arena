@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Three Models, One Prompt</title>
+<meta name="description" content="Seedance 2.5, Kling VIDEO 4.0 and MiniMax H3 on Runware: the same prompt, two scenes, played on one clock with measured frame rates, frame counts, costs and generation times.">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dark-lime.css">
+<script type="module" src="model-arena.js"></script>
+<style>
+  :root {
+    --background: #1a1a1a; --foreground: #f2f2f2; --card: #1c1c1c;
+    --muted: #292929; --muted-foreground: #d9d9d9; --border: #454545;
+    --primary: #afff9f; --primary-foreground: #1c1c1c; --accent: #345c2d;
+    --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --col: 768px; --wide: 1040px; --arena: 1240px;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--background); color: var(--foreground); font: 400 15px/1.7 var(--font-sans); -webkit-font-smoothing: antialiased; }
+  p, li { color: color-mix(in oklab, var(--foreground) 85%, transparent); }
+  a { color: var(--foreground); font-weight: 600; text-decoration: underline; text-underline-offset: 2px;
+    text-decoration-color: color-mix(in oklab, var(--foreground) 35%, transparent); }
+  a:hover { text-decoration-color: color-mix(in oklab, var(--foreground) 70%, transparent); }
+  .col { max-width: var(--col); margin: 0 auto; padding: 0 24px; }
+  .wide { max-width: var(--wide); margin: 24px auto; padding: 0 24px; }
+  .arena-wrap { max-width: var(--arena); margin: 24px auto 40px; padding: 0 24px; }
+  @media (max-width: 480px) { .col, .wide, .arena-wrap { padding: 0 16px; } }
+  header.post { padding: 48px 0 8px; }
+  .kicker { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted-foreground); }
+  h1 { font-weight: 500; font-size: 30px; line-height: 1.15; letter-spacing: -.015em; margin: 10px 0 24px; }
+  .dek { font-size: 17px; color: var(--muted-foreground); margin: 0 0 20px; }
+  .byline { font-size: 13px; color: var(--muted-foreground); }
+  h2 { font-weight: 600; font-size: 24px; letter-spacing: -.02em; line-height: 1.25; margin: 56px 0 16px; scroll-margin-top: 16px; }
+  .prompt-box { border: 1px solid var(--border); border-radius: 12px; background: var(--card); padding: 14px 18px; margin: 0 0 16px; }
+  .prompt-box .label, .input figcaption { font: 500 12px var(--font-mono); letter-spacing: .04em; color: var(--muted-foreground); }
+  .prompt-box p { margin: 6px 0 0; font-size: 14px; line-height: 1.6; }
+  figure.input { margin: 0 0 16px; max-width: 520px; }
+  figure.input img { display: block; width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--border); }
+  figure.input figcaption { margin-top: 6px; }
+  .note { font-size: 13px; color: var(--muted-foreground); }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 760px; }
+  th, td { text-align: left; padding: 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  thead th { font-weight: 600; }
+  tbody th { font-weight: 500; color: var(--muted-foreground); }
+  tbody tr:last-child > * { border-bottom: 0; }
+  tr.measured td { color: var(--primary); }
+  code { font: 13px var(--font-mono); background: var(--muted); color: color-mix(in oklab, var(--foreground) 90%, transparent); padding: 2px 6px; border-radius: 4px; }
+  th code { font-size: 12px; font-weight: 400; }
+  pre { background: var(--card); border: 1px solid var(--border); padding: 16px 20px; border-radius: 12px; overflow-x: auto; font-size: 13px; line-height: 1.6; }
+  pre code { background: none; padding: 0; }
+  ul.found li { margin-bottom: 8px; }
+  .links { display: flex; flex-wrap: wrap; gap: 12px; margin: 20px 0; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; background: var(--primary); color: var(--primary-foreground); height: 36px; padding: 0 16px;
+    border-radius: 8px; font-size: 14px; font-weight: 600; text-decoration: none; }
+  .btn:hover { background: color-mix(in oklab, var(--primary) 70%, transparent); }
+  .btn.ghost { background: none; color: var(--foreground); border: 1px solid var(--border); }
+  footer { padding: 32px 0 64px; font-size: 13px; color: var(--muted-foreground); }
+</style>
+</head>
+<body>
+
+<header class="post col">
+  <div class="kicker">Model evaluation · Video</div>
+  <h1>Three video models, one prompt: Seedance 2.5, Kling VIDEO 4.0 and MiniMax H3 on Runware</h1>
+  <p class="dek">We sent the same prompt to Seedance 2.5, Kling VIDEO 4.0 and MiniMax H3 through Runware's API in two scenes: a motocross POV from text alone, and a character sheet animated from one reference image. Each scene plays below with all three takes on one clock, under each clip what ffprobe measured on the file, what the run cost and how long it took.</p>
+  <div class="byline">Radek Rudnicki · <a href="#run">Run it yourself</a></div>
+</header>
+
+<main class="col">
+<h2 id="motocross">Scene 1 · Motocross POV, text to video</h2>
+<p>Text only, 10 seconds, 16:9, one take per model. The prompt asks for a helmet camera, a backflip with a slow-down, rain, mud and a commentator.</p>
+<!-- RADEK: voice -->
+<p class="note">Press Play all: the three clips run on one clock. Clips play muted here; open Full resolution for the sound (all six files carry an audio track).</p>
+</main>
+<div class="arena-wrap">
+<!--@scene:motocross-->
+</div>
+
+<main class="col">
+<h2 id="character-sheet">Scene 2 · Character sheet to animation</h2>
+<!-- RADEK: confirm this is the sheet you sent (matched by eye: the VORAX-M7 sheet, studio job 329983f2, made with GPT-Image-2.6 Sunburst on Runware) -->
+<p>One reference image, the same character sheet for all three, 10 seconds, 16:9. The sheet was made on Runware too, with GPT-Image-2.6. The prompt does not name the image with a model's reference tag; it says "this character sheet".</p>
+</main>
+<div class="arena-wrap">
+<!--@scene:character-sheet-->
+</div>
+
+<main class="col">
+<h2 id="specs">What each model exposes on Runware</h2>
+<p>Published facts come from each model's Runware schema and guides, read into the Model Arena spec database. Rows in green are measured on this post's six clips.</p>
+</main>
+<div class="wide"><div class="table-wrap">
+<!--@specs-->
+</div></div>
+
+<main class="col">
+<h2 id="found">What we found</h2>
+<ul class="found">
+  <!-- source: site/takes.json (ffprobe on the originals, scripts/site-media.ts); docs/model-specs.md ("Output fps is not stated for Kling, Seedance or H3") -->
+  <li><strong>All six clips are 24 fps, and none of the three models publishes that.</strong> Seedance and Kling returned 241 frames for a 10 s request, 24 × 10 + 1. H3 returned 243 frames, 10.125 s.</li>
+  <!-- source: site/takes.json (ffprobe width × height; studio resolution "hd" on every take); packages/core/src/specs/minimax-h3.ts (resolutions 768p, 1440p) -->
+  <li><strong>The same resolution setting gave two frame sizes.</strong> Seedance and Kling came back at 1280×720, H3 at 1344×768, its 768p tier.</li>
+  <!-- source: site/takes.json (costActualUsd and costEstimateUsd from the studio's jobs.json; all four ready Seedance runs there show 2.3208); docs/providers/runware-api.md (x-pricing per second) -->
+  <li><strong>Kling and H3 billed exactly ten seconds at list price, $1.57 and $0.80.</strong> Seedance billed $2.3208 against $2.304 for ten seconds at $0.2304, on every Seedance run we made at this setting.</li>
+  <!-- source: the scene 1 clips themselves (checked frame by frame on contact sheets); the 13 Nov video prompting notes (finding F4, private notes) -->
+  <li><strong>All three left the helmet camera for the backflip.</strong> Each shows the flip from trackside, then Kling and H3 return to the handlebar view. A flip seen from the helmet would roll the horizon through a full turn; no run so far has done it.</li>
+  <!-- source: docs/providers/runware-api.md ("Prompt tokens" and the character table); packages/core/src/specs/*.ts (prompting.addressing); the scene 2 clips -->
+  <li><strong>Each model names a reference image its own way</strong>: <code>&lt;&lt;&lt;image_1&gt;&gt;&gt;</code> on Kling, <code>@Image1</code> on Seedance, "Image 1" on H3. The scene 2 prompt used none of them, and all three still made the same green-and-yellow vehicle, so the image was used without a tag.</li>
+  <!-- source: the studio's docs/runware.md ("When a model vendor's moderation rejects a run"); the refused runs are in the studio's job log with no cost recorded -->
+  <li><strong>A prompt that named a real brand was refused by the model vendor, and nothing was charged.</strong> Runware answers the task with HTTP 400 and the code <code>invalidProviderContent</code>. Read the task's <code>errors</code> when you poll, or a refused run looks like one that is still rendering.</li>
+</ul>
+<!-- RADEK: voice. Your paragraph goes here: which take you would ship, and what you would change in the prompt. Nothing shows until you write it. -->
+
+<h2 id="run">Run it yourself</h2>
+<p>The scene 2 task for Seedance 2.5, as Runware's API takes it. Field names follow the Model Arena Runware provider (<code>providers/runware-api/task.ts</code>, <code>poll.ts</code>), checked against the model's schema.</p>
+<pre><code>const post = (tasks) =&gt; fetch("https://api.runware.ai/v1", {
+  method: "POST",
+  headers: { Authorization: `Bearer ${RUNWARE_API_KEY}`, "Content-Type": "application/json" },
+  body: JSON.stringify(tasks),
+}).then((r) =&gt; r.json());
+
+const taskUUID = crypto.randomUUID();
+await post([{
+  taskType: "videoInference",
+  taskUUID,
+  model: "bytedance:seedance@2.5",
+  positivePrompt: "animate this character sheet treating it as storyboard, …",
+  inputs: { referenceImages: ["https://…/character-sheet.png"] }, // a URL, or a mediaUUID from a mediaStorage upload
+  duration: 10,
+  resolution: "720p",
+  deliveryMethod: "async",
+  includeCost: true,
+}]);
+
+// Poll by taskUUID. Never resubmit: that bills a second clip.
+let row;
+while (!row) {
+  await new Promise((r) =&gt; setTimeout(r, 5000));
+  const { data = [], errors = [] } = await post([{ taskType: "getResponse", taskUUID }]);
+  if (errors.length) throw new Error(errors[0].message);
+  row = data.find((d) =&gt; d.taskUUID === taskUUID &amp;&amp; typeof d.videoURL === "string");
+}
+console.log(row.videoURL, row.cost); // cost in USD, from includeCost</code></pre>
+<p>The players on this page are the open <code>&lt;model-arena&gt;</code> element: one script tag and a record file. Its <a href="arena/specs.html">spec matrix and prompt composer</a> runs in the browser and sends nothing.</p>
+<div class="links">
+  <a class="btn" href="https://github.com/koshimazaki/motion-studio">Draw Control (motion-studio)</a>
+  <a class="btn ghost" href="https://github.com/koshimazaki/model-arena">model-arena</a>
+</div>
+<!-- RADEK: voice -->
+<p>Next part: Draw Control, where you draw and the drawing controls the camera and the figure, exported as a guide clip for these models to follow.</p>
+</main>
+
+<footer class="col">Clips: six Runware runs, 15 November 2026. Measured with ffprobe on the original files.</footer>
+</body>
+</html>

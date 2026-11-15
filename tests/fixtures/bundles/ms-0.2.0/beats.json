@@ -1,0 +1,8 @@
+{
+  "bpm": 120,
+  "offsetSeconds": 0.25,
+  "beatsPerBar": 4,
+  "source": "manual",
+  "beats": [0.25, 0.75, 1.25, 1.75],
+  "downbeats": [0.25]
+}

@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <title>Embed example</title>
+    <style>
+      /* A host page on a dark background with a lime accent, mapping its own tokens onto the elements. */
+      :root { color-scheme: dark; --host-bg: #0e0f0c; --host-fg: #eef2e8; --host-accent: #b6f23a; --host-line: #34382d; }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--host-bg); color: var(--host-fg); font: 15px/1.6 system-ui, sans-serif; }
+      header { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--host-line); }
+      header h1 { font-size: 16px; margin: 0; }
+      header arena-key { flex: 1 1 360px; max-width: 560px; }
+      main { max-width: 1200px; margin: 0 auto; padding: 16px; display: grid; gap: 24px; }
+      h2 { font-size: 15px; margin: 0 0 8px; }
+      p.hint { margin: 0; font-size: 13px; opacity: 0.75; }
+      .host-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+      @media (max-width: 640px) { .host-row { grid-template-columns: 1fr; } }
+      .host-preview { aspect-ratio: 16 / 9; background: #1b1d17; border-radius: 8px; display: grid; place-items: center; color: #8c9480; font-size: 13px; }
+      .host-transport { display: flex; gap: 12px; align-items: center; margin-top: 8px; }
+      .host-transport input { flex: 1; accent-color: var(--host-accent); }
+      button { font: inherit; background: var(--host-accent); color: #10130b; border: 0; border-radius: 6px; padding: 4px 12px; cursor: pointer; }
+      arena-key, arena-player, arena-generate, arena-gallery {
+        --ma-bg: #14160f; --ma-card: #181a13; --ma-fg: var(--host-fg); --ma-muted: #a9b09c; --ma-line: var(--host-line);
+        --ma-input: #22251c; --ma-chip: #22251c; --ma-accent: var(--host-accent); --ma-accent-fg: #10130b; --ma-radius: 6px;
+      }
+    </style>
+    <!-- One vendored file, loaded by a relative URL so the page works from any sub-path of a static host. -->
+    <script type="module" src="../dist/embed/model-arena-embed.js"></script>
+  </head>
+  <body>
+    <header>
+      <h1>Guide to video</h1>
+      <arena-key id="key"></arena-key>
+    </header>
+    <main>
+      <p class="hint" data-fake>Fake provider: this example answers every Runware request in the page itself, so no request leaves it and no key is spent. Run <code>npm run demo:embed</code> and <code>npm run build:embed</code> first.</p>
+
+      <section>
+        <h2>All in one: &lt;arena-generate&gt;, opened with a preset</h2>
+        <arena-generate id="gen" key-panel="key" preset="embed-preset.json" max-price="2"></arena-generate>
+      </section>
+
+      <section>
+        <h2>Parts: the host's own preview and playhead, with &lt;arena-player&gt; following it</h2>
+        <div class="host-row">
+          <div class="host-preview">host's 3D preview</div>
+          <arena-player id="player" controls="none" label="Generated clip"></arena-player>
+        </div>
+        <div class="host-transport">
+          <button type="button" id="host-play">Play</button>
+          <input id="host-scrub" type="range" min="0" max="5" step="0.01" value="0" aria-label="Host playhead" />
+          <span id="host-time">0.00 s</span>
+        </div>
+        <p class="hint">After a run, the result loads here; the page's own clock drives it every frame.</p>
+      </section>
+
+      <section>
+        <h2>&lt;arena-gallery&gt;: published runs, no key needed</h2>
+        <arena-gallery id="gallery" generate="gen"></arena-gallery>
+      </section>
+    </main>
+
+    <script type="module">
+      // The fake provider: answers mediaStorage, accountManagement, videoInference and getResponse like the API,
+      // and returns a local placeholder clip. It never calls the network.
+      const result = new URL("media/embed-result.mp4", location.href).href;
+      let n = 0;
+      let polls = 0;
+      const fakeFetch = async (url, init) => {
+        if (new URL(url).host !== "api.runware.ai") throw new Error("the fake provider only answers api.runware.ai");
+        const tasks = JSON.parse(init.body);
+        const data = tasks.map((t) => {
+          if (t.taskType === "mediaStorage") return { taskType: "mediaStorage", taskUUID: t.taskUUID, mediaUUID: `00000000-0000-4000-8000-${String(++n).padStart(12, "0")}` };
+          if (t.taskType === "accountManagement") return { taskType: "accountManagement", taskUUID: t.taskUUID, balance: 250 };
+          if (t.taskType === "videoInference") return { taskType: "videoInference", taskUUID: t.taskUUID };
+          if (t.taskType === "getResponse") return ++polls % 2 ? { taskUUID: t.taskUUID, status: "processing", progress: 50 } : { taskType: "videoInference", taskUUID: t.taskUUID, status: "success", videoURL: result, cost: 0.94 };
+          return { taskUUID: t.taskUUID };
+        });
+        await new Promise((r) => setTimeout(r, 50));
+        return { ok: true, status: 200, json: async () => ({ data }) };
+      };
+
+      const gen = document.getElementById("gen");
+      const gallery = document.getElementById("gallery");
+      const player = document.getElementById("player");
+      gen.fetch = fakeFetch;
+      // The key panel reads the balance on connect; in this demo it asks the fake provider too.
+      document.getElementById("key").fetch = fakeFetch;
+      gen.pollOptions = { initialDelayMs: 100, intervalMs: 100, maxIntervalMs: 200 };
+      gen.addEventListener("arena-gallery-add", (e) => gallery.add(e.detail.record, e.detail.base));
+      gen.addEventListener("arena-generate-result", (e) => player.setAttribute("src", e.detail.videoURL));
+
+      // The host's clock: its own playhead, which the player follows every frame.
+      const scrub = document.getElementById("host-scrub");
+      const label = document.getElementById("host-time");
+      const playBtn = document.getElementById("host-play");
+      let playing = false;
+      let t = 0;
+      let last = 0;
+      const frame = (now) => {
+        if (playing) {
+          t += (now - last) / 1000;
+          if (t >= 5) t = 0;
+          last = now;
+          requestAnimationFrame(frame);
+        }
+        scrub.value = String(t);
+        label.textContent = `${t.toFixed(2)} s`;
+        player.currentTime = t;
+      };
+      playBtn.addEventListener("click", () => {
+        playing = !playing;
+        playBtn.textContent = playing ? "Pause" : "Play";
+        if (playing) {
+          last = performance.now();
+          void player.play();
+          requestAnimationFrame(frame);
+        } else player.pause();
+      });
+      scrub.addEventListener("input", () => {
+        t = Number(scrub.value);
+        frame(performance.now());
+      });
+      window.hostClock = { get time() { return t; }, get playing() { return playing; } };
+    </script>
+  </body>
+</html>

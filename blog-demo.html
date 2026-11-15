@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <title>Blog panels demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <style>
+      /* The blog page's sizing contract: an article column, a 1240 px breakout for panel 1 and 1040 px for panel 2. */
+      :root { color-scheme: dark; --col: 768px; --wide: 1040px; --arena: 1240px; }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #1a1a1a; color: #f2f2f2; font: 400 15px/1.7 "Figtree", system-ui, sans-serif; }
+      .col { max-width: var(--col); margin: 0 auto; padding: 0 24px; }
+      .wide { max-width: var(--wide); margin: 32px auto; padding: 0 24px; }
+      .arena-wrap { max-width: var(--arena); margin: 32px auto; padding: 0 24px; }
+      @media (max-width: 480px) { .col, .wide, .arena-wrap { padding: 0 16px; } }
+      p { color: #d9d9d9; }
+      code { font-family: "JetBrains Mono", monospace; font-size: 13px; }
+    </style>
+    <link rel="stylesheet" href="/packages/element/themes/dark-lime.css" />
+    <script type="module" src="/packages/element/src/index.ts"></script>
+  </head>
+  <body>
+    <main class="col">
+      <h1>Blog panels demo</h1>
+      <p>Both panels as the blog post embeds them, playing local placeholder clips. Run <code>npm run demo:media</code> once to make them. No key, no paid call.</p>
+      <h2>Panel 1 · Arena</h2>
+    </main>
+    <div class="arena-wrap">
+      <model-arena layout="arena" src="/examples/records/blog/set.json"></model-arena>
+    </div>
+    <main class="col">
+      <h2>Panel 2 · Audio-reactive motion transfer</h2>
+      <p>Left, the Motion Studio guide; right, the selected model's output, on one clock.</p>
+    </main>
+    <div class="wide">
+      <model-arena layout="guidance" model="kling-4" src="/examples/records/blog/guidance.json"></model-arena>
+    </div>
+  </body>
+</html>

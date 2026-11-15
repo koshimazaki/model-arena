@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="media-base" content="https://pub-a43ab278435c48f28b76e8ecc0307ccd.r2.dev/">
+<title>Three Briefs, Four Models</title>
+<meta name="description" content="Draft for the Runware blog: Seedance 2.5, Kling VIDEO 4.0 and MiniMax H3 on three briefs, with FLUX 3 on the third, each prompt tuned to the model's own guide, with measured cost and time per clip.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* Tokens read from runware.ai/blog CSS, 10 Nov 2026. The site is dark-only. */
+  :root {
+    --background: #1a1a1a; --foreground: #f2f2f2; --card: #1c1c1c;
+    --muted: #292929; --muted-foreground: #d9d9d9; --border: #454545; --input: #2e2e2e;
+    --primary: #afff9f; --primary-foreground: #1c1c1c; --accent: #345c2d;
+    --yellow: #ffff7d; --yellow-deep: #58582c; --radius: 7px;
+    --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --col: 768px; --wide: 1240px;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--background); color: var(--foreground);
+    font: 400 15px/1.7 var(--font-sans); -webkit-font-smoothing: antialiased; }
+  p, li { color: color-mix(in oklab, var(--foreground) 85%, transparent); }
+  a { color: var(--foreground); font-weight: 600; text-decoration: underline; text-underline-offset: 2px;
+    text-decoration-color: color-mix(in oklab, var(--foreground) 35%, transparent); }
+  .col { max-width: var(--col); margin: 0 auto; padding: 0 24px; }
+  .wide { max-width: var(--wide); margin: 32px auto; padding: 0 24px; }
+  @media (max-width: 480px) { .col, .wide { padding: 0 16px; } }
+  header.post { padding: 48px 0 8px; }
+  .kicker { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted-foreground); }
+  h1 { font-weight: 500; font-size: 30px; line-height: 1.15; letter-spacing: -.015em; margin: 10px 0 24px; }
+  .dek { font-size: 17px; color: var(--muted-foreground); margin: 0 0 20px; }
+  .byline { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--muted-foreground); }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--muted) url("media/author.jpg") center / cover no-repeat; border: 1px solid var(--border); flex: none; }
+  h2 { font-weight: 600; font-size: 24px; letter-spacing: -.02em; line-height: 1.25; margin: 48px 0 20px; scroll-margin-top: 16px; }
+  h2 ~ h2, .wide + .col > h2:first-child { margin-top: 64px; padding-top: 40px; border-top: 1px solid color-mix(in oklab, var(--border) 60%, transparent); }
+  h3 { font-weight: 600; font-size: 20px; letter-spacing: -.015em; margin: 40px 0 16px; }
+  nav.toc { border: 1px solid var(--border); border-radius: 12px; background: var(--card); padding: 16px 20px; margin: 32px 0; font-size: 14px; }
+  nav.toc strong { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted-foreground); }
+  nav.toc ol { margin: 8px 0 0; padding-left: 20px; }
+  nav.toc a { font-weight: 500; text-decoration: none; }
+  .draft { display: block; margin: 32px 0; padding: 20px 16px; border: 1px dashed var(--border); border-radius: 10px;
+    background: color-mix(in oklab, var(--muted) 50%, transparent); font-size: 14px; color: var(--muted-foreground); }
+  .draft::before { content: "DRAFT"; display: inline-block; margin-right: 10px; font: 500 11px var(--font-mono); color: var(--yellow);
+    border: 1px solid var(--yellow-deep); border-radius: 5px; padding: 1px 6px; }
+  .table-wrap, .facts { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  .table-wrap table { min-width: 620px; }
+  .facts table { min-width: 480px; }
+  th, td { text-align: left; padding: 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tbody tr:last-child > * { border-bottom: 0; }
+  thead th { font-weight: 600; }
+  tbody th { font-weight: 500; color: var(--muted-foreground); white-space: nowrap; }
+  th small { font-weight: 400; color: #8a8a8a; }
+  td.check { color: var(--yellow); font-style: italic; }
+  code { font: 13px var(--font-mono); background: var(--muted); color: color-mix(in oklab, var(--foreground) 90%, transparent); padding: 2px 6px; border-radius: 4px; }
+  pre { background: var(--card); border: 1px solid var(--border); padding: 16px 20px; border-radius: 12px; overflow-x: auto; font-size: 13px; line-height: 1.6; }
+  pre code { background: none; padding: 0; }
+  blockquote.brief { margin: 24px 0; padding: 4px 0 4px 16px; border-left: 2px solid var(--accent); font-size: 14px; color: var(--muted-foreground); }
+  blockquote.brief p { margin: 0; }
+  .note { font-size: 13px; color: var(--muted-foreground); }
+  .blocked { margin-top: 14px; padding: 12px 14px; border: 1px dashed var(--border); border-radius: 8px; font-size: 13px; color: var(--muted-foreground); }
+  .blocked b { color: var(--foreground); font-weight: 600; }
+  .blocked p { margin: 6px 0 0; }
+
+  /* Scene player: three clips on one clock, one shared transport bar */
+  .stagecard { background: #1f1f1f; border-radius: 12px; padding: 20px; }
+  @media (max-width: 480px) { .stagecard { padding: 12px; } }
+  .clips { display: grid; gap: 12px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .clips.n2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .clips.n1 { grid-template-columns: minmax(0, 1fr); }
+  @media (max-width: 760px) { .clips, .clips.n2 { grid-template-columns: minmax(0, 1fr); } }
+  .clip { margin: 0; min-width: 0; }
+  .frame { position: relative; aspect-ratio: 16 / 9; background: #000; border-radius: 8px; overflow: hidden; }
+  .frame video { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .spk { position: absolute; right: 8px; bottom: 8px; width: 32px; height: 32px; border-radius: 50%; border: 0; cursor: pointer;
+    display: grid; place-items: center; background: rgb(0 0 0 / .55); box-shadow: 0 0 0 1px rgb(255 255 255 / .2); color: #bbb; backdrop-filter: blur(4px); }
+  .spk svg { width: 16px; height: 16px; fill: currentColor; }
+  .spk .wave { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; opacity: .25; }
+  .spk[aria-pressed="true"] { color: var(--primary); }
+  .spk[aria-pressed="true"] .wave { opacity: 1; }
+  .clip figcaption { margin-top: 8px; font-size: 13px; color: var(--muted-foreground); }
+  .clip figcaption b { color: var(--foreground); font-weight: 600; }
+  .clip figcaption code { background: none; padding: 0; font-size: 11px; color: #8a8a8a; }
+  details { margin-top: 4px; }
+  summary { cursor: pointer; font: 500 11px var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: #8a8a8a; }
+  summary span { text-transform: none; letter-spacing: 0; }
+  summary:hover { color: var(--muted-foreground); }
+  .prompt { margin: 8px 0 0; font-size: 12.5px; line-height: 1.55; color: var(--muted-foreground); overflow-wrap: anywhere; }
+  .prompt ins { text-decoration: none; color: var(--primary); background: color-mix(in oklab, var(--primary) 12%, transparent); border-radius: 3px; padding: 0 2px; }
+  .prompt del { color: #b07a7a; }
+  /* Transport: a quiet line, not a control panel. */
+  .bar { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+  .pp { width: 26px; height: 26px; flex: none; border-radius: 50%; cursor: pointer; display: grid; place-items: center;
+    background: transparent; border: 1px solid color-mix(in oklab, var(--primary) 55%, transparent); color: var(--primary); }
+  .pp:hover { background: color-mix(in oklab, var(--primary) 14%, transparent); }
+  .pp svg { width: 11px; height: 11px; fill: currentColor; }
+  .bar input[type=range] { flex: 1; min-width: 0; height: 14px; margin: 0; background: transparent; appearance: none; -webkit-appearance: none; cursor: pointer; }
+  /* The line fills green as it plays (--p is set by scenes.js), the dot riding its edge. */
+  .bar input[type=range] { --p: 0%; }
+  .bar input[type=range]::-webkit-slider-runnable-track { height: 2px; border-radius: 2px;
+    background: linear-gradient(to right, var(--primary) 0 var(--p), #3a3a3a var(--p) 100%); }
+  .bar input[type=range]::-moz-range-track { height: 2px; border-radius: 2px; background: #3a3a3a; }
+  .bar input[type=range]::-moz-range-progress { height: 2px; background: var(--primary); }
+  .bar input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 10px; height: 10px; margin-top: -4px; border-radius: 50%; border: 0; background: var(--primary); }
+  .bar input[type=range]::-moz-range-thumb { width: 10px; height: 10px; border-radius: 50%; border: 0; background: var(--primary); }
+  .bar .t { font: 11px var(--font-mono); color: #777; flex: none; }
+  /* Full view and per-clip expand, as in the Arena panel. */
+  .stagecard { position: relative; }
+  .fullview { position: absolute; top: 10px; right: 12px; z-index: 2; display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px;
+    border: 1px solid var(--border); border-radius: 6px; background: rgb(0 0 0 / .45); color: var(--muted-foreground); cursor: pointer; font: 500 11px var(--font-mono); }
+  .fullview:hover { color: var(--foreground); }
+  .player:has(.clips) { padding-top: 26px; }
+  .expand { position: absolute; top: 8px; right: 8px; z-index: 3; width: 28px; height: 28px; border-radius: 6px; display: grid; place-items: center; cursor: pointer;
+    border: 0; background: rgb(0 0 0 / .55); color: #ddd; opacity: 0; transition: opacity .15s; }
+  .frame:hover .expand, .expand:focus-visible { opacity: 1; }
+  @media (hover: none) { .expand { opacity: 1; } }
+  .expand svg, .fullview svg, .lb-close svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  /* A centred window over a dark, translucent backdrop. */
+  dialog.lb { width: min(1680px, 96vw); max-width: 96vw; max-height: 94vh; margin: auto; padding: 18px 20px 20px; overflow: auto;
+    border: 1px solid #2a2a2a; border-radius: 14px; background: #121212; color: var(--foreground); box-shadow: 0 30px 80px rgb(0 0 0 / .6); }
+  dialog.lb::backdrop { background: rgb(0 0 0 / .78); backdrop-filter: blur(2px); }
+  .lb-inner { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .lb-bar { width: min(1600px, 100%); display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 13px; color: var(--muted-foreground); }
+  .lb-bar b { color: var(--foreground); font: 400 13px var(--font-mono); }
+  .lb-tools { display: flex; align-items: center; gap: 12px; }
+  .lb-size { background: none; border: 0; cursor: pointer; font: 500 12px var(--font-sans); color: #8a8a8a; }
+  .lb-size:hover { color: var(--foreground); }
+  .lb-close { width: 32px; height: 32px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--muted-foreground); cursor: pointer; display: grid; place-items: center; }
+  .lb-frame { width: min(1600px, 100%); }
+  /* One model: big and centred, as if watching just that one. */
+  .lb-frame.one { width: min(1500px, 100%); }
+  .lb-frame.one .clip { display: flex; flex-direction: column; align-items: center; }
+  .lb-frame.one .frame { width: min(100%, calc(64vh * 16 / 9)); margin: 0 auto; }
+  .lb-frame.one .clip figcaption { width: min(100%, calc(64vh * 16 / 9)); }
+  .lb-frame .clip figcaption details { display: none; }
+  .lb-frame.actual { width: auto; max-width: none; overflow: auto; }
+  .lb-frame.actual .frame { aspect-ratio: auto; }
+  .lb-frame.actual video { width: auto; height: auto; max-width: none; }
+  .lb-frame .frame { cursor: zoom-in; }
+  .lb-frame.one .frame { cursor: default; }
+  .lb-strip { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+  .lb-strip button { background: var(--muted); border: 0; border-radius: 5px; padding: 3px 8px; cursor: pointer; font: 12px var(--font-mono); color: var(--muted-foreground); }
+  .lb-strip button[aria-current="true"] { color: var(--primary-foreground); background: var(--primary); }
+  .lb-prompt { width: min(1200px, 100%); margin: 0; font-size: 13px; line-height: 1.55; color: var(--muted-foreground); overflow-wrap: anywhere; }
+  figure.media { margin: 0; }
+  figure.media > figcaption { margin-top: 10px; font-size: 12px; line-height: 1.45; text-align: center; color: var(--muted-foreground); }
+  figure.ref { margin: 28px 0; }
+  figure.ref img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--border); }
+  .verdict { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin: 24px 0; }
+  .verdict.two { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+  .card .lab { display: block; margin-top: 12px; font: 500 11px var(--font-mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted-foreground); }
+  .card { border: 1px solid var(--border); border-radius: 12px; background: var(--card); padding: 16px 20px; font-size: 14px; }
+  .card b { display: block; color: var(--foreground); font-weight: 600; margin-bottom: 2px; }
+  .card p { margin: 4px 0 0; font-size: 14px; color: var(--muted-foreground); }
+  /* Model list and stat banner, after the blog's own patterns */
+  .models { border: 1px solid color-mix(in oklab, var(--border) 60%, transparent); border-radius: 8px; overflow: hidden;
+    background: color-mix(in oklab, var(--muted) 20%, transparent); margin: 32px 0; }
+  .models .row { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 16px; }
+  .models .row + .row { border-top: 1px solid color-mix(in oklab, var(--border) 60%, transparent); }
+  .models b { font-size: 14px; font-weight: 600; color: var(--foreground); }
+  .models code { display: inline-block; margin-top: 4px; background: none; padding: 0; font-size: 12px; color: var(--muted-foreground); }
+  .models p { margin: 6px 0 0; font-size: 14px; color: var(--muted-foreground); max-width: 28rem; }
+  .models .btn { height: 28px; padding: 0 12px; font-size: 12px; flex: none; }
+  .models .btn::after { content: none; }
+  @media (max-width: 560px) { .models .row { flex-direction: column; align-items: flex-start; } }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin: 32px 0 0; }
+  .stats > div { background: var(--card); padding: 28px 16px; text-align: center; display: flex; flex-direction: column; gap: 6px; }
+  .stats small { height: 20px; font-size: 14px; color: var(--muted-foreground); }
+  .stats strong { font-size: 30px; font-weight: 500; letter-spacing: -.015em; color: var(--primary); font-variant-numeric: tabular-nums; line-height: 1.15; }
+  .stats span { font-size: 14px; color: var(--muted-foreground); }
+  @media (max-width: 560px) { .stats { grid-template-columns: 1fr; } }
+  .author { display: flex; gap: 14px; align-items: center; border-top: 1px solid color-mix(in oklab, var(--border) 60%, transparent); padding: 32px 0 0; margin: 64px 0 0; }
+  .author .avatar { width: 48px; height: 48px; }
+  .author small { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted-foreground); }
+  .author .role { text-transform: none; letter-spacing: 0; font-size: 13px; }
+  .cta { text-align: center; margin: 64px auto 0; padding: 48px 24px; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; background: var(--primary); color: var(--primary-foreground); height: 36px; padding: 0 16px;
+    border-radius: 8px; font-size: 14px; font-weight: 600; text-decoration: none; }
+  .btn::after { content: "→"; font-size: 12px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 24px 0; }
+</style>
+</head>
+<body>
+
+<header class="post col">
+  <div class="kicker">Model evaluation · Video</div>
+  <h1>Three briefs, four video models: Seedance 2.5, Kling VIDEO 4.0, MiniMax H3 and FLUX 3</h1>
+  <p class="dek">A helmet-cam motocross stunt, a character sheet brought to life and a runner in New York, run on the models side by side, with every prompt shown, what changed between them, and what each clip cost and how long it took.</p>
+  <div class="byline"><span class="avatar" aria-hidden="true"></span>
+    <span>Radek Rudnicki · draft for the Runware blog · <span id="readtime">— min read</span></span></div>
+</header>
+
+<main class="col">
+
+<nav class="toc" aria-label="On this page"><strong>On this page</strong>
+  <ol>
+    <li><a href="#glance">At a glance</a></li>
+    <li><a href="#differences">How the three models differ</a></li>
+    <li><a href="#approach">How we approached it</a></li>
+    <li><a href="#moto">Brief 1: motocross, camera on the rider's head</a></li>
+    <li><a href="#sheet">Brief 2: a character sheet as storyboard</a></li>
+    <li><a href="#runner">Brief 3: a runner in New York, with FLUX 3</a></li>
+    <li><a href="#verdict">Which model for which job</a></li>
+    <li><a href="#next">What comes next</a></li>
+    <li><a href="#run">Run it yourself</a></li>
+  </ol>
+</nav>
+
+<h2 id="glance">At a glance</h2>
+<p>Three briefs, ten-second HD clips, generated from Genobi Studio: Seedance 2.5, Kling VIDEO 4.0 and MiniMax H3 on every brief, and FLUX 3 Video on the third. Each model got the same brief, written to its own prompting guide. The prompts are shown under every clip, with changes marked. The models ran side by side, not one after another. Each finished in three to five minutes. A 10 s HD clip cost from $0.80 (MiniMax H3) to $2.32 (Seedance 2.5).</p>
+<p><strong>The short version:</strong> Seedance 2.5 for fast sports realism, FLUX 3 Video for natural realism and a film look, MiniMax H3 for value, and Kling VIDEO 4.0 in between: close to Seedance on hard motion for less, and the best at following the sound brief. Every clip shown is the best of a few generations per model, and each brief ends with what the models did well and where they fell short.</p>
+<p>The tools behind this post are open source and run with your own Runware key: <a href="https://github.com/koshimazaki/motion-studio">Motion Studio</a>, which makes the guide clips, and <a href="https://github.com/koshimazaki/model-arena">Model Arena</a>, which runs one brief across the models and plays the results on one clock.</p>
+<div class="draft">Add the link to the live Motion Studio site once it is deployed.</div>
+
+<h2 id="differences">How the three models differ</h2>
+<p>Before comparing outputs, compare contracts: what each model accepts decides what you can ask of it. The cells come from Runware's model schemas (read 10 Nov). The frame rate and sound rows were checked on 14 Nov against the makers' own pages. The output frame rate is measured with ffprobe on the original files: every clip in this post came back at a constant 24 fps (241 frames for Seedance, Kling and FLUX, 243 for H3). We never asked for a frame rate, so that is what each model delivers at these settings.</p>
+</main>
+
+<div class="wide" style="max-width:1040px">
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th></th><th>Kling VIDEO 4.0</th><th>Seedance 2.5</th><th>MiniMax H3</th></tr></thead>
+    <tbody>
+      <tr><th>Reference video</th><td>1–5, 3–30 s each, 30 s total, min 700 px a side</td><td>up to 10</td><td>up to 3, billed per second</td></tr>
+      <tr><th>Reference audio</th><td>none (element voices only)</td><td>up to 10, 2–30 s</td><td>up to 3; video and audio share 15 s</td></tr>
+      <tr><th>Reference images</th><td>up to 10, 300 px a side or more</td><td>up to 10 in Genobi (schema: 30), 300 px or more</td><td>up to 9, 256 px or more</td></tr>
+      <tr><th>Start frame with references</th><td>yes</td><td>no, use a reference image</td><td>no, use a reference image</td></tr>
+      <tr><th>Addressing in the prompt</th><td><code>&lt;&lt;&lt;image_1&gt;&gt;&gt;</code></td><td><code>@Image1</code> <code>@Video1</code> <code>@Audio1</code></td><td>"Image 1", "Video 1"</td></tr>
+      <tr><th>Camera</th><td>prompt, or the camera path of a reference video</td><td>prompt only</td><td>prompt only</td></tr>
+      <tr><th>Durations</th><td>3–30 s</td><td>4–30 s, or auto</td><td>4–15 s</td></tr>
+      <tr><th>Output frame rate</th><td>24 fps (measured)</td><td>24 fps (measured)</td><td>24 fps (model card, measured)</td></tr>
+      <tr><th>HD output in this test</th><td>1280×720</td><td>1280×720</td><td>1344×768 (H3's 768p tier)</td></tr>
+      <tr><th>Makes its own sound</th><td>always, no off switch</td><td>yes, <code>settings.audio</code> turns it off</td><td>always, no off switch</td></tr>
+      <tr><th>Published rate, HD</th><td>$0.157 per second</td><td>$0.2304 per second</td><td>$0.08 per second</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="note">LTX-2.5 and FLUX 3 Video sit in the same Arena and are not part of this round.</p>
+</div>
+
+<main class="col">
+<h2 id="approach">How we approached it</h2>
+<p>Same brief, different prompts. None of the three models has a camera field or a negative prompt, and each reads a prompt differently:</p>
+<ul>
+  <li><strong>Kling</strong> wants reference roles first, then the setting, then the beats.</li>
+  <li><strong>Seedance</strong> wants the shot first.</li>
+  <li><strong>H3</strong> wants plain sentences about the picture, then the sound.</li>
+</ul>
+<p>Sending one prompt to three models tests the prompt, not the models. So we started from one brief, ran it, and changed the wording per model where its guide said it would help. The prompts below are the ones actually sent, typos included, with the changes marked against the first version.</p>
+<p>Every clip on this page is a pick. We ran each model a few times per brief and show its best take, chosen by eye, so you see each model at its best on the brief. This is an evaluation, so each “Our take” gives credit where a model earned it and names the faults we saw.</p>
+<p>Seedance, Kling and H3 ran through Runware's Models API on one key: one async <code>videoInference</code> task per clip, 10 s at HD, the cost Runware reports (<code>includeCost</code>) recorded on the run. Runware sets no hard concurrency limit and finds 2–4 requests at once gives the best throughput (<a href="https://runware.ai/docs/platform/rate-limits">rate limits</a>, checked 15 Nov). So the three models ran in parallel, and the wait was the slowest clip, not the sum of all three.</p>
+
+<h2 id="moto">Brief 1: motocross, camera on the rider's head</h2>
+<p>A stunt clip in the style of a sports broadcast: rain, mud, a sunset, a commentator, and a backflip seen from a camera on the rider's helmet. This is a hard ask on purpose. A helmet-cam backflip means the whole horizon rolls through the frame, and in our earlier runs on FLUX 3 Video the flip never completed.</p>
+<blockquote class="brief"><p>“motocross riding, with camera on drivers head looking at the steering bar with interface, dynmic jumps with time warp and slow down half way through the trick … Saying "oh noo" once the here does full backflip and lands full of dirt …”</p></blockquote>
+</main>
+
+<div class="wide">
+  <figure class="media">
+    <div class="stagecard"><div class="player" data-scene="moto" data-role="main"></div></div>
+    <figcaption>All three play on one clock and start muted. Press a speaker to hear one clip at a time. Open “Prompt” under a clip for the exact text sent.</figcaption>
+  </figure>
+</div>
+
+<main class="col">
+<div class="facts" data-scene="moto"></div>
+<p class="note">Cost is what Runware reported for the run. Time to result is from submission to the run's last update in Genobi, so it is approximate. Seedance's $2.32 is slightly over its published $0.2304/s × 10 s because the clip came back at 10.08 s.</p>
+
+<h3>One sentence that kept the camera on the helmet</h3>
+<p>On the first prompt, all three models cut away to a trackside view for the flip. Adding one clause, “same camera view from the drivers head throughout the video”, plus “no cuts” for Kling, kept Seedance and Kling on the helmet through the whole flip, horizon upside down. Kling's second version was the better of the two. H3 never held the helmet view: across the prompts we tried, it cut to a third-person view for the flip every time.</p>
+</main>
+
+<div class="wide" style="max-width:1040px">
+  <figure class="media">
+    <div class="stagecard"><div class="player" data-scene="moto" data-role="pov"></div></div>
+    <figcaption>Seedance 2.5 and Kling VIDEO 4.0 on the revised prompt.</figcaption>
+  </figure>
+</div>
+
+<main class="col">
+<h3>Our take</h3>
+<p>A deliberately hard stress test, and Seedance handled it best: for sports realism with fast, extreme physics it is still the one to beat. Kling got there too, for less, though it did odd things with the rider ahead; every model nailed the rain, the sunset, the slow-motion and the synced sound, but all of them twisted or cut away during the flip, so the physics is not fully there yet. On sound, Kling edges it: the prompt asks for a commentator, and Kling kept one talking throughout both of its clips, where Seedance brought the voice in only at the very end.</p>
+<h2 id="sheet">Brief 2: a character sheet as storyboard</h2>
+<p>One reference image goes to all three models: a character sheet for a small industrial robot, with views from several angles.</p>
+<figure class="media ref">
+  <img src="media/ref-sheet.jpg" width="1600" height="896" loading="lazy" alt="Character sheet for a small industrial robot, drawn from several angles with detail views of its parts">
+  <figcaption>The character sheet every model received as its one reference image.</figcaption>
+</figure>
+<p>The prompt asks each model to treat the sheet as a storyboard: assemble the unit part by part, move the camera between angles, and stay true to the sheet's look. This tests how well each model keeps to a reference image, and how much product-film camera it gives you without a camera parameter.</p>
+<blockquote class="brief"><p>“animate this character sheet treating it as storyboard, follow closely the aesthetic and style with smooth camera move from each angle with zooms on details and body parts in 3D realistic view, device setting up moving and assembling with parts, no hard cuts …”</p></blockquote>
+</main>
+
+<div class="wide">
+  <figure class="media">
+    <div class="stagecard"><div class="player" data-scene="sheet" data-role="main"></div></div>
+    <figcaption>Same reference image for all three. Open a clip's prompt to see how its wording differs from the first.</figcaption>
+  </figure>
+</div>
+
+<main class="col">
+<div class="facts" data-scene="sheet"></div>
+<h3>Our take</h3>
+<p>We wanted something interesting, sci-fi and industrial-grade, and all three did well with it: Seedance was the most believable, and Kling did really well once we took the effects out of its prompt. For the price, MiniMax H3 wins this one.</p>
+
+<h2 id="runner">Brief 3: a runner in New York, with FLUX 3</h2>
+<p>An athletic advert: a runner crossing a New York City pavement, fine film grain, strength and speed in the stride. This brief adds FLUX 3 Video beside Kling and H3, and it is the one Seedance could not do. Each model started from the same reference still.</p>
+<figure class="media ref">
+  <img src="media/ref-runner.jpg" width="1600" height="896" loading="lazy" alt="A runner in mid-stride on a wet New York pavement, the background streaked with motion blur">
+  <figcaption>The reference still the runner clips started from.</figcaption>
+</figure>
+<p>How the still goes in differs by model, as the table shows: Kling takes it as a reference image, H3 as its first frame, and FLUX as a start image. The prompt that went with it is short.</p>
+<blockquote class="brief"><p>“nike advert, runner in the new york city. Moving accross pavement, fine greain, visible logo, characters strength and speed”</p></blockquote>
+</main>
+
+<div class="wide">
+  <figure class="media">
+    <div class="stagecard"><div class="player" data-scene="runner" data-role="main"></div></div>
+    <figcaption>Kling VIDEO 4.0, MiniMax H3 and FLUX 3 Video on one clock. Seedance 2.5 returned no clip.</figcaption>
+  </figure>
+</div>
+
+<main class="col">
+<div class="facts" data-scene="runner"></div>
+<h3>Our take</h3>
+<p>FLUX looked the most realistic and kept the film look throughout, with great weather, a wet pavement and passers-by we had not asked for, though faces turn a little plastic in close-up. Kling was good but more sterile and stutters at around eight seconds, and H3 was lower resolution and distorted, yet it was the only one that held the shot instead of cutting away.</p>
+
+<h2 id="verdict">Which model for which job</h2>
+<p class="note">Observations from a small set of runs, not a benchmark. Each clip is the best of a few generations per model.</p>
+<p>For fast sports realism, Seedance. For natural realism and a film look, FLUX. For value, MiniMax H3, which did more than its price suggests. Kling sits in between: close to Seedance on hard motion, for less, and the one that followed the sound brief best.</p>
+<div class="verdict two">
+  <div class="card"><b>Seedance 2.5</b>
+    <span class="lab">Best at</span><p>Sports realism with fast, extreme physics: the strongest motocross clip. The most believable take on the robot sheet too.</p>
+    <span class="lab">Where it fell short</span><p>Guardrails got in the way on the runner: content moderation rejected every run of the branded brief, so it has no clip there. The commentator we asked for arrived only at the very end. The flip still twists. The highest price of the set, $2.32 a clip.</p></div>
+  <div class="card"><b>Kling VIDEO 4.0</b>
+    <span class="lab">Best at</span><p>Hard motion close to Seedance for $1.57 a clip, and sound: the commentator runs through both motocross clips, in sync. Strong on the robot sheet.</p>
+    <span class="lab">Where it fell short</span><p>Prompt adherence wavered: the rider ahead did things we had not asked for, and its effects gave unexpected results until we took the effects wording out of the prompt. On the runner it reads sterile in the zooms and stutters at around eight seconds.</p></div>
+  <div class="card"><b>MiniMax H3</b>
+    <span class="lab">Best at</span><p>Value: $0.80 a clip, and the pick for the robot sheet at that price. On the runner it was the only model that held the shot from start to finish.</p>
+    <span class="lab">Where it fell short</span><p>The runner came back looking lower resolution and distorted. It never held the helmet view on the motocross brief, across every prompt we tried.</p></div>
+  <div class="card"><b>FLUX 3 Video</b>
+    <span class="lab">Best at</span><p>Natural realism. It kept the film look throughout, with great weather, a wet pavement and passers-by that made sense in the scene. One brief only in this round.</p>
+    <span class="lab">Where it fell short</span><p>Faces turn a little plastic in close-up, and it cut to other shots we had not asked for.</p></div>
+</div>
+<p>Shared across the set: rain, sunset, slow motion and synced sound came easily to every model, and the full helmet-cam backflip is still out of reach for all of them.</p>
+<div class="stats">
+  <div><small>From</small><strong>$0.80</strong><span>per 10 s HD clip (MiniMax H3)</span></div>
+  <div><small>About</small><strong>3–5 min</strong><span>to a clip, three models in parallel</span></div>
+  <div><small></small><strong>3</strong><span>models on one key, one API</span></div>
+</div>
+<div class="models">
+  <div class="row"><div><b>Kling VIDEO 4.0</b><p>Reference videos carry the camera path. $0.157 per second at 720p.</p></div><a class="btn" href="https://runware.ai/docs/models/klingai-video-4-0">View model</a></div>
+  <div class="row"><div><b>Seedance 2.5</b><p>Up to 10 reference videos and 10 audio tracks; sound can be switched off. $0.2304 per second at 720p.</p></div><a class="btn" href="#">View model</a></div>
+  <div class="row"><div><b>MiniMax H3</b><p>Up to 3 reference videos, billed per second. $0.08 per second at 768p.</p></div><a class="btn" href="#">View model</a></div>
+</div>
+
+<h2 id="next">What comes next</h2>
+<div class="draft">The new part: audio-reactive motion transfer. Motion Studio, the open tool: a mannequin moves to the track's beat grid (moves time-stretched to the beats, energy from the audio), and exports a guide bundle: the guide clip at 1280×720, the audio, frame 0 and the beat times. A character still is made with FLUX.2 [klein] 9B, pose-matched to frame 0. Guide plus still go to the models that take a reference video; the character dances to your track.</div>
+<div class="draft">Camera moves through the same guide. The guide already carries motion and beat. The next step puts the camera in it too: a camera path animated in Motion Studio, so the move is set once and every model that takes a guide video follows it. For LTX, the same path maps to <code>settings.cameraMovement</code>.</div>
+<div class="draft">Where this comes from. One paragraph and two or three stills. Earlier audio-reactive work: the towers piece and the June flowers piece made in Genobi, and the camera-director workflows.</div>
+
+<h2 id="run">Run it yourself</h2>
+<div class="draft">The one task the Arena sends for Kling 4.0. Field names match Runware's Kling 4.0 schema (read 10 Nov); the prompt pattern is from Runware's own reference-videos guide.</div>
+<pre><code>// One Kling VIDEO 4.0 task on Runware (fields checked against schema.json, 10 Nov)
+const res = await fetch("https://api.runware.ai/v1", {
+  method: "POST",
+  headers: { "Content-Type": "application/json",
+             Authorization: `Bearer ${RUNWARE_API_KEY}` },
+  body: JSON.stringify([{
+    taskType: "videoInference",
+    taskUUID: crypto.randomUUID(),
+    model: "klingai:kling-video@4.0",
+    positivePrompt: "Reference only the camera path and pacing of &lt;&lt;&lt;video_1&gt;&gt;&gt;. "
+      + "Replace the mannequin with the character in &lt;&lt;&lt;image_1&gt;&gt;&gt;. …",
+    inputs: {
+      referenceVideos: ["https://…/guide.mp4"],   // the Motion Studio guide
+      referenceImages: ["https://…/character.png"] // the Klein still
+    },
+    duration: 5,
+    includeCost: true,
+    deliveryMethod: "async"
+  }])
+});</code></pre>
+<div class="draft">Links: Motion Studio and model-arena repos (open source), the record files. One line at the foot: the player in this post is the open-source <code>&lt;model-arena&gt;</code> element; bring your own key.</div>
+
+<div class="author"><span class="avatar" aria-hidden="true"></span>
+  <div><small>Written by</small><b>Radek Rudnicki</b><small class="role">Creative technologist</small></div></div>
+</main>
+
+<section class="cta col">
+  <h3 style="margin-top:0">Send one brief to three models.</h3>
+  <p>Run the comparison in the Arena with your Runware key.</p>
+  <a class="btn" href="#run">Open the Arena</a>
+</section>
+
+<section class="col" style="padding-bottom:48px">
+  <h3>Keep reading</h3>
+  <div class="cards">
+    <div class="card"><b>What's new on Runware: October 2026</b><small>link to the recap</small></div>
+    <div class="card"><b>From FLUX.1 [dev] to FLUX 3 Image</b><small>link to the comparison post</small></div>
+  </div>
+</section>
+
+<script>
+  try {
+    const words = [...document.querySelectorAll("main")].map((m) => m.innerText).join(" ").split(/\s+/).length;
+    document.getElementById("readtime").textContent = Math.max(1, Math.round(words / 230)) + " min read";
+  } catch (e) {}
+</script>
+<script src="scenes.js"></script>
+</body>
+</html>

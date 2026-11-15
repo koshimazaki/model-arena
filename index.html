@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <title>Model Arena demo</title>
+    <style>
+      :root { color-scheme: light dark; }
+      body { margin: 0; padding: 24px 16px; font-family: system-ui, sans-serif; background: Canvas; color: CanvasText; }
+      main { max-width: 1280px; margin: 0 auto; }
+      p.hint { font-size: 13px; opacity: 0.7; }
+    </style>
+    <script type="module" src="/packages/element/src/index.ts"></script>
+  </head>
+  <body>
+    <main>
+      <model-arena id="arena" src="/examples/records/mannequin-placeholder.json" layout="three-up"></model-arena>
+      <p class="hint">
+        Placeholder clips live in <code>examples/media/</code> (gitignored). Run <code>npm run demo:media</code> once to copy them in.
+        Open a run's record with <code>?record=/runs/&lt;folder&gt;/record.json</code>.
+      </p>
+    </main>
+    <script type="module">
+      const record = new URLSearchParams(location.search).get("record");
+      if (record && /^\/[A-Za-z0-9/._-]+\.json$/.test(record)) document.getElementById("arena").setAttribute("src", record);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,25 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`camera from the guide video > h3: Video 1 carries the camera move; no camera sentence of its own 1`] = `
+"Video 1 is the motion reference: follow its body motion, timing and camera move. Image 1 is the character; keep face, build and outfit. Image 2 is the setting; keep layout and light. The orange figure is the character.
+
+A courier in a yellow raincoat, moving as in Video 1. A rain-soaked city crossing at dusk.
+
+Sound: Follow the reference audio."
+`;
+
+exports[`camera from the guide video > kling-4: the guide reference carries motion, camera path and pacing; no camera words 1`] = `
+"Reference only the motion, camera path and pacing of <<<video_1>>>. Replace the figure in the guide with the character in <<<image_1>>>; keep face, build and outfit. Replace the guide's background with the setting in <<<image_2>>>; keep layout and light. The orange figure is the character.
+
+A courier in a yellow raincoat runs along the drawn path and leaps the puddle on the beat. A rain-soaked city crossing at dusk."
+`;
+
+exports[`camera from the guide video > seedance-2.5: opens with a camera clause that follows @Video1, never a static camera 1`] = `
+"Camera: follow the camera move of @Video1.
+
+@Video1 is the motion guide: follow its body motion, timing and camera move. @Image1 is the character; keep face, build and outfit. @Image2 is the setting; keep layout and light. The orange figure is the character.
+
+A courier in a yellow raincoat runs along the drawn path and leaps the puddle on the beat. A rain-soaked city crossing at dusk.
+
+Audio: Sync the motion to @Audio1."
+`;

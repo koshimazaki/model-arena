@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "0.2.0",
+  "width": 1280,
+  "height": 720,
+  "fps": 24,
+  "frames": 49,
+  "durationSeconds": 2.0417,
+  "view": "front",
+  "character": { "kind": "mannequin", "name": "Procedural mannequin" },
+  "generator": { "name": "motion-studio", "version": "0.1.0", "motion": "local-time-stretch" },
+  "audioInVideo": false,
+  "assets": [
+    { "role": "video", "name": "Rendered guide", "licence": "MIT (motion-studio)", "file": "guide.mp4" },
+    { "role": "character", "name": "Procedural mannequin", "licence": "MIT (motion-studio)" }
+  ]
+}

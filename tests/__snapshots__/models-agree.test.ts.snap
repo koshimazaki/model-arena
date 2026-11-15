@@ -1,0 +1,24 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Kling 4.0 Flash lane > sends no resolution field and matches its schema 1`] = `
+{
+  "deliveryMethod": "async",
+  "duration": 5,
+  "includeCost": true,
+  "inputs": {
+    "frameImages": [
+      {
+        "frame": "first",
+        "image": "{{upload:1:first-frame.png}}",
+      },
+    ],
+    "referenceVideos": [
+      "{{upload:2:guide-1280x720.mp4}}",
+    ],
+  },
+  "model": "klingai:kling-video@4.0-flash",
+  "positivePrompt": "Follow <<<video_1>>>.",
+  "taskType": "videoInference",
+  "taskUUID": "00000000-0000-4000-8000-000000000001",
+}
+`;

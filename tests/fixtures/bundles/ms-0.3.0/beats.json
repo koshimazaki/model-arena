@@ -1,0 +1,14 @@
+{
+  "bpm": 120,
+  "offsetSeconds": 0,
+  "beatsPerBar": 4,
+  "source": "analysis",
+  "beats": [0, 0.5, 1, 1.5, 2],
+  "downbeats": [0, 2],
+  "onsets": {
+    "low": [{ "seconds": 0.01, "strength": 0.9 }, { "seconds": 1.01, "strength": 0.8 }],
+    "mid": [{ "seconds": 0.51, "strength": 0.6 }],
+    "high": [{ "seconds": 0.26, "strength": 0.3 }, { "seconds": 0.76, "strength": 0.35 }]
+  },
+  "peaks": [{ "seconds": 0.02, "strength": 1 }, { "seconds": 1.02, "strength": 0.7 }]
+}

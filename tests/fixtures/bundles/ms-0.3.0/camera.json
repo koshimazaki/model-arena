@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "0.3.0",
+  "fps": 24,
+  "frames": 2,
+  "startFrame": 0,
+  "aspect": 1.7778,
+  "fovAxis": "vertical",
+  "units": "metres",
+  "axes": "Y up, right-handed",
+  "intensity": 0.5,
+  "modes": [{ "fromBeat": 0, "toBeat": 4, "modes": ["orbit", "pushIn"] }],
+  "accents": [{ "seconds": 0, "downbeat": true }],
+  "track": [
+    { "frame": 0, "position": [0, 1.5, 4], "target": [0, 1, 0], "fov": 40, "energy": 0.2 },
+    { "frame": 1, "position": [0.05, 1.5, 3.98], "target": [0, 1, 0], "fov": 40, "energy": 0.3 }
+  ],
+  "ltx": {
+    "settings": { "cameraMovement": "dolly_in" },
+    "approximate": true,
+    "scores": { "dolly": 0.4, "lateral": 0.1, "jib": 0 },
+    "note": "Approximate."
+  }
+}

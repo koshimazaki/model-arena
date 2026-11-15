@@ -5,7 +5,7 @@ summary: Product requirements for Model Arena, a drop-in web component that play
 
 # Model Arena: product requirements
 
-Status: planning, 7 November 2026. Owner: Koshi.
+Status: first slice built, 10 November 2026 (written 7 November). Owner: Koshi. Build state per package: [plan.md](plan.md).
 
 ## One line
 
@@ -29,7 +29,9 @@ Model comparisons are usually screen recordings stitched from separate tools. Re
 - **Your key stays in your browser.** It goes only to the provider, is held in memory or `sessionStorage`, and is never logged.
 - **No framework, no server.** A standard custom element; static hosting is enough.
 
-## Features, first milestone (preview 12 November)
+## Features, first milestone (preview Thu 12 November, final Sat 14 November)
+
+Built so far: F1, F2, F6, F7, F11 (as record-set tabs), F9 (as `--ma-*` properties) and the new F12 to F16. Not built: F4, F5, F8, F10. F3 changed: the built layouts are `arena` (2-5 models, layout per count), `guidance` (guide beside one output) and `three-up`.
 
 - **F1 Record schema:** a comparison with:
   - the guide (video, audio, first frame, keyframes, beats);
@@ -63,6 +65,14 @@ Model comparisons are usually screen recordings stitched from separate tools. Re
 - **F11 Galleries:** switch between records, such as "same image, five models" and "same mannequin guide, five ways in", and compare lanes side by side.
 - **F9 Themes:** CSS variables. A provider or brand look is one theme file; the core stays unbranded.
 
+The comparison is also developer education: what each model takes, how you prompt it, how you move its camera.
+
+- **F12 Model spec database** (`packages/core/src/specs/`, also `dist/model-specs.json`): one data-only spec per video model (Kling VIDEO 4.0 and 4.0 Flash, Seedance 2.5, MiniMax H3, LTX-2.5 Pro and Fast, FLUX 3 Video): inputs and their limits, combination rules, output, prompt addressing and rules, seed, camera, prices. Every field sourced; unknowns are `null` with "not stated". **Acceptance:** every spec validates against its JSON Schema and agrees with the saved Runware schema for that model.
+- **F13 Prompt composer** (`compose()`): one neutral shot description (subject, action, camera move from a neutral vocabulary, references with roles, optional audio and beats) in; per model, the prompt in its dialect with references addressed and numbered in its syntax, the camera move as a parameter (LTX) or in that model's own words, and warnings for what it cannot take. **Acceptance:** deterministic snapshots per model, including the character swap over a motion guide.
+- **F14 `<model-specs>` element:** the spec database as a matrix, a card per model with links to its API and prompting guides, and a live composer with the per-model prompts and params side by side and copy buttons. **Acceptance:** renders at 360 px without page overflow; the composer recomposes on every keystroke.
+- **F15 The one intent in the record:** `record.shot` holds the neutral description; `lane.composed` marks a prompt that came from it; `run-lane --shot` composes a lane. **Acceptance:** schema version stays 1; old records still validate.
+- **F16 Character still:** an image model (FLUX.2 [klein] 9B, FLUX 3 Image or Image Klein, GPT-Image-2.6 Flare or Sunburst, MiniMax H3 Image or Highspeed, Seedream 5.5, or Kling IMAGE 3.0, grouped by family for hosts through `imageFamilies()` and run through `generateImage()`) makes the character still, optionally pose-matched to the guide's first frame; the lane sends guide plus still so the video model swaps the placeholder figure for the character (`npm run still`, `run-lane --character`). **Acceptance:** dry runs validate against the image schemas; the still is never sent as a frame image beside references.
+
 ## Later
 
 - Runware Serverless lane for open-weights workflows (LTX Layout-to-Render).
@@ -84,23 +94,23 @@ Model comparisons are usually screen recordings stitched from separate tools. Re
 
 ## Known constraints
 
-- **Per-model inputs on Runware** (schemas read 7 Nov):
+- **Per-model inputs on Runware** (schemas re-read 10 Nov; the full picture is `<model-specs>` and [model-specs.md](model-specs.md)):
 
-  | Model | Inputs |
-  | --- | --- |
-  | Kling 4.0 | `referenceVideos`, up to 5 |
-  | Seedance 2.5 | `referenceVideos` up to 10, plus `referenceAudios` |
-  | MiniMax H3 | `referenceVideos` up to 3, plus `referenceAudios` |
-  | LTX-2.5 | `inputs.audio` and `frameImages`; no reference video |
-  | FLUX 3 Video | `frameImages` with positions; its `video` input is extension only |
+  | Model | Guide reaches it as | Notes |
+  | --- | --- | --- |
+  | Kling 4.0 | `referenceVideos` (≤5, 3-30 s, 700-4553 px, 24-60 fps) | A start frame may sit beside it; the character as `referenceImages` |
+  | Kling 4.0 Flash | as 4.0, 3-20 s | 720p only, no `resolution` field |
+  | Seedance 2.5 | `referenceVideos` (≤10, 2-30 s) plus `referenceAudios` | No `frameImages` beside any reference |
+  | MiniMax H3 | `referenceVideos` (≤3, 2-15 s, 15 s total) plus `referenceAudios` | No `frameImages` beside any reference; input video billed at $0.13/s |
+  | LTX-2.5 Pro / Fast | no reference video: `inputs.audio` plus one `referenceImages`, or `frameImages` | Camera parameter `settings.cameraMovement`, forbidden beside audio |
+  | FLUX 3 Video | `frameImages` (≤10, by frame index or first/last) | Its `video` input extends a clip; it is not a motion reference |
 
-  Re-read each schema before writing a field.
-- **On Magnific:** H3 and Seedance 2.5 refuse a start frame together with reference videos. Check the same on Runware.
+- **Local files are uploaded first** (`mediaStorage`); video and audio inputs take a UUID or URL only.
 - **Generation calls cost money.** The element plays published records without a key; running new lanes needs the user's key and a cost confirmation.
 
 ## Open questions
 
-1. Is the record schema versioned from the start (`schemaVersion: 1`)?
+1. Resolved: yes, `schemaVersion: 1`; `shot` and `composed` were added as optional fields without a version bump.
 2. Where are published records and media hosted by default? Static files next to the page, or object storage?
 3. Should the first milestone ship as an npm package, or as a plain ES module file?
 
