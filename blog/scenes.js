@@ -32,7 +32,7 @@ const CLIPS = [
   { scene: "guide2", role: "main", id: "ea43cecf", model: "runware-kling-4", label: "Anime skater · Kling VIDEO 4.0", w: 1280, h: 720, fps: 24, dur: 11.04, audio: true },
   { scene: "guide2", role: "main", id: "467386d7", model: "runware-seedance-2-5", label: "Anime skater · Seedance 2.5", w: 1280, h: 720, fps: 24, dur: 11.07, audio: true },
   { scene: "guide2", role: "main", id: "316c556f", model: "runware-kling-4", label: "Runner · Kling VIDEO 4.0", w: 1280, h: 720, fps: 24, dur: 12.04, audio: true },
-  { scene: "guide2", role: "main", id: "b2415db3", model: "runware-kling-4", label: "Forklift · Kling VIDEO 4.0", w: 1280, h: 720, fps: 24, dur: 12.04, audio: true },
+  { scene: "guide2", role: "main", id: "cba0b6ba", model: "runware-seedance-2-5", label: "Forklift · Seedance 2.5", w: 1280, h: 720, fps: 24, dur: 12.06, audio: true },
 ];
 
 const MODELS = {
