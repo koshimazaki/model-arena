@@ -214,8 +214,15 @@
   .tool small { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted-foreground); }
   .tool b { font-size: 22px; line-height: 1.2; }
   .tool p { margin: 0; font-size: 14px; color: var(--muted-foreground); }
-  .tool .links { margin-top: auto; padding-top: 10px; }
-  @media (max-width: 760px) { .tools { grid-template-columns: 1fr; } }
+  .tool.lead b, .tool.lead b a { color: var(--primary); text-decoration: none; }
+  .tool.lead b a:hover { text-decoration: underline; }
+  .tool dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 14px; margin: auto 0 0; padding-top: 10px; font-size: 14px; }
+  .tool dt { color: var(--muted-foreground); }
+  .tool dd { margin: 0; overflow-wrap: anywhere; }
+  .tool dd a { color: var(--primary); font-weight: 500; }
+  .col .tools { grid-template-columns: 1fr 1fr; }
+  .col .tool dl { font-size: 13px; gap: 6px 10px; }
+  @media (max-width: 760px) { .tools, .col .tools { grid-template-columns: 1fr; } }
   .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 24px 0; }
 </style>
 </head>
@@ -263,15 +270,20 @@
   <div class="tools">
     <div class="tool lead">
       <small>Open source · runs with your own Runware key</small>
-      <b>Draw Control</b>
+      <b><a href="https://draw-control.pages.dev/">Draw Control</a></b>
       <p>Draw the subject's path and the camera's path, drop in a track, and get a guide clip the video model follows. It opens with two examples to play with, and it draws, plays and exports the guide before you add a key.</p>
-      <div class="links"><a class="btn" href="https://draw-control.pages.dev/">Try it live</a><a class="btn ghost" href="https://github.com/koshimazaki/draw-control">GitHub</a></div>
+      <dl>
+        <dt>Live site</dt><dd><a href="https://draw-control.pages.dev/">draw-control.pages.dev</a></dd>
+        <dt>GitHub</dt><dd><a href="https://github.com/koshimazaki/draw-control">github.com/koshimazaki/draw-control</a></dd>
+      </dl>
     </div>
     <div class="tool">
       <small>Open source</small>
       <b>Model Arena</b>
       <p>Runs one brief across the models and plays the results on one clock.</p>
-      <div class="links"><a class="btn ghost" href="https://github.com/koshimazaki/model-arena">GitHub</a></div>
+      <dl>
+        <dt>GitHub</dt><dd><a href="https://github.com/koshimazaki/model-arena">github.com/koshimazaki/model-arena</a></dd>
+      </dl>
     </div>
   </div>
 </div>
@@ -471,6 +483,27 @@
   <div class="row"><div><b>Seedance 2.5</b><p>Up to 10 reference videos and 10 audio tracks; sound can be switched off. $0.2304 per second at 720p.</p></div><a class="btn" href="https://runware.ai/docs/models/bytedance-seedance-2-5">View model</a></div>
   <div class="row"><div><b>MiniMax H3</b><p>Up to 3 reference videos, billed per second. $0.08 per second at 768p.</p></div><a class="btn" href="https://runware.ai/docs/models/minimax-h3">View model</a></div>
 </div>
+
+<h3 id="tools">The tools behind this post</h3>
+<div class="tools">
+  <div class="tool lead">
+    <small>Open source · runs with your own Runware key</small>
+    <b><a href="https://draw-control.pages.dev/">Draw Control</a></b>
+    <p>Draw the subject's path and the camera's path, drop in a track, and get a guide clip the video model follows. It opens with two examples to play with, and it draws, plays and exports the guide before you add a key.</p>
+    <dl>
+      <dt>Live site</dt><dd><a href="https://draw-control.pages.dev/">draw-control.pages.dev</a></dd>
+      <dt>GitHub</dt><dd><a href="https://github.com/koshimazaki/draw-control">github.com/koshimazaki/draw-control</a></dd>
+    </dl>
+</div>
+  <div class="tool">
+    <small>Open source</small>
+    <b>Model Arena</b>
+    <p>Runs one brief across the models and plays the results on one clock.</p>
+    <dl>
+      <dt>GitHub</dt><dd><a href="https://github.com/koshimazaki/model-arena">github.com/koshimazaki/model-arena</a></dd>
+    </dl>
+</div>
+  </div>
 
 <div class="author"><span class="avatar" aria-hidden="true"></span>
   <div><small>Written by</small><b>Radek Rudnicki</b><small class="role">Creative technologist</small></div></div>
