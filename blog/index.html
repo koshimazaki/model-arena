@@ -151,6 +151,9 @@
   figure.media > figcaption { margin-top: 10px; font-size: 12px; line-height: 1.45; text-align: center; color: var(--muted-foreground); }
   figure.ref { margin: 28px 0; }
   figure.ref img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--border); }
+  .refs { display: grid; gap: 12px; grid-template-columns: repeat(3, 1fr); margin: 28px 0; align-items: start; }
+  .refs figure.ref { margin: 0; }
+  @media (max-width: 640px) { .refs { grid-template-columns: 1fr; } }
   .verdict { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin: 24px 0; }
   .verdict.two { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
   .card .lab { display: block; margin-top: 12px; font: 500 11px var(--font-mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted-foreground); }
@@ -206,7 +209,7 @@
     <li><a href="#sheet">Brief 2: a character sheet as storyboard</a></li>
     <li><a href="#runner">Brief 3: a runner in New York, with FLUX 3</a></li>
     <li><a href="#verdict">Which model for which job</a></li>
-    <li><a href="#next">What comes next</a></li>
+    <li><a href="#guide">Drawing the move, with Draw Control</a></li>
   </ol>
 </nav>
 
@@ -356,9 +359,38 @@
   <div class="row"><div><b>MiniMax H3</b><p>Up to 3 reference videos, billed per second. $0.08 per second at 768p.</p></div><a class="btn" href="#">View model</a></div>
 </div>
 
-<h2 id="next">What comes next</h2>
-<div class="draft">The new part: audio-reactive motion transfer. Motion Studio, the open tool: a mannequin moves to the track's beat grid (moves time-stretched to the beats, energy from the audio), and exports a guide bundle: the guide clip at 1280×720, the audio, frame 0 and the beat times. A character still is made with FLUX.2 [klein] 9B, pose-matched to frame 0. Guide plus still go to the models that take a reference video; the character dances to your track.</div>
-<div class="draft">Camera moves through the same guide. The guide already carries motion and beat. The next step puts the camera in it too: a camera path animated in Motion Studio, so the move is set once and every model that takes a guide video follows it. For LTX, the same path maps to <code>settings.cameraMovement</code>.</div>
+<h2 id="guide">Drawing the move, with Draw Control</h2>
+<p>The three briefs above steer the camera with words. This one steers it with a drawing. In <a href="https://draw-control.pages.dev/">Draw Control</a> you draw the subject's path and the camera's path on a map, block out the scene with simple grey shapes, and drop in a track. The page renders a guide clip, a stand-in figure with the camera move and the blockout timed to the beat, and the video model follows it for motion and framing while the prompt and the reference images decide the look.</p>
+<figure class="media ref">
+  <img src="media/ref-drawing.jpg" width="1600" height="1000" loading="lazy" alt="Draw Control: a map with the subject's path in orange and the camera's path in blue, a 3D preview of the guide with a stand-in flying car among grey blocks, and the track with its camera lane below">
+  <figcaption>The drawing: the subject's path in orange and the camera's path in blue on the map, the guide preview beside it, and the camera lane under the track.</figcaption>
+</figure>
+<p>The subject is a flying car on purpose. The stand-in in the guide is a plane, so a car tests whether a model follows the drawn move with a different shape. The references were built in four steps, with a mix of image models:</p>
+<ol>
+  <li>An environment: a city at night.</li>
+  <li>The car, as a sheet showing every angle, made with GPT Image. It went in as the character reference.</li>
+  <li>The car placed in the environment.</li>
+  <li>That picture re-framed to the camera view of the guide's first frame, to get the perspective. It went in as the first frame, with the environment as the second reference.</li>
+</ol>
+<div class="refs">
+  <figure class="media ref"><img src="media/ref-city.jpg" width="1376" height="768" loading="lazy" alt="A dense city at night with flying cars, a motorway far below and a holographic koi above the rooftops"><figcaption>1. The environment.</figcaption></figure>
+  <figure class="media ref"><img src="media/ref-car-sheet.jpg" width="1376" height="768" loading="lazy" alt="A sheet for a hovering car, the M-88 Spectre Hover, in four views: front three-quarter, side, front and rear"><figcaption>2. The car, every angle.</figcaption></figure>
+  <figure class="media ref"><img src="media/ref-first-frame.jpg" width="1600" height="800" loading="lazy" alt="The hovering car seen from behind, flying down a neon-lit avenue between towers, in the camera view of the guide's first frame"><figcaption>3 and 4. The car in the city, in the guide's first view.</figcaption></figure>
+</div>
+<p>The same guide and the same references went to two models, Seedance 2.5 and Kling VIDEO 4.0. Each clip is 14 seconds at 1280×720 and 24 fps.</p>
+<div class="draft">Add the prompt text as sent, and the guide clip itself.</div>
+</main>
+
+<div class="wide">
+  <figure class="media">
+    <div class="stagecard"><div class="player" data-scene="guide" data-role="main"></div></div>
+    <figcaption>Seedance 2.5 and Kling VIDEO 4.0 following the same drawn guide, on one clock.</figcaption>
+  </figure>
+</div>
+
+<main class="col">
+<h3>Our take</h3>
+<p>Kling followed the guide exactly, end to end: the camera goes where the drawing says, when it says. Seedance, at least with this prompt, kept closer to the reference images than to the guide, and the smooth camera movement it came up with on its own was still interesting and good to watch. The first frame was made for an earlier version of the guide, and both clips still worked well after the guide changed.</p>
 <div class="draft">Where this comes from. One paragraph and two or three stills. Earlier audio-reactive work: the towers piece and the June flowers piece made in Genobi, and the camera-director workflows.</div>
 
 <div class="author"><span class="avatar" aria-hidden="true"></span>

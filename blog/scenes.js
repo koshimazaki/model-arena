@@ -18,6 +18,9 @@ const CLIPS = [
   {"scene": "runner", "role": "main", "id": "873c2f11", "model": "runware-h3-frame", "prompt": "nike advert, runner in the new york city. Moving accross pavement, fine greain, visible logo, characters  strength and speed", "refs": 1, "w": 1344, "h": 768, "fps": 24.0, "cost": 0.8, "secs": 204, "dur": 10.0, "audio": true, "mode": "first frame (one still)"},
   {"scene": "runner", "role": "main", "id": "23a921db", "model": "flux-3-i2v", "prompt": "shoe manufacturer advert, runner in the new york city. Moving accross pavement, fine greain, visible logo, characters  strength and speed", "refs": 1, "w": 1280, "h": 704, "fps": 24.0, "cost": 1.5, "secs": 100, "dur": 10.0, "audio": true, "mode": "image to video (start image)"},
   { "scene": "runner", "role": "main", "model": "runware-seedance-2-5", "blocked": "Rejected by ByteDance's content moderation. Runware answered every Seedance run of this brief with invalidProviderContent: \"The generated content was flagged and rejected by ByteDance's content moderation system.\" Nothing was charged.", "mode": "text to video and first frame, same start image" },
+  // Draw Control guide (Example 1): the same drawn guide and references to two models. No prompt, cost or time recorded yet.
+  { scene: "guide", role: "main", id: "febe9cb1", model: "runware-seedance-2-5", w: 1280, h: 720, fps: 24, dur: 14.04, audio: true },
+  { scene: "guide", role: "main", id: "224d7eae", model: "runware-kling-4", w: 1280, h: 720, fps: 24, dur: 14.04, audio: true },
 ];
 
 const MODELS = {
@@ -78,7 +81,7 @@ const MODELS = {
 
   const EXPAND = () => icon("m15 15 6 6M15 9l6-6M21 16v5h-5M21 8V3h-5M3 16v5h5M3 21l6-6M3 8V3h5M9 9 3 3");
   const CLOSE = () => icon("M6 6l12 12M18 6 6 18");
-  const SCENE_NAMES = { moto: "Brief 1 · motocross", sheet: "Brief 2 · character sheet", runner: "Brief 3 · runner" };
+  const SCENE_NAMES = { moto: "Brief 1 · motocross", sheet: "Brief 2 · character sheet", runner: "Brief 3 · runner", guide: "Draw Control · drawn guide" };
 
   // The page plays light web copies; Full view loads the originals as generated
   // (full/ under the clip base), only for the scene it opens. Clips come from the
@@ -86,7 +89,7 @@ const MODELS = {
   // page; posters always sit beside the page.
   function tile(c, base, onExpand, full) {
     const m = MODELS[c.model] || { name: c.model, air: "" };
-    const same = words(c.prompt).join(" ") === words(base).join(" ");
+    const same = !c.prompt || words(c.prompt).join(" ") === words(base).join(" ");
     const src = full ? `${CLIP_BASE}full/${c.id}.mp4` : `${CLIP_BASE}${c.id}.mp4`;
     const video = h("video", { muted: true, playsinline: true, preload: full ? "auto" : "metadata", poster: `media/${c.id}.jpg`, src });
     video.muted = true;
@@ -97,8 +100,8 @@ const MODELS = {
     return h("figure", { class: "clip" },
       h("div", { class: "frame" }, video, spk, ex),
       h("figcaption", {}, h("b", {}, c.label || m.name),
-        h("details", {}, h("summary", {}, "Prompt ", h("span", {}, same ? "· as written" : "· tuned, changes marked")),
-          h("p", { class: "prompt" }, same ? c.prompt : diff(base, c.prompt)))));
+        c.prompt ? h("details", {}, h("summary", {}, "Prompt ", h("span", {}, same ? "· as written" : "· tuned, changes marked")),
+          h("p", { class: "prompt" }, same ? c.prompt : diff(base, c.prompt))) : null));
   }
 
   // One synced grid: tiles on a shared clock, a thin transport bar, one speaker at a time.
@@ -112,6 +115,9 @@ const MODELS = {
     const vids = tiles.map((f) => f.querySelector("video")), lead = vids[0];
     const end = () => Math.min(...vids.map((v) => v.duration || 10));
     const seek = (x) => vids.forEach((v) => { v.currentTime = x; });
+    // The scrub bar and the clock take the clips' real length once it is known (10 s until then).
+    const fit = () => { range.max = String(end()); t.textContent = `${clock(lead.currentTime)} / ${clock(end())}`; };
+    vids.forEach((v) => (v.readyState >= 1 ? fit() : v.addEventListener("loadedmetadata", fit, { once: true })));
     pp.addEventListener("click", () => {
       if (!lead.paused) { vids.forEach((v) => v.pause()); return; }
       if (lead.currentTime >= end() - 0.05) seek(0); else seek(lead.currentTime);
@@ -197,8 +203,9 @@ const MODELS = {
     const strip = h("div", { class: "lb-strip" },
       h("button", { "aria-current": String(all), onclick: () => go("all") }, "All"),
       clips.map((c, i) => h("button", { "aria-current": String(i === which), onclick: () => go(i) }, c.label || name(c))));
-    const promptText = all ? "Click a clip to see it alone, with its prompt."
-      : (words(clips[which].prompt).join(" ") === words(base).join(" ") ? clips[which].prompt : diff(base, clips[which].prompt));
+    const one = all ? null : clips[which].prompt;
+    const promptText = all ? (clips.some((c) => c.prompt) ? "Click a clip to see it alone, with its prompt." : "Click a clip to see it alone.")
+      : !one ? "" : (words(one).join(" ") === words(base).join(" ") ? one : diff(base, one));
     lb.replaceChildren(h("div", { class: "lb-inner" },
       h("div", { class: "lb-bar" }, h("b", {}, title), h("div", { class: "lb-tools" }, size, close)),
       frame, strip, h("p", { class: "lb-prompt" }, promptText)));
