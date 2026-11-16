@@ -18,7 +18,9 @@ const CLIPS = [
   {"scene": "runner", "role": "main", "id": "873c2f11", "model": "runware-h3-frame", "prompt": "nike advert, runner in the new york city. Moving accross pavement, fine greain, visible logo, characters  strength and speed", "refs": 1, "w": 1344, "h": 768, "fps": 24.0, "cost": 0.8, "secs": 204, "dur": 10.0, "audio": true, "mode": "first frame (one still)"},
   {"scene": "runner", "role": "main", "id": "23a921db", "model": "flux-3-i2v", "prompt": "shoe manufacturer advert, runner in the new york city. Moving accross pavement, fine greain, visible logo, characters  strength and speed", "refs": 1, "w": 1280, "h": 704, "fps": 24.0, "cost": 1.5, "secs": 100, "dur": 10.0, "audio": true, "mode": "image to video (start image)"},
   { "scene": "runner", "role": "main", "model": "runware-seedance-2-5", "blocked": "Rejected by ByteDance's content moderation. Runware answered every Seedance run of this brief with invalidProviderContent: \"The generated content was flagged and rejected by ByteDance's content moderation system.\" Nothing was charged.", "mode": "text to video and first frame, same start image" },
-  // Draw Control guide (Example 1): the same drawn guide and references to two models. No prompt, cost or time recorded yet.
+  // Draw Control guide (Example 1): the guide clip itself (Settings > Download guide (.zip) > guide.mp4), then the
+  // two models that followed it with the same references. No prompt, cost or time recorded yet.
+  { scene: "guide", role: "main", id: "guide-ex1", model: "draw-control-guide", label: "The guide, from Draw Control", w: 1280, h: 720, fps: 24, dur: 14.04, audio: true },
   { scene: "guide", role: "main", id: "febe9cb1", model: "runware-seedance-2-5", w: 1280, h: 720, fps: 24, dur: 14.04, audio: true },
   { scene: "guide", role: "main", id: "224d7eae", model: "runware-kling-4", w: 1280, h: 720, fps: 24, dur: 14.04, audio: true },
 ];
@@ -186,7 +188,7 @@ const MODELS = {
     const frame = h("div", { class: `lb-frame${all ? "" : " one"}` });
     const size = h("button", { class: "lb-size", hidden: all }, "Actual size");
     const close = h("button", { class: "lb-close", "aria-label": "Close full view", onclick: () => lb.close() }, CLOSE());
-    const title = all ? `All ${clips.length} models · ${SCENE_NAMES[scene] || ""}` : clips[which].label || name(clips[which]);
+    const title = all ? `All ${clips.length} clips · ${SCENE_NAMES[scene] || ""}` : clips[which].label || name(clips[which]);
     const shown = all ? clips : [clips[which]];
     // In Full view the clips loop, play the originals, and carry the playhead on swap.
     let g = null;
