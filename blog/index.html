@@ -78,7 +78,7 @@
   .clips.n5 > :nth-child(n+3) { grid-column: span 2; }
   .clips.n1 { grid-template-columns: minmax(0, 1fr); }
   @media (max-width: 760px) { .clips, .clips.n2, .clips.n4, .clips.n5 { grid-template-columns: minmax(0, 1fr); } .clips.n5 > * { grid-column: auto !important; } }
-  @media (min-width: 1100px) { .lb-frame .clips.n4 { grid-template-columns: repeat(4, minmax(0, 1fr)); } .lb-frame .clips.n5 { grid-template-columns: repeat(5, minmax(0, 1fr)); } .lb-frame .clips.n5 > * { grid-column: auto; } }
+  @media (min-width: 1100px) { .lb-frame .clips.n4 { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
   .clip { margin: 0; min-width: 0; }
   .frame { position: relative; aspect-ratio: 16 / 9; background: #000; border-radius: 8px; overflow: hidden; }
   .frame video { width: 100%; height: 100%; object-fit: contain; display: block; }
@@ -119,6 +119,8 @@
   .fullview { position: absolute; top: 10px; right: 12px; z-index: 2; display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px;
     border: 1px solid var(--border); border-radius: 6px; background: rgb(0 0 0 / .45); color: var(--muted-foreground); cursor: pointer; font: 500 11px var(--font-mono); }
   .fullview:hover { color: var(--foreground); }
+  .views { position: absolute; top: 10px; right: 12px; z-index: 2; display: flex; gap: 6px; }
+  .views .fullview { position: static; }
   .player:has(.clips) { padding-top: 26px; }
   .expand { position: absolute; top: 8px; right: 8px; z-index: 3; width: 28px; height: 28px; border-radius: 6px; display: grid; place-items: center; cursor: pointer;
     border: 0; background: rgb(0 0 0 / .55); color: #ddd; opacity: 0; transition: opacity .15s; }
@@ -137,6 +139,8 @@
   .lb-size:hover { color: var(--foreground); }
   .lb-close { width: 32px; height: 32px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--muted-foreground); cursor: pointer; display: grid; place-items: center; }
   .lb-frame { width: min(1600px, 100%); }
+  /* Two rows (two tiles over three): both rows fit the window. Row heights are 9/32 and 9/48 of the width; captions, bars and padding take about 270px. */
+  .lb-frame.two-rows { width: min(1600px, 100%, calc((94vh - 270px) * 2.13)); }
   /* One model: big and centred, as if watching just that one. */
   .lb-frame.one { width: min(1500px, 100%); }
   .lb-frame.one .clip { display: flex; flex-direction: column; align-items: center; }

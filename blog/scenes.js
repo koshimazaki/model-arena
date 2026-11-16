@@ -21,8 +21,8 @@ const CLIPS = [
   // Draw Control (Example 1). The inputs first: the map played back (recorded from the page by stepping its scrub bar,
   // one screenshot per frame) and the guide clip itself (Settings > Download guide (.zip) > guide.mp4). Then the three
   // models that followed the guide with the same references. No cost or time recorded for these runs.
-  { scene: "guide", role: "main", id: "drawing-ex1", model: "draw-control-map", label: "The drawing, played back in Draw Control", w: 1280, h: 720, fps: 24, dur: 14.04, audio: true },
-  { scene: "guide", role: "main", id: "guide-ex1", model: "draw-control-guide", label: "The guide, from Draw Control", w: 1280, h: 720, fps: 24, dur: 14.04, audio: true },
+  { scene: "guide", role: "main", id: "drawing-ex1", input: true, model: "draw-control-map", label: "The drawing, played back in Draw Control", w: 1280, h: 720, fps: 24, dur: 14.04, audio: true },
+  { scene: "guide", role: "main", id: "guide-ex1", input: true, model: "draw-control-guide", label: "The guide, from Draw Control", w: 1280, h: 720, fps: 24, dur: 14.04, audio: true },
   { scene: "guide", role: "main", id: "febe9cb1", model: "runware-seedance-2-5", w: 1280, h: 720, fps: 24, dur: 14.04, audio: true },
   { scene: "guide", role: "main", id: "224d7eae", model: "runware-kling-4", w: 1280, h: 720, fps: 24, dur: 14.04, audio: true },
   { scene: "guide", role: "main", id: "ecc3166d", model: "runware-h3", w: 1344, h: 768, fps: 24, dur: 14.38, audio: true },
@@ -188,7 +188,9 @@ const MODELS = {
   function openLb(clips, base, scene, which, from) {
     pauseAll();
     const all = which === "all";
-    const frame = h("div", { class: `lb-frame${all ? "" : " one"}` });
+    const shownCount = all ? clips.length : 1;
+    // Five clips keep the page's two rows in Full view (guidance over videos), sized to fit the window.
+    const frame = h("div", { class: `lb-frame${all ? "" : " one"}${shownCount === 5 ? " two-rows" : ""}` });
     const size = h("button", { class: "lb-size", hidden: all }, "Actual size");
     const close = h("button", { class: "lb-close", "aria-label": "Close full view", onclick: () => lb.close() }, CLOSE());
     const title = all ? `All ${clips.length} clips · ${SCENE_NAMES[scene] || ""}` : clips[which].label || name(clips[which]);
@@ -227,10 +229,16 @@ const MODELS = {
     const base = (CLIPS.find((c) => c.scene === el.dataset.scene && c.role === "main" && !c.blocked) || clips[0]).prompt;
     const scene = el.dataset.scene;
     const g = grid(clips, base, (i) => openLb(clips, base, scene, i, g.state()));
-    const full = h("button", { class: "fullview", onclick: () => openLb(clips, base, scene, "all", g.state()) }, EXPAND(), "Full view");
+    // Where a scene shows its inputs beside the models (input: true), a second button opens the models alone.
+    const outputs = clips.filter((c) => !c.input);
+    const split = outputs.length > 1 && outputs.length < clips.length;
+    const full = h("button", { class: "fullview", title: split ? "The guidance and the videos, bigger" : "All clips, bigger", onclick: () => openLb(clips, base, scene, "all", g.state()) }, EXPAND(), "Full view");
+    const only = split
+      ? h("button", { class: "fullview", title: "Only the models' videos, side by side", onclick: () => openLb(outputs, base, scene, "all", g.state()) }, EXPAND(), "Videos only")
+      : null;
     const cards = blocked.map((c) =>
       h("div", { class: "blocked" }, h("b", {}, name(c)), h("span", {}, " · no clip"), h("p", {}, c.blocked)));
-    el.replaceChildren(full, ...g.nodes, ...cards);
+    el.replaceChildren(h("div", { class: "views" }, only, full), ...g.nodes, ...cards);
   }
 
   function facts(el) {
