@@ -161,6 +161,7 @@
   .lb-strip button[aria-current="true"] { color: var(--primary-foreground); background: var(--primary); }
   .lb-prompt { width: min(1200px, 100%); margin: 0; font-size: 13px; line-height: 1.55; color: var(--muted-foreground); overflow-wrap: anywhere; }
   figure.media { margin: 0; }
+  video.teaser { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; border-radius: 12px; background: #000; }
   figure.media > figcaption { margin-top: 10px; font-size: 12px; line-height: 1.45; text-align: center; color: var(--muted-foreground); }
   figure.ref { margin: 28px 0; }
   figure.ref img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--border); cursor: zoom-in; }
@@ -232,10 +233,25 @@
 </nav>
 
 <h2 id="glance">At a glance</h2>
-<p>Three briefs, ten-second HD clips, generated from Genobi Studio: Seedance 2.5, Kling VIDEO 4.0 and MiniMax H3 on every brief, and FLUX 3 Video on the third. Each model got the same brief, written to its own prompting guide. The prompts are shown under every clip, with changes marked. The models ran side by side, not one after another. Each finished in three to five minutes. A 10 s HD clip cost from $0.80 (MiniMax H3) to $2.32 (Seedance 2.5).</p>
-<p><strong>The short version:</strong> Seedance 2.5 for fast sports realism, FLUX 3 Video for natural realism and a film look, MiniMax H3 for value, and Kling VIDEO 4.0 in between: close to Seedance on hard motion for less, and the best at following the sound brief. Every clip shown is the best of a few generations per model, and each brief ends with what the models did well and where they fell short.</p>
+<p>How much control do you have over a video model, and how does each model respond to it? This post works up from words to a drawing, with Seedance 2.5, Kling VIDEO 4.0 and MiniMax H3 on every step and FLUX 3 Video on one.</p>
+<ul>
+  <li><strong>Text to video, under hard conditions.</strong> A helmet-cam motocross backflip, described in words alone.</li>
+  <li><strong>Images as input.</strong> A character sheet given as a reference and read as a storyboard, then a runner in New York from a start image (image to video).</li>
+  <li><strong>Video to video, with a drawn guide.</strong> A new approach to motion control: in Draw Control you draw the subject's path and the camera's path, it renders a guide clip timed to the beat, and the model follows it for motion and framing.</li>
+</ul>
+<p>Each brief was written to each model's own prompting guide, and the prompts are shown under every clip, with changes marked. The three briefs are ten-second HD clips generated from Genobi Studio; the guided clips run 11 to 14 seconds. The models ran in parallel and each finished in three to five minutes. A 10 s HD clip cost from $0.80 (MiniMax H3) to $2.32 (Seedance 2.5).</p>
+<p><strong>The short version:</strong> Seedance 2.5 for fast sports realism, FLUX 3 Video for natural realism and a film look, MiniMax H3 for value, and Kling VIDEO 4.0 in between: close to Seedance on hard motion for less, and the best at following the sound brief. On the drawn guide, Kling followed the path most exactly and Seedance gave the most cinematic take. Every clip shown is the best of a few generations per model, and each brief ends with what the models did well and where they fell short.</p>
 <p>The tools behind this post are open source and run with your own Runware key: <a href="https://github.com/koshimazaki/draw-control">Draw Control</a>, the motion studio that makes the guide clips (<a href="https://draw-control.pages.dev/">try it live</a>), and <a href="https://github.com/koshimazaki/model-arena">Model Arena</a>, which runs one brief across the models and plays the results on one clock.</p>
+</main>
 
+<div class="wide" style="max-width:1040px">
+  <figure class="media">
+    <video class="teaser" controls playsinline preload="metadata" width="1920" height="1080" poster="media/teaser-draw-control.jpg" data-clip="teaser-draw-control" aria-label="Draw Control teaser, one minute, with music"></video>
+    <figcaption>Draw Control in one minute: draw the paths, render the guide, and compare the models on it.</figcaption>
+  </figure>
+</div>
+
+<main class="col">
 <h2 id="differences">How the models differ</h2>
 <p>Before comparing outputs, compare contracts: what each model accepts decides what you can ask of it. The cells come from Runware's model schemas (read 10 Nov; input counts and clip lengths checked again 16 Nov). The frame rate and sound rows were checked on 14 Nov against the makers' own pages. The output frame rate is measured with ffprobe on the original files: every clip in this post came back at a constant 24 fps (241 frames for Seedance, Kling and FLUX, 243 for H3). We never asked for a frame rate, so that is what each model delivers at these settings.</p>
 </main>

@@ -285,6 +285,8 @@ const MODELS = {
     img.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openImage(img); } });
   });
 
+  // A stand-alone clip in the page (the teaser) takes its file from the same clip base.
+  document.querySelectorAll("video[data-clip]").forEach((v) => { v.src = `${CLIP_BASE}${v.dataset.clip}.mp4`; });
   document.querySelectorAll(".player").forEach(player);
   document.querySelectorAll(".facts").forEach(facts);
 })();
