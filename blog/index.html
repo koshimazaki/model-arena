@@ -71,9 +71,10 @@
   .stagecard { background: #1f1f1f; border-radius: 12px; padding: 20px; }
   @media (max-width: 480px) { .stagecard { padding: 12px; } }
   .clips { display: grid; gap: 12px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .clips.n2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .clips.n2, .clips.n4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .clips.n1 { grid-template-columns: minmax(0, 1fr); }
-  @media (max-width: 760px) { .clips, .clips.n2 { grid-template-columns: minmax(0, 1fr); } }
+  @media (max-width: 760px) { .clips, .clips.n2, .clips.n4 { grid-template-columns: minmax(0, 1fr); } }
+  @media (min-width: 1100px) { .lb-frame .clips.n4 { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
   .clip { margin: 0; min-width: 0; }
   .frame { position: relative; aspect-ratio: 16 / 9; background: #000; border-radius: 8px; overflow: hidden; }
   .frame video { width: 100%; height: 100%; object-fit: contain; display: block; }
@@ -377,21 +378,22 @@
   <figure class="media ref"><img src="media/ref-car-sheet.jpg" width="1376" height="768" loading="lazy" alt="A sheet for a hovering car, the M-88 Spectre Hover, in four views: front three-quarter, side, front and rear"><figcaption>2. The car, every angle.</figcaption></figure>
   <figure class="media ref"><img src="media/ref-first-frame.jpg" width="1600" height="800" loading="lazy" alt="The hovering car seen from behind, flying down a neon-lit avenue between towers, in the camera view of the guide's first frame"><figcaption>3 and 4. The car in the city, in the guide's first view.</figcaption></figure>
 </div>
-<p>The same guide and the same references went to two models, Seedance 2.5 and Kling VIDEO 4.0. The guide plays first in the row below: Draw Control exports it as an MP4, together with its audio, its first frame and its beat grid. All three clips are 14 seconds at 1280×720 and 24 fps.</p>
-<p>The shot description is the same for both models: a subject, a setting and an action. Draw Control adds one line telling the model to take only the motion, the camera path and the pacing from the guide.</p>
+<p>The same guide and the same references went to three models: Seedance 2.5, Kling VIDEO 4.0 and MiniMax H3. The guide plays first in the row below: Draw Control exports it as an MP4, together with its audio, its first frame and its beat grid. Every clip runs about 14 seconds at 24 fps, at 1280×720 for the guide, Seedance and Kling, and 1344×768 for H3.</p>
+<p>The shot description is the same for all three models: a subject, a setting and an action. Draw Control adds one line telling the model to take only the motion, the camera path and the pacing from the guide.</p>
 <blockquote class="brief"><p>“an unbranded flying car, sleek and low (the orange figure; white marks its nose), a futuristic city at night, neon signs on tall towers, light rain on empty streets, it flies down the avenue, turns left into a narrow gap between the towers and comes down to land between the buildings”</p></blockquote>
 </main>
 
 <div class="wide">
   <figure class="media">
     <div class="stagecard"><div class="player" data-scene="guide" data-role="main"></div></div>
-    <figcaption>The guide, then Seedance 2.5 and Kling VIDEO 4.0 following it, all on one clock.</figcaption>
+    <figcaption>The guide, then Seedance 2.5, Kling VIDEO 4.0 and MiniMax H3 following it, all on one clock.</figcaption>
   </figure>
 </div>
 
 <main class="col">
 <h3>Our take</h3>
-<p>Kling followed the guide exactly, end to end: the camera goes where the drawing says, when it says. Seedance, at least with this prompt, kept closer to the reference images than to the guide, and the smooth camera movement it came up with on its own was still interesting and good to watch. The first frame was made for an earlier version of the guide, and both clips still worked well after the guide changed.</p>
+<p>Kling followed the guide exactly, end to end: the camera goes where the drawing says, when it says. Seedance, at least with this prompt, kept closer to the reference images than to the guide, and the smooth camera movement it came up with on its own was still interesting and good to watch. The first frame was made for an earlier version of the guide, and the clips still worked well after the guide changed.</p>
+<div class="draft">Add the take on MiniMax H3. From the frames: it goes through the same three views as the guide (three-quarter, behind, then top) and reaches the top view earlier than the guide does.</div>
 <div class="draft">Where this comes from. One paragraph and two or three stills. Earlier audio-reactive work: the towers piece and the June flowers piece made in Genobi, and the camera-director workflows.</div>
 
 <div class="author"><span class="avatar" aria-hidden="true"></span>
