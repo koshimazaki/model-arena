@@ -49,7 +49,7 @@
     border: 1px solid var(--yellow-deep); border-radius: 5px; padding: 1px 6px; }
   .table-wrap, .facts { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
   table { border-collapse: collapse; width: 100%; font-size: 14px; }
-  .table-wrap table { min-width: 620px; }
+  .table-wrap table { min-width: 860px; }
   .facts table { min-width: 480px; }
   th, td { text-align: left; padding: 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
   tbody tr:last-child > * { border-bottom: 0; }
@@ -217,7 +217,7 @@
 <nav class="toc" aria-label="On this page"><strong>On this page</strong>
   <ol>
     <li><a href="#glance">At a glance</a></li>
-    <li><a href="#differences">How the three models differ</a></li>
+    <li><a href="#differences">How the models differ</a></li>
     <li><a href="#approach">How we approached it</a></li>
     <li><a href="#moto">Brief 1: motocross, camera on the rider's head</a></li>
     <li><a href="#sheet">Brief 2: a character sheet as storyboard</a></li>
@@ -232,30 +232,33 @@
 <p><strong>The short version:</strong> Seedance 2.5 for fast sports realism, FLUX 3 Video for natural realism and a film look, MiniMax H3 for value, and Kling VIDEO 4.0 in between: close to Seedance on hard motion for less, and the best at following the sound brief. Every clip shown is the best of a few generations per model, and each brief ends with what the models did well and where they fell short.</p>
 <p>The tools behind this post are open source and run with your own Runware key: <a href="https://github.com/koshimazaki/draw-control">Draw Control</a>, the motion studio that makes the guide clips (<a href="https://draw-control.pages.dev/">try it live</a>), and <a href="https://github.com/koshimazaki/model-arena">Model Arena</a>, which runs one brief across the models and plays the results on one clock.</p>
 
-<h2 id="differences">How the three models differ</h2>
-<p>Before comparing outputs, compare contracts: what each model accepts decides what you can ask of it. The cells come from Runware's model schemas (read 10 Nov). The frame rate and sound rows were checked on 14 Nov against the makers' own pages. The output frame rate is measured with ffprobe on the original files: every clip in this post came back at a constant 24 fps (241 frames for Seedance, Kling and FLUX, 243 for H3). We never asked for a frame rate, so that is what each model delivers at these settings.</p>
+<h2 id="differences">How the models differ</h2>
+<p>Before comparing outputs, compare contracts: what each model accepts decides what you can ask of it. The cells come from Runware's model schemas (read 10 Nov; input counts and clip lengths checked again 16 Nov). The frame rate and sound rows were checked on 14 Nov against the makers' own pages. The output frame rate is measured with ffprobe on the original files: every clip in this post came back at a constant 24 fps (241 frames for Seedance, Kling and FLUX, 243 for H3). We never asked for a frame rate, so that is what each model delivers at these settings.</p>
 </main>
 
-<div class="wide" style="max-width:1040px">
+<div class="wide" style="max-width:1180px">
   <div class="table-wrap">
   <table>
-    <thead><tr><th></th><th>Kling VIDEO 4.0</th><th>Seedance 2.5</th><th>MiniMax H3</th></tr></thead>
+    <thead><tr><th></th><th>Kling VIDEO 4.0</th><th>Seedance 2.5</th><th>MiniMax H3</th><th>FLUX 3 Video</th></tr></thead>
     <tbody>
-      <tr><th>Reference video</th><td>1–5, 3–30 s each, 30 s total, min 700 px a side</td><td>up to 10</td><td>up to 3, billed per second</td></tr>
-      <tr><th>Reference audio</th><td>none (element voices only)</td><td>up to 10, 2–30 s</td><td>up to 3; video and audio share 15 s</td></tr>
-      <tr><th>Reference images</th><td>up to 10, 300 px a side or more</td><td>up to 10 in Genobi (schema: 30), 300 px or more</td><td>up to 9, 256 px or more</td></tr>
-      <tr><th>Start frame with references</th><td>yes</td><td>no, use a reference image</td><td>no, use a reference image</td></tr>
-      <tr><th>Addressing in the prompt</th><td><code>&lt;&lt;&lt;image_1&gt;&gt;&gt;</code></td><td><code>@Image1</code> <code>@Video1</code> <code>@Audio1</code></td><td>"Image 1", "Video 1"</td></tr>
-      <tr><th>Camera</th><td>prompt, or the camera path of a reference video</td><td>prompt only</td><td>prompt only</td></tr>
-      <tr><th>Durations</th><td>3–30 s</td><td>4–30 s, or auto</td><td>4–15 s</td></tr>
-      <tr><th>Output frame rate</th><td>24 fps (measured)</td><td>24 fps (measured)</td><td>24 fps (model card, measured)</td></tr>
-      <tr><th>HD output in this test</th><td>1280×720</td><td>1280×720</td><td>1344×768 (H3's 768p tier)</td></tr>
-      <tr><th>Makes its own sound</th><td>always, no off switch</td><td>yes, <code>settings.audio</code> turns it off</td><td>always, no off switch</td></tr>
-      <tr><th>Published rate, HD</th><td>$0.157 per second</td><td>$0.2304 per second</td><td>$0.08 per second</td></tr>
+      <tr><th>Takes</th><td>text, images, video</td><td>text, images, video, audio</td><td>text, images, video, audio</td><td>text, images, video</td></tr>
+      <tr><th>Inputs per request</th><td>up to 15 files</td><td>30 images, 10 videos, 10 audio</td><td>up to 12 files, 64 MB</td><td>10 frame images, or 1 video</td></tr>
+      <tr><th>Reference video</th><td>1–5, 3–30 s each, 30 s total, min 700 px a side</td><td>up to 10</td><td>up to 3, billed per second</td><td>none; one clip of up to 15 s, to continue it</td></tr>
+      <tr><th>Reference audio</th><td>none (element voices only)</td><td>up to 10, 2–30 s</td><td>up to 3; video and audio share 15 s</td><td>none</td></tr>
+      <tr><th>Reference images</th><td>up to 10, 300 px a side or more</td><td>up to 10 in Genobi (schema: 30), 300 px or more</td><td>up to 9, 256 px or more</td><td>none; frame images only</td></tr>
+      <tr><th>Start frame with references</th><td>yes</td><td>no, use a reference image</td><td>no, use a reference image</td><td>frames only: first, last and keyframes</td></tr>
+      <tr><th>Addressing in the prompt</th><td><code>&lt;&lt;&lt;image_1&gt;&gt;&gt;</code></td><td><code>@Image1</code> <code>@Video1</code> <code>@Audio1</code></td><td>"Image 1", "Video 1"</td><td>plain words: "as the first frame"</td></tr>
+      <tr><th>Camera</th><td>prompt, or the camera path of a reference video</td><td>prompt only</td><td>prompt only</td><td>prompt only</td></tr>
+      <tr><th>Clip length</th><td>3–30 s</td><td>4–30 s, or auto</td><td>4–15 s</td><td>5–20 s, or auto</td></tr>
+      <tr><th>Output frame rate</th><td>24 fps (measured)</td><td>24 fps (measured)</td><td>24 fps (model card, measured)</td><td>24 fps (guide, measured)</td></tr>
+      <tr><th>HD output in this test</th><td>1280×720</td><td>1280×720</td><td>1344×768 (H3's 768p tier)</td><td>1280×704</td></tr>
+      <tr><th>Makes its own sound</th><td>always, no off switch</td><td>yes, <code>settings.audio</code> turns it off</td><td>always, no off switch</td><td>yes, <code>settings.audio</code> turns it off</td></tr>
+      <tr><th>Published rate, HD</th><td>$0.157 per second</td><td>$0.2304 per second</td><td>$0.08 per second</td><td>$0.17 per second</td></tr>
+      <tr><th>Prompting guide</th><td><a href="https://runware.ai/docs/models/klingai-video-4-0/guides/prompting">Prompting</a></td><td><a href="https://runware.ai/docs/models/bytedance-seedance-2-5/guides/prompting">Prompting</a></td><td><a href="https://runware.ai/docs/models/minimax-h3/guides/generating-video">Generating video</a></td><td><a href="https://runware.ai/docs/models/bfl-flux-3-video/guides/prompting">Prompting</a></td></tr>
     </tbody>
   </table>
   </div>
-  <p class="note">LTX-2.5 and FLUX 3 Video sit in the same Arena and are not part of this round.</p>
+  <p class="note">FLUX 3 Video ran on the third brief only. LTX-2.5 sits in the same Arena and is not part of this round.</p>
 </div>
 
 <main class="col">
@@ -405,8 +408,8 @@
 </div>
 <div class="models">
   <div class="row"><div><b>Kling VIDEO 4.0</b><p>Reference videos carry the camera path. $0.157 per second at 720p.</p></div><a class="btn" href="https://runware.ai/docs/models/klingai-video-4-0">View model</a></div>
-  <div class="row"><div><b>Seedance 2.5</b><p>Up to 10 reference videos and 10 audio tracks; sound can be switched off. $0.2304 per second at 720p.</p></div><a class="btn" href="#">View model</a></div>
-  <div class="row"><div><b>MiniMax H3</b><p>Up to 3 reference videos, billed per second. $0.08 per second at 768p.</p></div><a class="btn" href="#">View model</a></div>
+  <div class="row"><div><b>Seedance 2.5</b><p>Up to 10 reference videos and 10 audio tracks; sound can be switched off. $0.2304 per second at 720p.</p></div><a class="btn" href="https://runware.ai/docs/models/bytedance-seedance-2-5">View model</a></div>
+  <div class="row"><div><b>MiniMax H3</b><p>Up to 3 reference videos, billed per second. $0.08 per second at 768p.</p></div><a class="btn" href="https://runware.ai/docs/models/minimax-h3">View model</a></div>
 </div>
 
 <div class="author"><span class="avatar" aria-hidden="true"></span>
