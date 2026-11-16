@@ -26,6 +26,13 @@ const CLIPS = [
   { scene: "guide", role: "main", id: "febe9cb1", model: "runware-seedance-2-5", w: 1280, h: 720, fps: 24, dur: 14.04, audio: true },
   { scene: "guide", role: "main", id: "224d7eae", model: "runware-kling-4", w: 1280, h: 720, fps: 24, dur: 14.04, audio: true },
   { scene: "guide", role: "main", id: "ecc3166d", model: "runware-h3", w: 1344, h: 768, fps: 24, dur: 14.38, audio: true },
+  // Draw Control, Example 2: one guide, three subjects.
+  { scene: "guide2", role: "main", id: "drawing-ex2", input: true, model: "draw-control-map", label: "The drawing, played back in Draw Control", w: 1280, h: 720, fps: 24, dur: 12.04, audio: true },
+  { scene: "guide2", role: "main", id: "guide-ex2", input: true, model: "draw-control-guide", label: "The guide, from Draw Control", w: 1280, h: 720, fps: 24, dur: 12.04, audio: true },
+  { scene: "guide2", role: "main", id: "ea43cecf", model: "runware-kling-4", label: "Anime skater · Kling VIDEO 4.0", w: 1280, h: 720, fps: 24, dur: 11.04, audio: true },
+  { scene: "guide2", role: "main", id: "467386d7", model: "runware-seedance-2-5", label: "Anime skater · Seedance 2.5", w: 1280, h: 720, fps: 24, dur: 11.07, audio: true },
+  { scene: "guide2", role: "main", id: "316c556f", model: "runware-kling-4", label: "Runner · Kling VIDEO 4.0", w: 1280, h: 720, fps: 24, dur: 12.04, audio: true },
+  { scene: "guide2", role: "main", id: "b2415db3", model: "runware-kling-4", label: "Forklift · Kling VIDEO 4.0", w: 1280, h: 720, fps: 24, dur: 12.04, audio: true },
 ];
 
 const MODELS = {
@@ -86,7 +93,7 @@ const MODELS = {
 
   const EXPAND = () => icon("m15 15 6 6M15 9l6-6M21 16v5h-5M21 8V3h-5M3 16v5h5M3 21l6-6M3 8V3h5M9 9 3 3");
   const CLOSE = () => icon("M6 6l12 12M18 6 6 18");
-  const SCENE_NAMES = { moto: "Brief 1 · motocross", sheet: "Brief 2 · character sheet", runner: "Brief 3 · runner", guide: "Draw Control · drawn guide" };
+  const SCENE_NAMES = { moto: "Brief 1 · motocross", sheet: "Brief 2 · character sheet", runner: "Brief 3 · runner", guide: "Draw Control · drawn guide", guide2: "Draw Control · one guide, three subjects" };
 
   // The page plays light web copies; Full view loads the originals as generated
   // (full/ under the clip base), only for the scene it opens. Clips come from the
@@ -189,8 +196,8 @@ const MODELS = {
     pauseAll();
     const all = which === "all";
     const shownCount = all ? clips.length : 1;
-    // Five clips keep the page's two rows in Full view (guidance over videos), sized to fit the window.
-    const frame = h("div", { class: `lb-frame${all ? "" : " one"}${shownCount === 5 ? " two-rows" : ""}` });
+    // Four to six clips sit in two rows in Full view (guidance over videos, or two by two), sized to fit the window.
+    const frame = h("div", { class: `lb-frame${all ? "" : " one"}${shownCount >= 4 && shownCount <= 6 ? ` fit${shownCount}` : ""}` });
     const size = h("button", { class: "lb-size", hidden: all }, "Actual size");
     const close = h("button", { class: "lb-close", "aria-label": "Close full view", onclick: () => lb.close() }, CLOSE());
     const title = all ? `All ${clips.length} clips · ${SCENE_NAMES[scene] || ""}` : clips[which].label || name(clips[which]);

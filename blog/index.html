@@ -76,9 +76,11 @@
   .clips.n5 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   .clips.n5 > :nth-child(-n+2) { grid-column: span 3; }
   .clips.n5 > :nth-child(n+3) { grid-column: span 2; }
+  /* Six clips: two inputs on the first row, four outputs on the second. */
+  .clips.n6 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .clips.n6 > :nth-child(-n+2) { grid-column: span 2; }
   .clips.n1 { grid-template-columns: minmax(0, 1fr); }
-  @media (max-width: 760px) { .clips, .clips.n2, .clips.n4, .clips.n5 { grid-template-columns: minmax(0, 1fr); } .clips.n5 > * { grid-column: auto !important; } }
-  @media (min-width: 1100px) { .lb-frame .clips.n4 { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  @media (max-width: 760px) { .clips, .clips.n2, .clips.n4, .clips.n5, .clips.n6 { grid-template-columns: minmax(0, 1fr); } .clips.n5 > *, .clips.n6 > * { grid-column: auto !important; } }
   .clip { margin: 0; min-width: 0; }
   .frame { position: relative; aspect-ratio: 16 / 9; background: #000; border-radius: 8px; overflow: hidden; }
   .frame video { width: 100%; height: 100%; object-fit: contain; display: block; }
@@ -139,8 +141,10 @@
   .lb-size:hover { color: var(--foreground); }
   .lb-close { width: 32px; height: 32px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--muted-foreground); cursor: pointer; display: grid; place-items: center; }
   .lb-frame { width: min(1600px, 100%); }
-  /* Two rows (two tiles over three): both rows fit the window. Row heights are 9/32 and 9/48 of the width; captions, bars and padding take about 270px. */
-  .lb-frame.two-rows { width: min(1600px, 100%, calc((94vh - 270px) * 2.13)); }
+  /* Two rows that both fit the window: two tiles over three (fit5), two over four (fit6), two by two (fit4). The factor is the width over the two rows' height; captions, bars and padding take about 270px. */
+  .lb-frame.fit5 { width: min(1600px, 100%, calc((94vh - 270px) * 2.13)); }
+  .lb-frame.fit6 { width: min(1600px, 100%, calc((94vh - 300px) * 2.37)); }
+  .lb-frame.fit4 { width: min(1600px, 100%, calc((94vh - 270px) * 1.78)); }
   /* One model: big and centred, as if watching just that one. */
   .lb-frame.one { width: min(1500px, 100%); }
   .lb-frame.one .clip { display: flex; flex-direction: column; align-items: center; }
@@ -381,6 +385,20 @@
 <h3>Our take</h3>
 <p>With this one prompt and this guide, Kling followed the drawing best, Seedance came in between and MiniMax H3 followed it least. Kling is precise: the camera goes where the drawing says, end to end. Its picture reads a little like a game, and the reflections are really good. Seedance kept closer to the reference images than to the guide, and it came out the most cinematic: fog, rain and steam off the car, the audio kept, and a smooth camera move of its own that was good to watch. Overall we call Kling and Seedance a tie.</p>
 <p>H3 has really nice light, the engines above all, but it did not pick up the spatial moves from the guide. Our guess is that it would need a LoRA or a fine-tune on top to do this. All three ran on one prompt, so each has room left with a prompt tuned to it. The first frame was made for an earlier version of the guide, and the clips still worked well after the guide changed.</p>
+<h3 id="guide2">Example 2: one guide, three subjects</h3>
+<p>The second example turns the test round: one guide, different subjects. The drawing is a straight run down a street at a steady 4 metres a second, with one small hop on a kick. The camera starts low and close, pulls back alongside as the subject passes behind a row of blocks, then rises to a high view of the whole street. The stand-in is a plain upright figure, so the same guide can carry a person or a vehicle.</p>
+<p>Only the shot description and the references change from clip to clip: an anime skater, a runner in New York and a forklift on a factory floor. The skater ran on two models, Kling VIDEO 4.0 and Seedance 2.5; the runner and the forklift are Kling. The guide runs 12 seconds at 24 fps on an 11-second drum and bass loop.</p>
+</main>
+
+<div class="wide">
+  <figure class="media">
+    <div class="stagecard"><div class="player" data-scene="guide2" data-role="main"></div></div>
+    <figcaption>The drawing and the guide on top, then the anime skater on Kling VIDEO 4.0 and on Seedance 2.5, the runner and the forklift, all on one clock.</figcaption>
+  </figure>
+</div>
+
+<main class="col">
+<div class="draft">Our take on Example 2: Radek's verdict to come. A first read from the frames: the three Kling clips open low and close and keep the guide's order, close, then alongside, then high. Seedance opens on the skater's face, then picks the guide up and turns the grey blocks into kiosks the skater passes behind.</div>
 <div class="draft">Where this comes from. One paragraph and two or three stills. Earlier audio-reactive work: the towers piece and the June flowers piece made in Genobi, and the camera-director workflows.</div>
 
 <h2 id="verdict">Which model for which job</h2>
