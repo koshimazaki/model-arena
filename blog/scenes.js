@@ -18,8 +18,10 @@ const CLIPS = [
   {"scene": "runner", "role": "main", "id": "873c2f11", "model": "runware-h3-frame", "prompt": "nike advert, runner in the new york city. Moving accross pavement, fine greain, visible logo, characters  strength and speed", "refs": 1, "w": 1344, "h": 768, "fps": 24.0, "cost": 0.8, "secs": 204, "dur": 10.0, "audio": true, "mode": "first frame (one still)"},
   {"scene": "runner", "role": "main", "id": "23a921db", "model": "flux-3-i2v", "prompt": "shoe manufacturer advert, runner in the new york city. Moving accross pavement, fine greain, visible logo, characters  strength and speed", "refs": 1, "w": 1280, "h": 704, "fps": 24.0, "cost": 1.5, "secs": 100, "dur": 10.0, "audio": true, "mode": "image to video (start image)"},
   { "scene": "runner", "role": "main", "model": "runware-seedance-2-5", "blocked": "Rejected by ByteDance's content moderation. Runware answered every Seedance run of this brief with invalidProviderContent: \"The generated content was flagged and rejected by ByteDance's content moderation system.\" Nothing was charged.", "mode": "text to video and first frame, same start image" },
-  // Draw Control guide (Example 1): the guide clip itself (Settings > Download guide (.zip) > guide.mp4), then the
-  // three models that followed it with the same references. No prompt, cost or time recorded yet.
+  // Draw Control (Example 1). The inputs first: the map played back (recorded from the page by stepping its scrub bar,
+  // one screenshot per frame) and the guide clip itself (Settings > Download guide (.zip) > guide.mp4). Then the three
+  // models that followed the guide with the same references. No cost or time recorded for these runs.
+  { scene: "guide", role: "main", id: "drawing-ex1", model: "draw-control-map", label: "The drawing, played back in Draw Control", w: 1280, h: 720, fps: 24, dur: 14.04, audio: true },
   { scene: "guide", role: "main", id: "guide-ex1", model: "draw-control-guide", label: "The guide, from Draw Control", w: 1280, h: 720, fps: 24, dur: 14.04, audio: true },
   { scene: "guide", role: "main", id: "febe9cb1", model: "runware-seedance-2-5", w: 1280, h: 720, fps: 24, dur: 14.04, audio: true },
   { scene: "guide", role: "main", id: "224d7eae", model: "runware-kling-4", w: 1280, h: 720, fps: 24, dur: 14.04, audio: true },
@@ -247,6 +249,26 @@ const MODELS = {
         row("Cost per 10 s HD clip", (c) => `$${c.cost.toFixed(2)}`),
         row(["Time to result ", h("small", {}, "(approx.)")], (c) => `≈ ${mins(c.secs)}`))));
   }
+
+  // A reference image opens bigger in a small window over the page: click or Enter to open; click, Escape or the cross to close.
+  const box = h("dialog", { class: "imgbox", "aria-label": "Image, larger" });
+  document.body.append(box);
+  box.addEventListener("close", () => box.replaceChildren());
+  box.addEventListener("click", (e) => { if (e.target === box || e.target.tagName === "IMG") box.close(); });
+  function openImage(img) {
+    const caption = img.closest("figure")?.querySelector("figcaption")?.textContent || img.alt;
+    const close = h("button", { class: "lb-close", "aria-label": "Close image", onclick: () => box.close() }, CLOSE());
+    box.replaceChildren(h("div", { class: "imgbar" }, h("span", {}, caption), close), h("img", { src: img.currentSrc || img.src, alt: img.alt }));
+    if (!box.open) box.showModal();
+    close.focus();
+  }
+  document.querySelectorAll("figure.ref img").forEach((img) => {
+    img.tabIndex = 0;
+    img.setAttribute("role", "button");
+    img.setAttribute("aria-label", `Open bigger: ${img.alt}`);
+    img.addEventListener("click", () => openImage(img));
+    img.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openImage(img); } });
+  });
 
   document.querySelectorAll(".player").forEach(player);
   document.querySelectorAll(".facts").forEach(facts);
