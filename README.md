@@ -4,7 +4,7 @@
 
 [![Three models playing the same brief on one clock](docs/img/post-player.jpg)](https://runware-arena.pages.dev/)
 
-Model Arena is a drop-in web component that plays video-model outputs side by side on one clock, runs them with your own key, and shows exactly what each model was given and what it cost. See it in use in the post [Three briefs, four video models](https://runware-arena.pages.dev/): Seedance 2.5, Kling VIDEO 4.0, MiniMax H3 and FLUX 3 Video on the same briefs, with each prompt, the measured cost and time, and what each model did well and where it fell short.
+Model Arena is a drop-in web component that plays video-model outputs side by side on one clock, runs them with your own key, and shows exactly what each model was given and what it cost. See it in use in the post [From text to drawing: motion control in four video models](https://runware-arena.pages.dev/): Seedance 2.5, Kling VIDEO 4.0, MiniMax H3 and FLUX 3 Video on the same briefs, with each prompt, the measured cost and time, and what each model did well and where it fell short.
 
 **Runs on [Runware](https://runware.ai).** Lanes go through the Runware API with your own key: Kling VIDEO 4.0, Seedance 2.5, MiniMax H3, LTX-2.5 and FLUX 3 Video for video, and nine image models for character stills. A dry run prints exactly what would be sent. A paid run needs a price cap and a typed yes, and logs what it cost. The key goes only to `api.runware.ai` and is never logged or written to a record.
 
